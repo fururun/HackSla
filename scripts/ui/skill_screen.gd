@@ -20,6 +20,7 @@ const MOD_NAMES: Dictionary = {
 	"chain_damage_mult": "チェイン威力倍率", "chain_area_mult": "チェイン範囲倍率",
 }
 
+var stash: Stash
 var _caster: SkillCaster
 var _opened: bool = false
 var _was_paused: bool = false
@@ -38,7 +39,12 @@ func _init() -> void:
 	layer = 90
 
 
-func setup(caster: SkillCaster) -> void:
+func setup(caster: SkillCaster, inventory: Stash = null) -> void:
+	if stash != null and stash.changed.is_connected(_refresh):
+		stash.changed.disconnect(_refresh)
+	stash = inventory
+	if stash != null:
+		stash.changed.connect(_refresh)
 	if is_instance_valid(_caster) and _caster.loadout.changed.is_connected(_on_loadout_changed):
 		_caster.loadout.changed.disconnect(_on_loadout_changed)
 	_caster = caster
@@ -98,7 +104,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _available_skills() -> Array[SkillDef]:
 	var out: Array[SkillDef] = []
 	for skill: SkillDef in DataDB.skills.values():
-		if not skill.chain_only:
+		if not skill.chain_only and (stash == null or stash.has_gem(GemInstance.Kind.SKILL, skill.id)):
 			out.append(skill)
 	return out
 
@@ -111,7 +117,7 @@ func _available_supports(slot: int) -> Array[SupportDef]:
 	if skill == null:
 		return out
 	for support: SupportDef in DataDB.supports.values():
-		if support.can_support(skill):
+		if support.can_support(skill) and (stash == null or stash.has_gem(GemInstance.Kind.SUPPORT, support.id)):
 			out.append(support)
 	return out
 
