@@ -1,6 +1,7 @@
 ---
 id: T04
 agent: gemini
+role: research
 title: 参考作の分析（POE2のジェム・パッシブツリー・アイテムフィルター）
 allowed: docs/reference_poe2.md
 ---

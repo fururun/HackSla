@@ -24,3 +24,6 @@ __pycache__/
 # PCごとの配布設定（Godot の場所など）
 tools/dispatch/agents.local.conf
 .dispatch_review.md
+
+# 画面の撮影（確認用）
+shots/
