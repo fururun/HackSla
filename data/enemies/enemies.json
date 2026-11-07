@@ -1,0 +1,41 @@
+[
+  {
+    "id": "swarmling",
+    "name": "群れ小鬼",
+    "behavior": "melee_swarm",
+    "life": 14,
+    "speed": 55,
+    "damage": 3,
+    "attack_range": 10,
+    "attack_interval": 0.9,
+    "xp": 2,
+    "pack": [8, 14],
+    "color": "#c9a24a"
+  },
+  {
+    "id": "brute",
+    "name": "岩殻",
+    "behavior": "tank",
+    "life": 120,
+    "speed": 28,
+    "damage": 10,
+    "attack_range": 14,
+    "attack_interval": 1.6,
+    "xp": 12,
+    "pack": [1, 2],
+    "color": "#7d8a99"
+  },
+  {
+    "id": "training_dummy",
+    "name": "案山子",
+    "behavior": "dummy",
+    "life": 0,
+    "speed": 0,
+    "damage": 0,
+    "attack_range": 0,
+    "attack_interval": 0,
+    "xp": 0,
+    "pack": [1, 1],
+    "color": "#a0784f"
+  }
+]

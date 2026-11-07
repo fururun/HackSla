@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI外注管理ボード</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --panel: #ffffff; --ink: #1d1c1a; --sub: #6b675f; --line: #e3dfd7; --soft: #f8f6f2;
+    --good: #2f8f5b; --warn: #b7791f; --bad: #c2412d; --info: #5b6b7f;
+    --c-claude: #c8643f; --c-codex: #12866a; --c-gemini: #3f74d8; --c-muse: #7c4fd6; --c-none: #8a857b;
+    --radius: 10px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151514; --panel: #1f1e1c; --ink: #ecebe7; --sub: #a29d93; --line: #34322e; --soft: #262522;
+            --good: #4fb47d; --warn: #d9a23f; --bad: #e0634d; --info: #8fa0b5; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.55 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; }
+  .sub { color: var(--sub); font-size: 12.5px; }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--sub); font-size: 12.5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+  .dot.pulse { animation: pulse 1.6s ease-in-out infinite; }
+  .dot.off { background: var(--bad); animation: none; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .banner { background: var(--soft); border: 1px dashed var(--line); border-radius: var(--radius); padding: 8px 12px; font-size: 12.5px; color: var(--sub); margin-bottom: 14px; }
+  h2 { font-size: 13px; color: var(--sub); font-weight: 600; letter-spacing: .06em; margin: 26px 0 10px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+  .kpi b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .kpi span { color: var(--sub); font-size: 12px; }
+  .kpi.attn b { color: var(--bad); }
+
+  .companies { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .co { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; border-top: 4px solid var(--c); }
+  .co-head { display: flex; align-items: center; gap: 10px; }
+  .mono { width: 34px; height: 34px; border-radius: 8px; background: var(--c); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
+  .co-name { font-weight: 700; font-size: 15px; }
+  .co-role { color: var(--sub); font-size: 12px; }
+  .pill { margin-left: auto; font-size: 11.5px; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--sub); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .pill.on { color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); font-weight: 600; }
+  .pill.on .dot { background: var(--c); }
+  .co-now { min-height: 22px; margin: 10px 0 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { font-family: var(--mono); font-size: 11.5px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--soft); cursor: pointer; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; border-top: 1px solid var(--line); padding-top: 8px; }
+  .stats b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .stats span { font-size: 11px; color: var(--sub); }
+  .stats .neg b { color: var(--bad); }
+  .co-foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); margin-top: 8px; }
+  .bar { height: 5px; border-radius: 3px; background: var(--soft); overflow: hidden; margin-top: 4px; }
+  .bar i { display: block; height: 100%; background: var(--c); }
+
+  .board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; align-items: start; }
+  .col { background: color-mix(in srgb, var(--panel) 55%, transparent); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; min-height: 120px; }
+  .col-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 8px; font-weight: 700; font-size: 13px; }
+  .col-head .n { font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .col-head .arrow { color: var(--sub); font-weight: 400; margin-left: 4px; }
+  .col.attn .col-head { color: var(--bad); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; transition: transform .08s; }
+  .card:hover { transform: translateY(-1px); }
+  .card-top { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .card .id { font-family: var(--mono); font-weight: 700; }
+  .co-tag { color: var(--c); font-weight: 600; }
+  .badge { margin-left: auto; font-size: 11px; padding: 0 6px; border-radius: 4px; background: var(--soft); color: var(--sub); }
+  .badge.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+  .badge.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .badge.good { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+  .card .title { font-size: 13px; margin: 3px 0 4px; }
+  .card .meta { font-size: 11.5px; color: var(--sub); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .card .tail { font-family: var(--mono); font-size: 11px; color: var(--sub); background: var(--soft); border-radius: 5px; padding: 4px 6px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .note { font-size: 12px; color: var(--bad); margin-top: 4px; }
+  .card a { color: inherit; }
+  .empty { color: var(--sub); font-size: 12px; text-align: center; padding: 16px 0; }
+  .spin { display: inline-block; width: 9px; height: 9px; border: 2px solid var(--c); border-right-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .feed { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 14px; max-height: 460px; overflow-y: auto; }
+  .feed-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; align-items: baseline; }
+  .feed-row:last-child { border-bottom: 0; }
+  .feed-row time { color: var(--sub); font-size: 12px; font-variant-numeric: tabular-nums; flex: none; width: 64px; }
+  .feed-row .dot { flex: none; position: relative; top: -1px; }
+  .tone-good { background: var(--good); } .tone-bad { background: var(--bad); } .tone-warn { background: var(--warn); } .tone-info { background: var(--info); }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal.open { display: flex; }
+  .sheet { background: var(--panel); border-radius: 12px; width: min(860px, 100%); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-top: 5px solid var(--c); }
+  .sheet-head { padding: 14px 16px 10px; display: flex; gap: 10px; align-items: flex-start; }
+  .sheet-head h3 { margin: 0; font-size: 16px; }
+  .close { margin-left: auto; border: 0; background: var(--soft); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+  .tab { border: 0; background: none; padding: 8px 10px; cursor: pointer; color: var(--sub); font: inherit; border-bottom: 2px solid transparent; }
+  .tab.on { color: var(--ink); border-bottom-color: var(--c); font-weight: 600; }
+  .sheet pre { margin: 0; padding: 14px 16px; overflow: auto; font: 12px/1.6 var(--mono); white-space: pre-wrap; word-break: break-word; flex: 1; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; padding: 0 16px 12px; font-size: 12.5px; }
+  .facts div span { display: block; color: var(--sub); font-size: 11.5px; }
+  .hint { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--sub); }
+  .hint code { font-family: var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+
+  @media (max-width: 1000px) {
+    .companies { grid-template-columns: repeat(2, 1fr); }
+    .board { grid-template-columns: repeat(5, 260px); overflow-x: auto; padding-bottom: 6px; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 14px 12px 40px; }
+    .kpis { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .kpi { padding: 8px 10px; }
+    .kpi b { font-size: 20px; }
+    /* 取引先は横にめくる */
+    .companies { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 80vw; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+    .co { scroll-snap-align: start; }
+    /* 発注フローは縦に並べ、空の列は見出しだけにする */
+    .board { grid-template-columns: 1fr; overflow: visible; }
+    .col { min-height: 0; }
+    .col.is-empty .empty { display: none; }
+    .col.is-empty .col-head { padding-bottom: 2px; color: var(--sub); }
+    .feed { max-height: 360px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>AI外注管理ボード</h1>
+      <div class="sub" id="meta">発注元：ふるるん</div>
+    </div>
+    <div class="live"><span class="dot pulse" id="live-dot"></span><span id="live-text">接続中…</span></div>
+  </header>
+  <div class="banner" id="demo-banner" hidden>デモ表示です。リポジトリで <code>python3 tools/dispatch/monitor/monitor.py</code> を起動して開くと、実際の取引に切り替わります。</div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>取引先</h2>
+  <div class="companies" id="companies"></div>
+
+  <h2>発注フロー</h2>
+  <div class="board" id="board"></div>
+
+  <h2>取引履歴</h2>
+  <div class="feed" id="feed"></div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="sheet" id="sheet">
+    <div class="sheet-head">
+      <div><div class="sub" id="m-co"></div><h3 id="m-title"></h3></div>
+      <button class="close" id="m-close">閉じる</button>
+    </div>
+    <div class="facts" id="m-facts"></div>
+    <div class="tabs">
+      <button class="tab on" data-tab="prompt">発注書</button>
+      <button class="tab" data-tab="log">作業ログ</button>
+    </div>
+    <pre id="m-body"></pre>
+    <div class="hint" id="m-hint"></div>
+  </div>
+</div>
+
+<script>
+const COLORS = { claude: "var(--c-claude)", codex: "var(--c-codex)", gemini: "var(--c-gemini)", muse: "var(--c-muse)" };
+const MONO = { claude: "Cl", codex: "Cx", gemini: "Ge", muse: "Mu" };
+const COLUMNS = [
+  { key: "draft", label: "発注準備", stages: ["draft"] },
+  { key: "work", label: "作業中", stages: ["ordered", "working"] },
+  { key: "review", label: "検収待ち", stages: ["delivered"] },
+  { key: "attn", label: "要対応", stages: ["failed", "rejected", "no_change"], attn: true },
+  { key: "done", label: "完了", stages: ["accepted", "done"] },
+];
+const BADGE = { ordered: ["待機", ""], working: ["作業中", ""], failed: ["失敗", "bad"], rejected: ["差し戻し", "bad"],
+                no_change: ["納品物なし", "warn"], accepted: ["検収OK", "good"], done: ["完了", "good"], delivered: ["納品済み", "good"] };
+
+let state = null, fetchedAt = 0, current = null, currentTab = "prompt", detail = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const color = a => COLORS[a] || "var(--c-none)";
+function dur(s) {
+  if (s == null) return "-";
+  s = Math.max(0, Math.round(s));
+  if (s < 60) return s + "秒";
+  if (s < 3600) return Math.floor(s / 60) + "分" + String(s % 60).padStart(2, "0") + "秒";
+  return Math.floor(s / 3600) + "時間" + Math.floor((s % 3600) / 60) + "分";
+}
+const hm = ts => ts ? new Date(ts * 1000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "-";
+const liveElapsed = t => (t.elapsed || 0) + (Date.now() / 1000 - fetchedAt);
+const isUrl = s => /^https?:\/\//.test(s || "");
+
+async function load() {
+  try {
+    const r = await fetch("api/state", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    state = await r.json();
+    fetchedAt = Date.now() / 1000;
+    setLive(true);
+  } catch (e) {
+    if (!state || state.demo) { state = demoState(); fetchedAt = Date.now() / 1000; }
+    else { setLive(false); }
+  }
+  render();
+}
+function setLive(ok) {
+  document.getElementById("live-dot").className = "dot " + (ok ? "pulse" : "off");
+  document.getElementById("live-text").textContent = ok ? "3秒ごとに自動更新" : "監視サーバーに接続できません";
+}
+
+function render() {
+  const s = state;
+  document.getElementById("demo-banner").hidden = !s.demo;
+  if (s.demo) { document.getElementById("live-dot").className = "dot"; document.getElementById("live-text").textContent = "デモデータ"; }
+  document.getElementById("meta").textContent = `発注元：ふるるん ／ ${s.repo}（基準 ${s.base}） ／ ${hm(s.now)} 時点`;
+
+  const count = st => s.tasks.filter(t => st.includes(t.stage)).length;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const doneToday = s.feed.filter(f => f.tone === "good" && f.ts * 1000 >= today.getTime() && /完了|検収OK/.test(f.text)).length;
+  const kpis = [
+    ["作業中", count(["ordered", "working"])],
+    ["検収待ち", count(["delivered"])],
+    ["要対応", count(["failed", "rejected", "no_change"]), true],
+    ["今日の完了・検収", doneToday],
+    ["発注準備", count(["draft"])],
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(([l, n, attn]) =>
+    `<div class="kpi ${attn && n ? "attn" : ""}"><b>${n}</b><span>${l}</span></div>`).join("");
+
+  document.getElementById("companies").innerHTML = s.companies.map(c => {
+    const on = c.working.length > 0;
+    const rate = c.success_rate;
+    return `<div class="co" style="--c:${color(c.key)}">
+      <div class="co-head"><div class="mono">${MONO[c.key] || "?"}</div>
+        <div><div class="co-name">${esc(c.name)}</div><div class="co-role">${esc(c.role)}</div></div>
+        <span class="pill ${on ? "on" : ""}">${on ? '<span class="dot pulse"></span>' : ""}${on ? "作業中 " + c.working.length + "件" : "待機中"}</span></div>
+      <div class="co-now">${c.working.map(id => `<span class="chip" data-id="${esc(id)}">${esc(id)}</span>`).join("") || '<span class="sub">いま受けている仕事はありません</span>'}</div>
+      <div class="stats">
+        <div><b>${c.orders}</b><span>受注</span></div>
+        <div><b>${c.delivered}</b><span>納品</span></div>
+        <div class="${c.rejected ? "neg" : ""}"><b>${c.rejected}</b><span>差し戻し</span></div>
+        <div class="${c.failed ? "neg" : ""}"><b>${c.failed}</b><span>失敗</span></div>
+      </div>
+      <div class="co-foot"><span>平均納期 ${dur(c.avg_secs)}</span><span>成功率 ${rate == null ? "-" : rate + "%"}</span></div>
+      <div class="bar"><i style="width:${rate || 0}%"></i></div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("board").innerHTML = COLUMNS.map((col, i) => {
+    const items = s.tasks.filter(t => col.stages.includes(t.stage));
+    return `<div class="col ${col.attn ? "attn" : ""} ${items.length ? "" : "is-empty"}">
+      <div class="col-head"><span>${col.label}${i < COLUMNS.length - 1 && !col.attn ? '<span class="arrow">→</span>' : ""}</span><span class="n">${items.length}</span></div>
+      ${items.map(card).join("") || '<div class="empty">なし</div>'}
+    </div>`;
+  }).join("");
+
+  document.getElementById("feed").innerHTML = s.feed.length ? s.feed.map(f =>
+    `<div class="feed-row"><time>${hm(f.ts)}</time><span class="dot tone-${f.tone}"></span><span>${esc(f.text)}</span></div>`).join("")
+    : '<div class="empty">まだ取引がありません。dispatch.sh で発注すると、ここに記録されます。</div>';
+
+  document.querySelectorAll("[data-id]").forEach(el => el.onclick = e => { e.stopPropagation(); openTask(el.dataset.id); });
+  if (current) fillFacts();
+}
+
+function card(t) {
+  const [b, tone] = BADGE[t.stage] || ["", ""];
+  const meta = [];
+  if (t.stage === "draft") meta.push(t.file ? esc(t.file) : "未発注");
+  if (t.stage === "ordered") meta.push("着手待ち");
+  if (t.stage === "working") meta.push(`<span class="spin"></span> 経過 <span data-elapsed="${esc(t.id)}">${dur(liveElapsed(t))}</span>`);
+  if (t.secs != null && t.stage !== "working") meta.push("所要 " + dur(t.secs));
+  if (t.changed && t.changed !== "なし") meta.push(esc(t.changed_ja || t.changed));
+  if (isUrl(t.pr)) meta.push(`<a href="${esc(t.pr)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PRを開く</a>`);
+  if (t.rejects) meta.push(`差し戻し${t.rejects}回`);
+  if (t.mock) meta.push("模擬");
+  return `<div class="card" style="--c:${color(t.agent)}" data-id="${esc(t.id)}">
+    <div class="card-top"><span class="id">${esc(t.id)}</span><span class="co-tag">${esc(t.company)}</span>${b && t.stage !== "draft" ? `<span class="badge ${tone}">${b}</span>` : ""}</div>
+    <div class="title">${esc(t.title || "(無題)")}</div>
+    <div class="meta">${meta.map(m => `<span>${m}</span>`).join("")}</div>
+    ${t.stage === "working" && t.tail && t.tail.length ? `<div class="tail">${esc(t.tail[t.tail.length - 1])}</div>` : ""}
+    ${t.note ? `<div class="note">${t.stage === "rejected" ? "差し戻し理由：" : "メモ："}${esc(t.note)}</div>` : ""}
+  </div>`;
+}
+
+async function openTask(id) {
+  current = id; currentTab = "prompt"; detail = null;
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById("sheet").style.setProperty("--c", color(t.agent));
+  document.getElementById("m-co").textContent = `${t.company} への発注`;
+  document.getElementById("m-title").textContent = `${t.id}：${t.title || ""}`;
+  fillFacts();
+  document.getElementById("m-hint").innerHTML =
+    `検収：<code>tools/dispatch/review.sh ${esc(id)} ok</code> ／ 差し戻し：<code>tools/dispatch/review.sh ${esc(id)} ng "理由"</code>`;
+  setTab("prompt");
+  document.getElementById("modal").classList.add("open");
+  if (state.demo) { detail = demoDetail(t); }
+  else {
+    try { detail = await (await fetch("api/task?id=" + encodeURIComponent(id), { cache: "no-store" })).json(); }
+    catch (e) { detail = { prompt: "読み込めませんでした", log: "" }; }
+  }
+  setTab(currentTab);
+}
+function fillFacts() {
+  const t = state.tasks.find(x => x.id === current);
+  if (!t) return;
+  const facts = [
+    ["段階", t.stage_label], ["発注", hm(t.ordered_at)], ["着手", hm(t.started_at)], ["納品", hm(t.finished_at)],
+    ["所要", t.stage === "working" ? dur(liveElapsed(t)) : dur(t.secs)], ["触ってよい場所", t.allowed || "-"],
+  ];
+  if (isUrl(t.pr)) facts.push(["PR", `<a href="${esc(t.pr)}" target="_blank" rel="noopener">開く</a>`]);
+  else if (t.pr === "--no-pr") facts.push(["PR", "作らない設定（--no-pr）"]);
+  else if (t.pr && t.pr !== "-") facts.push(["PR", esc(t.pr)]);
+  if (t.changed && t.changed !== "なし") facts.push(["変更", esc(t.changed_ja || t.changed)]);
+  document.getElementById("m-facts").innerHTML = facts.map(([k, v]) => `<div><span>${k}</span>${k === "PR" ? v : esc(v)}</div>`).join("");
+}
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  const body = document.getElementById("m-body");
+  if (!detail) { body.textContent = "読み込み中…"; return; }
+  body.textContent = (tab === "prompt" ? detail.prompt : detail.log) || (tab === "log" ? "まだログはありません" : "発注書がありません");
+  if (tab === "log") body.scrollTop = body.scrollHeight;
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+document.getElementById("m-close").onclick = () => { document.getElementById("modal").classList.remove("open"); current = null; };
+document.getElementById("modal").onclick = e => { if (e.target.id === "modal") document.getElementById("m-close").click(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.getElementById("m-close").click(); });
+
+// 経過時間は1秒ごとに進める（データの取り直しは3秒ごと）
+setInterval(() => {
+  if (!state) return;
+  document.querySelectorAll("[data-elapsed]").forEach(el => {
+    const t = state.tasks.find(x => x.id === el.dataset.elapsed);
+    if (t) el.textContent = dur(liveElapsed(t));
+  });
+}, 1000);
+
+// ---------- デモデータ（監視サーバーなしで開いたとき） ----------
+function demoState() {
+  const now = Math.floor(Date.now() / 1000), m = 60;
+  const T = (id, agent, title, stage, extra = {}) => ({ id, agent, title, stage, allowed: "", ordered_at: null, started_at: null,
+    finished_at: null, secs: null, rc: null, changed: "", pr: "", note: "", rejects: 0, runs: stage === "draft" ? 0 : 1, mock: false, file: "", tail: [], ...extra });
+  const tasks = [
+    T("T19", "claude", "スキルツリー（パッシブ専用）とその画面", "draft", { file: "tasks/T19.md" }),
+    T("T20", "codex", "ドロップのフィルター", "draft", { file: "tasks/T20.md" }),
+    T("T08", "codex", "敵AI（近接・遠距離・硬い単体・速い群れ）", "working", { ordered_at: now - 9 * m, started_at: now - 9 * m, elapsed: 9 * m + 12, allowed: "scenes/enemies/",
+      tail: ["Pool size set to 200; spawning 150 enemies for test"] }),
+    T("T12", "gemini", "初期データの数値（ジェム・装備・敵）", "working", { ordered_at: now - 6 * m, started_at: now - 6 * m, elapsed: 6 * m + 3, allowed: "data/",
+      tail: ["skills.json: 10 gems written, checking DPS curve per stage"] }),
+    T("T17", "muse", "デバッグツール（数値の即時変更）", "working", { ordered_at: now - 3 * m, started_at: now - 3 * m, elapsed: 3 * m + 40, allowed: "tools/debug/",
+      tail: ["Adding hotkey F2 to spawn enemy pack"] }),
+    T("T10", "claude", "スキル実行システム（ジェムと補助の合成）", "delivered", { ordered_at: now - 50 * m, started_at: now - 50 * m, finished_at: now - 22 * m, secs: 28 * m, rc: 0,
+      changed: "6 files changed, 412 insertions(+)", pr: "https://github.com/example/game/pull/14" }),
+    T("T11", "codex", "スキル装備画面（スキル枠・補助枠・上限）", "delivered", { ordered_at: now - 40 * m, started_at: now - 40 * m, finished_at: now - 15 * m, secs: 25 * m, rc: 0,
+      changed: "4 files changed, 268 insertions(+)", pr: "https://github.com/example/game/pull/15" }),
+    T("T14", "codex", "ドロップテーブルとアイテム生成", "rejected", { ordered_at: now - 80 * m, started_at: now - 80 * m, finished_at: now - 52 * m, secs: 28 * m, rc: 0,
+      changed: "3 files changed, 190 insertions(+)", rejects: 1, note: "付与効果の数値がコードに直書き。data/ に移す" }),
+    T("T18", "muse", "撃破演出（ヒットストップ・画面揺れ）", "failed", { ordered_at: now - 30 * m, started_at: now - 30 * m, finished_at: now - 27 * m, secs: 3 * m, rc: 1, changed: "なし" }),
+    T("T06", "codex", "敵の大量表示の負荷テスト", "done", { ordered_at: now - 180 * m, started_at: now - 180 * m, finished_at: now - 150 * m, secs: 30 * m, rc: 0, changed: "2 files changed, 96 insertions(+)" }),
+    T("T09", "claude", "ダメージ計算・ステータス・属性耐性", "accepted", { ordered_at: now - 120 * m, started_at: now - 120 * m, finished_at: now - 95 * m, secs: 25 * m, rc: 0,
+      changed: "5 files changed, 301 insertions(+)", pr: "https://github.com/example/game/pull/12" }),
+    T("T04", "gemini", "参考作の分析（POE2のジェム・ツリー）", "done", { ordered_at: now - 200 * m, started_at: now - 200 * m, finished_at: now - 185 * m, secs: 15 * m, rc: 0, changed: "1 file changed, 220 insertions(+)" }),
+  ];
+  const names = { claude: "Claude社", codex: "Codex社", gemini: "Gemini社", muse: "Muse社" };
+  const labels = { draft: "発注準備", ordered: "発注済み", working: "作業中", delivered: "検収待ち", accepted: "検収OK", rejected: "差し戻し", failed: "失敗", no_change: "納品物なし", done: "完了" };
+  const jaChanged = s => (s.match(/\d+ (file|insertion|deletion)/g) || [])
+    .map(x => x.replace(/ file/, "ファイル").replace(/ insertion/, "行追加").replace(/ deletion/, "行削除")).join("・") || s;
+  tasks.forEach(t => { t.company = names[t.agent]; t.stage_label = labels[t.stage]; t.changed_ja = jaChanged(t.changed); });
+  const companies = [
+    { key: "claude", name: "Claude社", role: "設計・統括・レビュー", working: [], orders: 6, delivered: 6, failed: 0, rejected: 0, avg_secs: 1520, success_rate: 100 },
+    { key: "codex", name: "Codex社", role: "実装（並列の主力）", working: ["T08"], orders: 9, delivered: 7, failed: 1, rejected: 1, avg_secs: 1610, success_rate: 75 },
+    { key: "gemini", name: "Gemini社", role: "数値設計・調査・検証", working: ["T12"], orders: 4, delivered: 3, failed: 0, rejected: 0, avg_secs: 980, success_rate: 100 },
+    { key: "muse", name: "Muse社", role: "ツール・小さな実装", working: ["T17"], orders: 3, delivered: 1, failed: 1, rejected: 0, avg_secs: 640, success_rate: 50 },
+  ];
+  const feed = [
+    [3, "Muse社に T17「デバッグツール（数値の即時変更）」を発注", "info"],
+    [6, "Gemini社に T12「初期データの数値（ジェム・装備・敵）」を発注", "info"],
+    [9, "Codex社に T08「敵AI（近接・遠距離・硬い単体・速い群れ）」を発注", "info"],
+    [15, "Codex社が T11 を納品（4ファイル・268行追加）", "good"],
+    [22, "Claude社が T10 を納品（6ファイル・412行追加）", "good"],
+    [27, "Muse社の T18 が失敗（終了コード 1）", "bad"],
+    [45, "T14 を差し戻し（付与効果の数値がコードに直書き。data/ に移す）", "bad"],
+    [90, "T09 を検収OK", "good"],
+    [148, "T06 が完了", "good"],
+  ].map(([ago, text, tone]) => ({ ts: now - ago * m, t: "", text, tone, id: "" }));
+  return { now, repo: "hackslash", base: "main", companies, tasks, feed, demo: true };
+}
+function demoDetail(t) {
+  return {
+    prompt: `あなたはこのゲーム開発チームの一員です（担当: ${t.agent}）。次のルールを必ず守ってください。\n- まずリポジトリ直下の AGENTS.md を読み、その規約に従うこと\n- 変更してよいのは次の場所だけ: ${t.allowed || "指示書に書かれた場所"}\n- git の commit / push / PR作成はしないこと（配布スクリプトが行います）\n- 作業の最後に「やったこと」「確認方法」「気になる点」を短くまとめて出力すること\n\n## タスク ${t.id}: ${t.title}\n\n（デモ表示のため、指示書の本文は省略しています）`,
+    log: t.stage === "draft" ? "" : `[${t.agent}] AGENTS.md を読みました\n[${t.agent}] 作業を開始します\n${(t.tail || []).join("\n")}\n${t.stage === "failed" ? "Error: scene file not found: scenes/fx/hit_stop.tscn\n" : ""}（デモ表示）`,
+  };
+}
+
+load();
+setInterval(load, 3000);
+</script>
+</body>
+</html>
