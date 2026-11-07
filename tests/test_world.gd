@@ -43,6 +43,12 @@ func test_main_scene_runs() -> void:
 		await tree.process_frame
 	var player := tree.get_first_node_in_group("player") as Player
 	t.check(player != null, "プレイヤーがいる")
+	t.check(InputMap.has_action("restart_game"), "やり直しの操作(F5)が登録されている")
+	var listener: Node = null
+	for child: Node in main.get_children():
+		if child is RestartListener:
+			listener = child
+	t.check(listener != null and listener.process_mode == Node.PROCESS_MODE_ALWAYS, "やり直しの受け口が止まっていても動く")
 	var dummies: Array[Node2D] = []
 	for node: Node in tree.get_nodes_in_group("enemies"):
 		if node is TrainingDummy:
