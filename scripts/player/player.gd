@@ -9,6 +9,7 @@ const MOVE_SPEED: float = 80.0
 
 var facing: int = 2  ## Facing の番号（最初は下向き）
 var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
+var vitals: PlayerVitals = PlayerVitals.new(caster.stats)  ## 体力・経験値（stats は caster と共有）
 var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
 
 
@@ -27,6 +28,11 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	vitals.tick(delta)
+	if vitals.is_dead():
+		velocity = Vector2.ZERO
+		queue_redraw()
+		return
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	velocity = input * MOVE_SPEED
 	move_and_slide()
@@ -42,8 +48,15 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
+## 敵に殴られた（EnemyManager.player_hit につなぐ）
+func on_player_hit(damage: float, _source: Node) -> void:
+	vitals.take_damage(damage)
+
+
 ## スキル枠 slot を狙った位置に向けて出す。出せたら true（空の枠・再使用時間中は false）
 func use_skill(slot: int, target: Vector2) -> bool:
+	if vitals.is_dead():
+		return false
 	caster.fx_parent = get_parent()
 	var hits := caster.cast(slot, target, global_position, Facing.to_vector(facing))
 	if hits < 0:
@@ -66,7 +79,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
 	draw_circle(Vector2.ZERO, 6.0, Color(0, 0, 0, 0.35))  # 影
 	draw_set_transform(Vector2.ZERO)
-	var body := Color("#e8e2d0")
+	var body := Color("#6b5a5a") if vitals.is_dead() else Color("#e8e2d0")
 	draw_rect(Rect2(-3, -15, 6, 11), body)               # 体
 	draw_circle(Vector2(0, -18), 3.0, Color("#f2d6b3"))  # 頭
 	var f := Facing.to_vector(facing)
