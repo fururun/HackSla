@@ -3,14 +3,14 @@
     "id": "scatter",
     "name": "拡散",
     "kinds": ["projectile"],
-    "modifiers": { "projectile_count": 2, "damage_mult": 0.75 },
+    "modifiers": { "projectile_count": 2, "damage_mult": 0.85 },
     "description": "飛び道具が3方向に広がる。1発あたりの威力は下がる。"
   },
   {
     "id": "burst_on_kill",
     "name": "撃破時爆発",
     "kinds": [],
-    "modifiers": { "explode_on_kill": 0.35, "explode_damage_ratio": 0.5 },
+    "modifiers": { "explode_on_kill": 0.6, "explode_damage_ratio": 1.5 },
     "description": "このスキルで倒した敵が、一定の確率で爆発して周りを巻き込む。"
   }
 ]
