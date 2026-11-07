@@ -9,6 +9,7 @@ signal player_hit(damage: float, source: Enemy)
 
 const SEPARATION_PASSES: int = 4
 
+var enemy_parent: Node  ## 敵を置く先。Y軸ソートする親を指定する（空なら自分の子）
 var _feedback: HitFeedback
 
 var _packs: Dictionary[int, Array] = {}
@@ -30,7 +31,9 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 		enemy_hit.connect(_feedback.on_enemy_hit)
 	var enemy: Enemy = _pool.pop_back() if not _pool.is_empty() else Enemy.new()
 	if enemy.get_parent() == null:
-		add_child(enemy)
+		# Y軸ソートする親（World）の直下に置く。管理ノードの下に置くと、群れ全体が1枚として
+		# 壁やプレイヤーと前後を比べられてしまい、描画順がずれる
+		(enemy_parent if enemy_parent != null else self).add_child(enemy)
 	enemy.manager = self
 	enemy.definition = def
 	enemy.life = def.life

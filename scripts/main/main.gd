@@ -45,6 +45,7 @@ func _ready() -> void:
 func _add_enemies() -> void:
 	var manager := EnemyManager.new()
 	manager.name = "EnemyManager"
+	manager.enemy_parent = world  # 壁・プレイヤーと同じ Y軸ソートの親に置き、描画順を合わせる
 	world.add_child(manager)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()

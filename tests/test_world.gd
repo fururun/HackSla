@@ -49,6 +49,12 @@ func test_main_scene_runs() -> void:
 			dummies.append(node as Node2D)
 	t.check_eq(dummies.size(), 2, "案山子が2体")
 	t.check(tree.get_nodes_in_group("enemies").size() > 2, "マップの印から敵の群れが置かれる")
+	var world_node: Node = main.get_node("World")
+	var swarm_in_world := true
+	for node: Node in tree.get_nodes_in_group("enemies"):
+		if not node is TrainingDummy and node.get_parent() != world_node:
+			swarm_in_world = false
+	t.check(swarm_in_world, "敵は壁・プレイヤーと同じY軸ソートの親(World)の直下にいる")
 	var dummy: Node2D = dummies[0]
 	player.global_position = dummy.global_position + Vector2(-16, 4)
 	t.check(player.try_basic_attack(dummy.global_position), "斬撃を出せる")
