@@ -36,7 +36,31 @@ func _ready() -> void:
 		dummy.position = pos
 		world.add_child(dummy)
 
+	_add_enemies()
+	_add_skill_screen()
 	_add_help()
+
+
+## マップの印（s=群れ小鬼の群れ、b=岩殻）に敵を置く。時間で湧かせず、倒しに行く配置
+func _add_enemies() -> void:
+	var manager := EnemyManager.new()
+	manager.name = "EnemyManager"
+	world.add_child(manager)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var swarm: EnemyDef = DataDB.enemy("swarmling")
+	var brute: EnemyDef = DataDB.enemy("brute")
+	for pos: Vector2 in map.markers.get("s", []):
+		manager.spawn_pack(swarm, pos, rng)
+	for pos: Vector2 in map.markers.get("b", []):
+		manager.spawn(brute, pos)
+
+
+func _add_skill_screen() -> void:
+	var screen := SkillScreen.new()
+	screen.name = "SkillScreen"
+	add_child(screen)
+	screen.setup(player.caster)
 
 
 static func load_map(path: String) -> PackedStringArray:
@@ -51,7 +75,7 @@ func _add_help() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var help := Label.new()
-	help.text = "WASD: 移動　左クリック: 斬撃（マウスの方向）"
+	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備"
 	help.position = Vector2(6, 4)
 	help.add_theme_font_size_override("font_size", 8)
 	help.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))

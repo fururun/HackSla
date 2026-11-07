@@ -43,8 +43,13 @@ func test_main_scene_runs() -> void:
 		await tree.process_frame
 	var player := tree.get_first_node_in_group("player") as Player
 	t.check(player != null, "プレイヤーがいる")
-	t.check_eq(tree.get_nodes_in_group("enemies").size(), 2, "案山子が2体")
-	var dummy := tree.get_first_node_in_group("enemies") as Node2D
+	var dummies: Array[Node2D] = []
+	for node: Node in tree.get_nodes_in_group("enemies"):
+		if node is TrainingDummy:
+			dummies.append(node as Node2D)
+	t.check_eq(dummies.size(), 2, "案山子が2体")
+	t.check(tree.get_nodes_in_group("enemies").size() > 2, "マップの印から敵の群れが置かれる")
+	var dummy: Node2D = dummies[0]
 	player.global_position = dummy.global_position + Vector2(-16, 4)
 	t.check(player.try_basic_attack(dummy.global_position), "斬撃を出せる")
 	t.check(not player.try_basic_attack(dummy.global_position), "再使用時間中は出せない")
