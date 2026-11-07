@@ -1,6 +1,6 @@
 ---
 id: T17
-agent: muse
+agent: codex
 title: デバッグ用の操作（FPS表示・データ再読み込み・案山子の呼び出し）
 allowed: scripts/debug/ project.godot
 ---
