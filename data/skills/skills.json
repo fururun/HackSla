@@ -1,0 +1,54 @@
+[
+  {
+    "id": "slash",
+    "name": "斬撃",
+    "element": "physical",
+    "kind": "melee",
+    "damage": [8, 12],
+    "cooldown": 0.35,
+    "range": 26,
+    "radius": 22,
+    "speed": 0,
+    "chain_only": false,
+    "description": "前方を扇状に斬る。"
+  },
+  {
+    "id": "frost_bloom",
+    "name": "氷華",
+    "element": "cold",
+    "kind": "area",
+    "damage": [6, 9],
+    "cooldown": 1.2,
+    "range": 0,
+    "radius": 44,
+    "speed": 0,
+    "chain_only": false,
+    "description": "足元から冷気を広げ、周りの敵を凍えさせる。"
+  },
+  {
+    "id": "fire_bolt",
+    "name": "火球",
+    "element": "fire",
+    "kind": "projectile",
+    "damage": [7, 11],
+    "cooldown": 0.5,
+    "range": 200,
+    "radius": 4,
+    "speed": 220,
+    "chain_only": false,
+    "description": "狙った方向へ火の玉を放つ。"
+  },
+  {
+    "id": "shatter",
+    "name": "砕氷",
+    "element": "cold",
+    "kind": "melee",
+    "damage": [18, 26],
+    "cooldown": 0.35,
+    "range": 26,
+    "radius": 36,
+    "speed": 0,
+    "chain_only": true,
+    "description": "凍えた敵を砕き、氷の破片を周りへ飛び散らせる。"
+  }
+]

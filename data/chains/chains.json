@@ -1,0 +1,12 @@
+[
+  {
+    "id": "shatter",
+    "name": "砕氷",
+    "prev_skill": "",
+    "next_skill": "",
+    "prev_tags": ["cold", "area"],
+    "next_tags": ["melee"],
+    "result": "shatter",
+    "description": "冷気の範囲スキルの次に近接スキルを使うと、凍えた敵を砕く技に変わる。"
+  }
+]

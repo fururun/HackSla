@@ -1,0 +1,12 @@
+[
+  { "id": "life_1",        "name": "頑丈な",     "stat": "life",                 "value": [10, 25], "weight": 100, "slots": [] },
+  { "id": "armor_1",       "name": "堅い",       "stat": "armor",                "value": [8, 20],  "weight": 80,  "slots": ["armor", "helmet", "boots"] },
+  { "id": "damage_1",      "name": "鋭い",       "stat": "damage_pct",           "value": [8, 18],  "weight": 80,  "slots": ["weapon", "ring", "amulet"] },
+  { "id": "fire_dmg_1",    "name": "燃える",     "stat": "fire_damage_pct",      "value": [10, 20], "weight": 50,  "slots": ["weapon", "ring", "amulet"] },
+  { "id": "cold_dmg_1",    "name": "凍てつく",   "stat": "cold_damage_pct",      "value": [10, 20], "weight": 50,  "slots": ["weapon", "ring", "amulet"] },
+  { "id": "cast_speed_1",  "name": "素早い",     "stat": "cast_speed_pct",       "value": [5, 12],  "weight": 40,  "slots": ["weapon", "ring", "amulet"] },
+  { "id": "move_speed_1",  "name": "身軽な",     "stat": "move_speed_pct",       "value": [5, 15],  "weight": 40,  "slots": ["boots"] },
+  { "id": "area_1",        "name": "広がる",     "stat": "area_pct",             "value": [6, 14],  "weight": 40,  "slots": ["weapon", "amulet"] },
+  { "id": "fire_res_1",    "name": "炎除けの",   "stat": "fire_res",             "value": [10, 25], "weight": 60,  "slots": [] },
+  { "id": "life_kill_1",   "name": "貪る",       "stat": "life_on_kill",         "value": [1, 4],   "weight": 30,  "slots": ["weapon", "ring"] }
+]

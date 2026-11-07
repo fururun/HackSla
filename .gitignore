@@ -1,0 +1,19 @@
+# Godot
+.godot/
+*.import.tmp
+export/
+export_presets.cfg.bak
+*.translation
+
+# 配布キットのログ・記録
+.dispatch/
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Python
+__pycache__/

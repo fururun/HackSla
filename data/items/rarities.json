@@ -1,0 +1,8 @@
+[
+  { "id": "common",    "name": "コモン",     "tier": 0, "affixes": [0, 0], "weight": 1000, "beam": false, "color": "#d8d8d8" },
+  { "id": "uncommon",  "name": "アンコモン", "tier": 1, "affixes": [1, 2], "weight": 400,  "beam": false, "color": "#6fa8ff" },
+  { "id": "rare",      "name": "レア",       "tier": 2, "affixes": [3, 4], "weight": 90,   "beam": false, "color": "#ffd34d" },
+  { "id": "epic",      "name": "エピック",   "tier": 3, "affixes": [4, 5], "weight": 15,   "beam": false, "color": "#c77dff" },
+  { "id": "legend",    "name": "レジェンド", "tier": 4, "affixes": [5, 6], "weight": 3,    "beam": true,  "color": "#ff9a3c" },
+  { "id": "myth",      "name": "神話",       "tier": 5, "affixes": [6, 6], "weight": 0.5,  "beam": true,  "color": "#ff4d6d" }
+]

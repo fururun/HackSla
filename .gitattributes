@@ -1,0 +1,10 @@
+# 改行コードをそろえる（Windows / Mac 混在でも差分が汚れないように）
+* text=auto eol=lf
+
+# 画像・音は差分を取らない
+*.png binary
+*.aseprite binary
+*.ase binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
