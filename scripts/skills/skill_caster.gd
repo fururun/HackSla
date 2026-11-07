@@ -1,0 +1,225 @@
+class_name SkillCaster
+extends Node
+## スキルの実行本体：枠のスキルを取り出し、チェイン・補助ジェム・再使用時間を反映して当てる。
+## 飛び道具・範囲の円はプールして使い回す。撃破時爆発は待ち行列で順に処理する（再帰しない）。
+
+signal cast_done(slot: int, skill: SkillDef, hits: int, chained: bool)
+
+## 1回の発動ぶんの情報（撃破時爆発の設定と、爆発の待ち行列）
+class CastContext extends RefCounted:
+	var skill: SkillDef
+	var explode_chance: float = 0.0
+	var explode_ratio: float = 0.0
+	var queue: Array[Dictionary] = []  ## {pos: Vector2, damage: float}
+
+var loadout := SkillLoadout.new()
+var chain := ChainTracker.new()
+var stats := StatBlock.new()
+var rng := RandomNumberGenerator.new()
+var fx_parent: Node  ## 弾・円・斬撃を置く先（プレイヤーの親）
+
+var last_skill: SkillDef = null  ## 直近に実際に出した技（チェイン後の技を含む）
+var last_chained: bool = false
+var projectiles_created: int = 0  ## 弾を new した回数（プール再利用の確認用）
+var areas_created: int = 0
+
+var _cooldowns: PackedFloat32Array = PackedFloat32Array()
+var _free_projectiles: Array[SkillProjectile] = []
+var _area_fx: Array[AreaFx] = []
+
+
+func _init() -> void:
+	_cooldowns.resize(SkillLoadout.SLOT_COUNT)
+	rng.randomize()
+
+
+func _physics_process(delta: float) -> void:
+	tick(delta)
+
+
+## 再使用時間を進める
+func tick(delta: float) -> void:
+	for i: int in _cooldowns.size():
+		_cooldowns[i] = maxf(0.0, _cooldowns[i] - delta)
+
+
+func cooldown_left(slot: int) -> float:
+	return _cooldowns[slot - 1] if SkillLoadout.is_valid_slot(slot) else 0.0
+
+
+## 枠のスキルを出す。出せなければ -1（空の枠・再使用時間中）。
+## 出せたら、いま当てた敵の数（飛び道具は発射時点では 0）。
+func cast(slot: int, target: Vector2, origin: Vector2, fallback_dir: Vector2 = Vector2.DOWN) -> int:
+	var base := loadout.skill(slot)
+	if base == null or _cooldowns[slot - 1] > 0.0:
+		return -1
+
+	var out := chain.on_cast(base, DataDB.chains, DataDB.skills)
+	var chained := out != base
+	var mods: Dictionary = {}
+	var sup := loadout.support(slot)
+	if sup != null:
+		mods = sup.modifiers
+	var dmg_mult := _mod(mods, "damage_mult")
+	var area_mult := _mod(mods, "area_mult")
+	if chained:
+		dmg_mult *= _mod(mods, "chain_damage_mult")
+		area_mult *= _mod(mods, "chain_area_mult")
+	_cooldowns[slot - 1] = out.cooldown * _mod(mods, "cooldown_mult")
+
+	var aim := target - origin
+	if aim.length() < CombatConsts.MIN_AIM_DISTANCE:
+		aim = fallback_dir
+	aim = aim.normalized()
+
+	var ctx := CastContext.new()
+	ctx.skill = out
+	ctx.explode_chance = float(mods.get("explode_on_kill", 0.0))
+	ctx.explode_ratio = float(mods.get("explode_damage_ratio", 0.0))
+
+	var hits := 0
+	match out.kind:
+		"melee":
+			hits = _cast_melee(out, ctx, origin, aim, dmg_mult, area_mult)
+		"area":
+			hits = _cast_area(out, ctx, origin, dmg_mult, area_mult)
+		"projectile":
+			_cast_projectile(out, ctx, origin, aim, dmg_mult, area_mult, mods)
+	_flush_explosions(ctx)
+
+	last_skill = out
+	last_chained = chained
+	cast_done.emit(slot, out, hits, chained)
+	return hits
+
+
+# ---- kind ごとの当て方 ----
+
+func _cast_melee(skill: SkillDef, ctx: CastContext, origin: Vector2, aim: Vector2, dmg_mult: float, area_mult: float) -> int:
+	var reach := (skill.range + skill.radius) * area_mult
+	var hits := 0
+	for n: Node in enemies():
+		var e := n as Node2D
+		if e != null and Iso.in_ground_arc(origin, aim, e.global_position, reach, CombatConsts.MELEE_HALF_ANGLE_DEG):
+			_hit(e, _damage(skill, dmg_mult), skill, ctx)
+			hits += 1
+	if fx_parent != null:
+		SlashFx.spawn(fx_parent, origin, aim, reach)
+	return hits
+
+
+func _cast_area(skill: SkillDef, ctx: CastContext, origin: Vector2, dmg_mult: float, area_mult: float) -> int:
+	var radius := skill.radius * area_mult
+	var hits := 0
+	for n: Node in enemies():
+		var e := n as Node2D
+		if e != null and Iso.in_ground_circle(origin, e.global_position, radius):
+			_hit(e, _damage(skill, dmg_mult), skill, ctx)
+			hits += 1
+	_play_area_fx(origin, radius, CombatConsts.ELEMENT_COLORS.get(skill.element, Color.WHITE), CombatConsts.AREA_FX_LIFE)
+	return hits
+
+
+func _cast_projectile(skill: SkillDef, ctx: CastContext, origin: Vector2, aim: Vector2, dmg_mult: float,
+		area_mult: float, mods: Dictionary) -> void:
+	var count := 1 + maxi(0, int(mods.get("projectile_count", 0)))
+	var hops := maxi(0, int(mods.get("hop_count", 0)))
+	var base_ground := Vector2(aim.x, aim.y * 2.0).normalized()
+	for i: int in count:
+		var offset := deg_to_rad((float(i) - float(count - 1) * 0.5) * CombatConsts.PROJECTILE_SPREAD_DEG)
+		var p := _take_projectile()
+		p.launch(self, skill, ctx, origin, base_ground.rotated(offset), _damage(skill, dmg_mult), skill.radius * area_mult, hops)
+
+
+## 弾が敵に当たったとき（SkillProjectile から呼ばれる）
+func projectile_hit(proj: SkillProjectile, enemy: Node2D) -> void:
+	_hit(enemy, proj.damage, proj.skill, proj.ctx)
+	_flush_explosions(proj.ctx)
+
+
+# ---- ダメージと撃破時爆発 ----
+
+func _damage(skill: SkillDef, mult: float) -> float:
+	return DamageCalc.skill_damage(skill, stats, skill.roll_damage(rng)) * mult
+
+
+## 1体に当てる。倒れたら（active が false になったら）確率で爆発を待ち行列に積む
+func _hit(enemy: Node2D, amount: float, skill: SkillDef, ctx: CastContext) -> void:
+	var alive_before := _alive(enemy)
+	enemy.call("take_hit", amount, skill)
+	if alive_before and not _alive(enemy) and ctx.explode_chance > 0.0 and rng.randf() < ctx.explode_chance:
+		ctx.queue.append({"pos": enemy.global_position, "damage": _max_life(enemy) * ctx.explode_ratio})
+
+
+## 爆発を待ち行列の順に処理する。倒れた敵がさらに積むので、連鎖は打ち止めなし。
+## 敵は1体につき1回しか倒れない（倒れた敵は enemies グループから外れる）ので、必ず終わる。
+func _flush_explosions(ctx: CastContext) -> void:
+	var i := 0
+	while i < ctx.queue.size():
+		var ex: Dictionary = ctx.queue[i]
+		i += 1
+		var pos: Vector2 = ex["pos"]
+		_play_area_fx(pos, CombatConsts.EXPLOSION_RADIUS, Color("#ffb03d"), CombatConsts.EXPLOSION_FX_LIFE)
+		for n: Node in enemies():
+			var e := n as Node2D
+			if e != null and Iso.in_ground_circle(pos, e.global_position, CombatConsts.EXPLOSION_RADIUS):
+				_hit(e, float(ex["damage"]), ctx.skill, ctx)
+	ctx.queue.clear()
+
+
+static func _alive(enemy: Node) -> bool:
+	if not is_instance_valid(enemy):
+		return false
+	var a: Variant = enemy.get("active")  # 倒れない的（案山子）は active を持たない
+	return a == null or bool(a)
+
+
+static func _max_life(enemy: Node) -> float:
+	var d: Variant = enemy.get("definition")
+	return (d as EnemyDef).life if d is EnemyDef else 0.0
+
+
+static func enemy_radius(enemy: Node) -> float:
+	var r: Variant = enemy.get("hit_radius")
+	return float(r) if r != null else CombatConsts.DEFAULT_ENEMY_RADIUS
+
+
+static func _mod(mods: Dictionary, key: String) -> float:
+	return float(mods.get(key, 1.0))
+
+
+func enemies() -> Array[Node]:
+	if fx_parent == null or not fx_parent.is_inside_tree():
+		return []
+	return fx_parent.get_tree().get_nodes_in_group("enemies")
+
+
+# ---- プール ----
+
+func _take_projectile() -> SkillProjectile:
+	if not _free_projectiles.is_empty():
+		return _free_projectiles.pop_back()
+	var p := SkillProjectile.new()
+	projectiles_created += 1
+	fx_parent.add_child(p)
+	return p
+
+
+func recycle_projectile(p: SkillProjectile) -> void:
+	_free_projectiles.append(p)
+
+
+func _play_area_fx(pos: Vector2, radius: float, color: Color, life: float) -> void:
+	if fx_parent == null:
+		return
+	var fx: AreaFx = null
+	for f: AreaFx in _area_fx:
+		if not f.busy:
+			fx = f
+			break
+	if fx == null:
+		fx = AreaFx.new()
+		areas_created += 1
+		fx_parent.add_child(fx)
+		_area_fx.append(fx)
+	fx.play(pos, radius, color, life)
