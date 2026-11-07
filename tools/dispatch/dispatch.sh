@@ -87,6 +87,11 @@ fm_body() {
   ' "$1"
 }
 
+## 役割を省略したときの既定
+default_role() {
+  case "$1" in claude) echo design ;; codex) echo impl ;; gemini) echo balance ;; *) echo "" ;; esac
+}
+
 agent_cmd() {
   case "$1" in
     claude) echo "${CLAUDE_CMD:-}" ;;
@@ -106,6 +111,8 @@ for f in "${TASK_FILES[@]}"; do
   agent="$(fm_get "$f" agent | tr 'A-Z' 'a-z')"
   title="$(fm_get "$f" title)"
   allowed="$(fm_get "$f" allowed)"
+  role="$(fm_get "$f" role)"
+  [ -n "$role" ] || role="$(default_role "$agent")"
 
   [ -n "$id" ]    || { echo "  ✗ $f: id がありません" >&2; continue; }
   [ -n "$agent" ] || { echo "  ✗ $f: agent がありません" >&2; continue; }
@@ -123,7 +130,11 @@ for f in "${TASK_FILES[@]}"; do
 
   branch="task/$id"
   wt="$WT_ROOT/$id"
-  echo "  • $id → $agent「$title」（触ってよい場所: ${allowed:-指定なし}）"
+  role_file="$ROOT/agents/$agent/$role.md"
+  if [ -n "$role" ] && [ ! -f "$role_file" ]; then
+    echo "  ✗ $id: 役割「$role」の心得（agents/$agent/$role.md）がありません" >&2; continue
+  fi
+  echo "  • $id → $agent／${role:-役割なし}「$title」（触ってよい場所: ${allowed:-指定なし}）"
 
   if [ "$DRY_RUN" -eq 1 ]; then IDS+=("$id"); continue; fi
 
@@ -145,6 +156,12 @@ for f in "${TASK_FILES[@]}"; do
     echo "- git の commit / push / PR作成はしないこと（配布スクリプトが行います）"
     echo "- 作業の最後に「やったこと」「確認方法」「気になる点」を短くまとめて出力すること"
     echo
+    if [ -f "$role_file" ]; then
+      echo "## あなたの役割"
+      echo
+      cat "$role_file"
+      echo
+    fi
     echo "## タスク $id: $title"
     echo
     fm_body "$f"
@@ -152,7 +169,7 @@ for f in "${TASK_FILES[@]}"; do
 
   # 実行時に使う情報を保存
   printf '%s\n%s\n%s\n%s\n' "$agent" "$title" "$wt" "$branch" > "$LOG_DIR/$id.meta"
-  emit ordered "$id" "$agent" title="$title" allowed="$allowed" run="$RUN_ID" file="$f" branch="$branch" mock="$MOCK"
+  emit ordered "$id" "$agent" role="$role" title="$title" allowed="$allowed" run="$RUN_ID" file="$f" branch="$branch" mock="$MOCK"
   IDS+=("$id")
 done
 

@@ -1,6 +1,7 @@
 ---
 id: T09
 agent: claude
+role: design
 title: ダメージ計算・ステータス・属性耐性・経験値とレベル
 allowed: scripts/stats/ tests/test_stats.gd
 ---

@@ -65,7 +65,10 @@ review_one() {
   git worktree remove --force "$wt" >/dev/null 2>&1
   git worktree add -q --detach "$wt" "$ref" || { echo "✗ $id: 作業場所を作れません" >&2; return 1; }
 
+  qa_file="$ROOT/agents/$reviewer/qa.md"
+  [ -f "$qa_file" ] || qa_file="$ROOT/agents/$reviewer/test.md"
   {
+    if [ -f "$qa_file" ]; then cat "$qa_file"; echo; fi
     echo "あなたはこのゲーム開発チームのQA担当です（担当: $reviewer）。ほかのAI（$author）が納品した作業を確認してください。"
     echo "- ファイルは一切変更しないこと。git の操作もしないこと（読む・テストを実行するだけ）"
     echo "- まずリポジトリ直下の AGENTS.md と docs/concept.md を読むこと"

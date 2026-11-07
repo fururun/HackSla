@@ -4,6 +4,8 @@
 
 ## Claude の役割（司令塔・設計担当）
 
+役割ごとの心得は `agents/claude/`（pm・design・acceptance）、手順書は `skills/`。
+
 - 設計、タスクの切り分け、指示書（`tasks/*.md`）の作成
 - コアの実装（データの型、スキル実行、ダメージ計算、スキルツリー）
 - ほかのAIのPRのレビューと検収（`tools/dispatch/review.sh`）

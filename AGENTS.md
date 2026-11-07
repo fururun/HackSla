@@ -9,6 +9,7 @@ Claude / Codex / Gemini / Muse Code は、作業の前に必ずこのファイ�
 - いま作っているもの：`docs/prototype.md`（プロトタイプの範囲）
 - データの書き方：`docs/data_schema.md`
 - チーム体制とQAの流れ：`docs/team.md`
+- 各社の役割の心得：`agents/`、作業の手順書（スキル）：`skills/`（指示に役割が書いてあれば、その心得と手順書に従う）
 
 ## やらないこと（企画の方針）
 
