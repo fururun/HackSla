@@ -7,10 +7,12 @@
     "speed": 58,
     "damage": 4,
     "attack_range": 12,
-    "attack_interval": 1.0,
+    "attack_interval": 1,
     "xp": 3,
     "pack": [8, 14],
-    "color": "#c9a24a"
+    "color": "#c9a24a",
+    "aggro_range": 120,
+    "windup": 0
   },
   {
     "id": "brute",
@@ -23,7 +25,9 @@
     "attack_interval": 1.5,
     "xp": 18,
     "pack": [1, 2],
-    "color": "#7d8a99"
+    "color": "#7d8a99",
+    "aggro_range": 90,
+    "windup": 0.3
   },
   {
     "id": "training_dummy",
@@ -36,6 +40,8 @@
     "attack_interval": 0,
     "xp": 0,
     "pack": [1, 1],
-    "color": "#a0784f"
+    "color": "#a0784f",
+    "aggro_range": 0,
+    "windup": 0
   }
 ]

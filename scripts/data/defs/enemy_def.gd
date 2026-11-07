@@ -10,6 +10,8 @@ var behavior: String = ""
 var life: float = 0.0
 var speed: float = 0.0
 var damage: float = 0.0
+var aggro_range: float = 0.0
+var windup: float = 0.0
 var attack_range: float = 0.0
 var attack_interval: float = 0.0
 var xp: int = 0
@@ -31,6 +33,8 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 	e.life = float(d.get("life", 0))
 	e.speed = float(d.get("speed", 0))
 	e.damage = float(d.get("damage", 0))
+	e.aggro_range = float(d.get("aggro_range", 0))
+	e.windup = float(d.get("windup", 0))
 	e.attack_range = float(d.get("attack_range", 0))
 	e.attack_interval = float(d.get("attack_interval", 0))
 	e.xp = int(d.get("xp", 0))
@@ -45,6 +49,8 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 		errors.append("enemy %s: behavior「%s」は %s のどれかにしてください" % [e.id, e.behavior, ", ".join(BEHAVIORS)])
 	if e.life <= 0.0 and e.behavior != "dummy":
 		errors.append("enemy %s: life が 0 以下（倒れない敵は behavior を dummy に）" % e.id)
-	if e.pack_min > e.pack_max:
-		errors.append("enemy %s: pack の最小が最大より大きい" % e.id)
+	if e.aggro_range < 0.0 or e.windup < 0.0:
+		errors.append("enemy %s: aggro_range / windup は 0 以上にしてください" % e.id)
+	if e.pack_min < 1 or e.pack_min > e.pack_max:
+		errors.append("enemy %s: pack は 1 以上で、最小を最大以下にしてください" % e.id)
 	return e
