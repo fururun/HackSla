@@ -3,9 +3,13 @@ extends Node2D
 ## 地面座標（画面の縦を2倍）で空間ハッシュを構築する。
 ## 押し合いの各反復では位置を固定して比較し、補正を最後にまとめて適用する。
 
+signal enemy_hit(enemy: Enemy, amount: float, killed: bool)
+
 signal player_hit(damage: float, source: Enemy)
 
 const SEPARATION_PASSES: int = 4
+
+var _feedback: HitFeedback
 
 var _packs: Dictionary[int, Array] = {}
 var _next_pack_id: int = 0
@@ -20,6 +24,10 @@ var last_pair_checks: int = 0
 
 func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	assert(def != null, "敵の定義が必要です")
+	if _feedback == null:
+		_feedback = HitFeedback.new()
+		add_child(_feedback, false, Node.INTERNAL_MODE_BACK)
+		enemy_hit.connect(_feedback.on_enemy_hit)
 	var enemy: Enemy = _pool.pop_back() if not _pool.is_empty() else Enemy.new()
 	if enemy.get_parent() == null:
 		add_child(enemy)

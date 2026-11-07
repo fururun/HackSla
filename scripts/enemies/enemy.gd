@@ -20,7 +20,11 @@ var manager: EnemyManager
 func take_hit(amount: float, _skill: SkillDef) -> void:
 	if not active or definition.is_immortal:
 		return
-	life = maxf(0.0, life - maxf(0.0, amount))
+	if not is_finite(amount) or amount <= 0.0 or life <= 0.0:
+		return
+	var damage: float = minf(life, amount)
+	life -= damage
+	manager.enemy_hit.emit(self, damage, life <= 0.0)
 	if life <= 0.0:
 		manager.despawn(self)
 
