@@ -12,6 +12,7 @@ const KEYS: Dictionary = {
 	"skill_5": [KEY_R],
 	"skill_6": [KEY_F],
 	"toggle_debug": [KEY_F1],
+	"toggle_skill_screen": [KEY_K],
 }
 
 const MOUSE: Dictionary = {
