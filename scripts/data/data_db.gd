@@ -11,6 +11,8 @@ const FILES: Dictionary = {
 	"bases": "res://data/items/bases.json",
 	"affixes": "res://data/items/affixes.json",
 }
+## 表示名・説明文（一番外側がオブジェクト）。案の切り替えは names.json の adopted / rarity_plan だけで行う
+const TEXT_FILE: String = "res://data/text/names.json"
 
 var skills: Dictionary = {}     ## id -> SkillDef
 var supports: Dictionary = {}   ## id -> SupportDef
@@ -19,6 +21,8 @@ var enemies: Dictionary = {}    ## id -> EnemyDef
 var rarities: Array[RarityDef] = []  ## tier の低い順
 var bases: Dictionary = {}      ## id -> ItemBaseDef
 var affixes: Dictionary = {}    ## id -> AffixDef
+var texts: Dictionary = {}      ## "category:id" -> TextEntry
+var rarity_plan: int = 1        ## レアリティ名の案（6段階セットで切り替える）
 var errors: Array[String] = []
 
 
@@ -34,7 +38,7 @@ func _ready() -> void:
 
 func reload() -> void:
 	skills.clear(); supports.clear(); chains.clear(); enemies.clear()
-	rarities.clear(); bases.clear(); affixes.clear(); errors.clear()
+	rarities.clear(); bases.clear(); affixes.clear(); texts.clear(); errors.clear()
 
 	for d: Dictionary in _load("skills"):
 		_put(skills, SkillDef.from_dict(d, errors), "skill")
@@ -51,7 +55,9 @@ func reload() -> void:
 	rarities.sort_custom(func(a: RarityDef, b: RarityDef) -> bool: return a.tier < b.tier)
 	for d: Dictionary in _load("chains"):
 		chains.append(ChainRule.from_dict(d, errors))
+	_load_texts()
 	_check_references()
+	_apply_texts()
 
 
 ## 別のデータを指している名前が実在するか
@@ -87,6 +93,73 @@ func _load(key: String) -> Array:
 	return json.data
 
 
+func _load_texts() -> void:
+	if not FileAccess.file_exists(TEXT_FILE):
+		errors.append("%s がありません" % TEXT_FILE)
+		return
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(TEXT_FILE)) != OK:
+		errors.append("%s の %d 行目: %s" % [TEXT_FILE, json.get_error_line(), json.get_error_message()])
+		return
+	if typeof(json.data) != TYPE_DICTIONARY:
+		errors.append("%s: 一番外側はオブジェクト { ... } にしてください" % TEXT_FILE)
+		return
+	var root: Dictionary = json.data
+	rarity_plan = int(root.get("rarity_plan", 1))
+	for d: Variant in root.get("entries", []):
+		if typeof(d) != TYPE_DICTIONARY:
+			continue
+		var e := TextEntry.from_dict(d, errors)
+		var key := "%s:%s" % [e.category, e.id]
+		if texts.has(key):
+			errors.append("text「%s」が2回定義されています" % key)
+		texts[key] = e
+
+
+## 読み込んだ表示名・説明文を各データの name / description に反映する
+func _apply_texts() -> void:
+	for s: SkillDef in skills.values():
+		_apply(s, text_of("skill", s.id))
+	for s: SupportDef in supports.values():
+		_apply(s, text_of("support", s.id))
+	for en: EnemyDef in enemies.values():
+		_apply(en, text_of("enemy", en.id))
+	for a: AffixDef in affixes.values():
+		_apply(a, text_of("affix", a.id))
+	for r: RarityDef in rarities:
+		_apply(r, text_of("rarity", r.id))
+	for c: ChainRule in chains:
+		var t: TextEntry = text_of("chain", c.id)
+		_apply(c, t if t != null else text_of("skill", c.result))
+	for key: String in texts:
+		var e: TextEntry = texts[key]
+		if e.category == "rarity":
+			var r: RarityDef = rarity(e.id)
+			if r == null:
+				errors.append("text %s: rarities.json にありません" % key)
+			elif e.rank != r.tier + 1:
+				errors.append("text %s: rank %d が tier %d と合いません（rank = tier + 1）" % [key, e.rank, r.tier])
+		elif e.category != "affix" and e.category != "chain" and not _exists(e.category, e.id):
+			errors.append("text %s: 対応するデータがありません" % key)
+
+
+func _exists(category: String, id: String) -> bool:
+	match category:
+		"skill": return skills.has(id)
+		"support": return supports.has(id)
+		"enemy": return enemies.has(id)
+	return false
+
+
+func _apply(def: Object, t: TextEntry) -> void:
+	if t == null:
+		return
+	var plan: int = rarity_plan if t.category == "rarity" else 0
+	def.set("name", t.display_name(plan))
+	if "description" in def:
+		def.set("description", t.description(plan))
+
+
 func _put(table: Dictionary, def: Variant, label: String) -> void:
 	if def.id.is_empty():
 		return
@@ -96,6 +169,28 @@ func _put(table: Dictionary, def: Variant, label: String) -> void:
 
 
 # ---- 引くための関数 ----
+
+## 表示名・説明文の1件（なければ null）
+func text_of(category: String, id: String) -> TextEntry:
+	return texts.get("%s:%s" % [category, id])
+
+
+func rarity(id: String) -> RarityDef:
+	for r: RarityDef in rarities:
+		if r.id == id:
+			return r
+	return null
+
+
+## 装備の表示名。付与効果名（接頭辞）をそのまま順に連結し、ベース名を続ける（助詞・語尾の調整はしない）
+func item_display_name(base_id: String, affix_ids: Array) -> String:
+	var out := ""
+	for aid: Variant in affix_ids:
+		var a: AffixDef = affixes.get(str(aid))
+		out += a.name if a != null else ""
+	var b: ItemBaseDef = bases.get(base_id)
+	return out + (b.name if b != null else base_id)
+
 
 func skill(id: String) -> SkillDef:
 	return skills.get(id)

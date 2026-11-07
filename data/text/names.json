@@ -1,0 +1,665 @@
+{
+ "version": "0.1",
+ "status": "draft",
+ "rarity_plan": 1,
+ "entries": [
+  {
+   "category": "skill",
+   "id": "slash",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "払い太刀",
+     "reading": "はらいたち",
+     "description": "前の敵をまとめてなぎ払う、基本の斬撃。"
+    },
+    {
+     "plan": 2,
+     "display_name": "一文字斬り",
+     "reading": "いちもんじぎり",
+     "description": "横一線に振り抜き、間合いの敵を切り裂く。"
+    },
+    {
+     "plan": 3,
+     "display_name": "旋り斬り",
+     "reading": "めぐりぎり",
+     "description": "一歩踏み込みながら回して斬り、囲みを崩す。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "frost_bloom",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "霜囲い",
+     "reading": "しもがこい",
+     "description": "足元に霜の輪を広げ、踏んだ敵を冷やす。"
+    },
+    {
+     "plan": 2,
+     "display_name": "こごえ野",
+     "reading": "こごえの",
+     "description": "周りに冷たい野原を広げ、敵の足を鈍らせる。"
+    },
+    {
+     "plan": 3,
+     "display_name": "白い吐息",
+     "reading": "しろいといき",
+     "description": "冷たい息を円く吹き出し、近くの敵を凍てつかせる。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "fire_bolt",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "火だま打ち",
+     "reading": "ひだまうち",
+     "description": "小さな火の玉をまっすぐ撃ち出す。"
+    },
+    {
+     "plan": 2,
+     "display_name": "ひのこ矢",
+     "reading": "ひのこや",
+     "description": "火の粉を束ねた矢を放ち、当たると小さく燃え広がる。"
+    },
+    {
+     "plan": 3,
+     "display_name": "燃えかけら",
+     "reading": "もえかけら",
+     "description": "燃える欠片を投げ、着弾で火花を散らす。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "shatter",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "霜砕き",
+     "reading": "しもくだき",
+     "description": "冷気で凍えた敵を斬って砕き、氷の欠片を周囲に散らす。"
+    },
+    {
+     "plan": 2,
+     "display_name": "こおり太刀",
+     "reading": "こおりだち",
+     "description": "凍えた敵に重く響く一太刀で、氷ごと真っ二つにする。"
+    },
+    {
+     "plan": 3,
+     "display_name": "凍て割り",
+     "reading": "いてわり",
+     "description": "硬く凍った敵を踏み込んで割り、近くの敵も巻き込む。"
+    }
+   ]
+  },
+  {
+   "category": "support",
+   "id": "scatter",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "三つ又",
+     "reading": "みつまた",
+     "description": "飛び道具が3方向に分かれ、一度に広く当たるようになる。"
+    },
+    {
+     "plan": 2,
+     "display_name": "分かれ玉",
+     "reading": "わかれだま",
+     "description": "撃った玉が三つに分かれ、正面と斜めを同時に狙う。"
+    },
+    {
+     "plan": 3,
+     "display_name": "ひらき撃ち",
+     "reading": "ひらきうち",
+     "description": "飛び道具が扇のように開き、横に並んだ敵をまとめて撃つ。"
+    }
+   ]
+  },
+  {
+   "category": "support",
+   "id": "burst_on_kill",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "はじけ仕舞い",
+     "reading": "はじけじまい",
+     "description": "倒した敵が最期にはじけ、周りの敵を巻き込む。"
+    },
+    {
+     "plan": 2,
+     "display_name": "倒れ爆ぜ",
+     "reading": "たおれはぜ",
+     "description": "倒れた敵がその場で爆ぜて、小さな範囲にダメージを与える。"
+    },
+    {
+     "plan": 3,
+     "display_name": "最期の火",
+     "reading": "さいごのひ",
+     "description": "倒した敵に火が残り、一瞬遅れて周りを焼く。"
+    }
+   ]
+  },
+  {
+   "category": "enemy",
+   "id": "swarmling",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "群れ歯",
+     "reading": "むれば",
+     "description": "一匹は弱いが、歯をむいて群れで押し寄せる小さな魔物。"
+    },
+    {
+     "plan": 2,
+     "display_name": "わらわら坊",
+     "reading": "わらわらぼう",
+     "description": "暗がりから次々わいてくる、数だけが武器の小魔物。"
+    },
+    {
+     "plan": 3,
+     "display_name": "ちび噛み",
+     "reading": "ちびかみ",
+     "description": "足元に噛みついて離れない、うるさいほどの小群れ。"
+    }
+   ]
+  },
+  {
+   "category": "enemy",
+   "id": "brute",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "岩のろ",
+     "reading": "いわのろ",
+     "description": "岩の体でのろのろ進む、正面からの攻撃が通りにくい魔物。"
+    },
+    {
+     "plan": 2,
+     "display_name": "ごつ石",
+     "reading": "ごついし",
+     "description": "ごつごつした石の塊がそのまま歩く、遅くて重い魔物。"
+    },
+    {
+     "plan": 3,
+     "display_name": "動く岩壁",
+     "reading": "うごくいわかべ",
+     "description": "壁のように立ちはだかり、倒すのに時間がかかる岩の魔物。"
+    }
+   ]
+  },
+  {
+   "category": "enemy",
+   "id": "training_dummy",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "不倒さん",
+     "reading": "ふとうさん",
+     "description": "",
+     "note": "何度撃っても倒れないので、帰ってきた者がまず腕とビルドを試せるよう、拠点の入口に立てられている。"
+    },
+    {
+     "plan": 2,
+     "display_name": "まんまる師匠",
+     "description": "",
+     "note": "本物の敵と戦う前に、安全な場所で間合いと当て方を覚えてもらうために置かれている。"
+    },
+    {
+     "plan": 3,
+     "display_name": "ぽん太",
+     "description": "",
+     "note": "拠点を作った者が夜の見張りの相棒として残し、今は皆の試し撃ち相手になっている。"
+    }
+   ]
+  },
+  {
+   "category": "rarity",
+   "id": "common",
+   "rank": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "素朴",
+     "description": ""
+    },
+    {
+     "plan": 2,
+     "display_name": "かすか",
+     "description": ""
+    },
+    {
+     "plan": 3,
+     "display_name": "道端の品",
+     "description": ""
+    }
+   ]
+  },
+  {
+   "category": "rarity",
+   "id": "uncommon",
+   "rank": 2,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "上質",
+     "description": ""
+    },
+    {
+     "plan": 2,
+     "display_name": "ほのか",
+     "description": ""
+    },
+    {
+     "plan": 3,
+     "display_name": "旅人の品",
+     "description": ""
+    }
+   ]
+  },
+  {
+   "category": "rarity",
+   "id": "rare",
+   "rank": 3,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "希少",
+     "description": ""
+    },
+    {
+     "plan": 2,
+     "display_name": "かがやき",
+     "description": ""
+    },
+    {
+     "plan": 3,
+     "display_name": "使い手の品",
+     "description": ""
+    }
+   ]
+  },
+  {
+   "category": "rarity",
+   "id": "epic",
+   "rank": 4,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "卓越",
+     "description": ""
+    },
+    {
+     "plan": 2,
+     "display_name": "まばゆき",
+     "description": ""
+    },
+    {
+     "plan": 3,
+     "display_name": "名手の品",
+     "description": ""
+    }
+   ]
+  },
+  {
+   "category": "rarity",
+   "id": "legend",
+   "rank": 5,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "語り継がれる",
+     "description": ""
+    },
+    {
+     "plan": 2,
+     "display_name": "星あつめ",
+     "description": ""
+    },
+    {
+     "plan": 3,
+     "display_name": "伝説に届く品",
+     "description": ""
+    }
+   ]
+  },
+  {
+   "category": "rarity",
+   "id": "myth",
+   "rank": 6,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "二つとない",
+     "description": ""
+    },
+    {
+     "plan": 2,
+     "display_name": "夜明けの先",
+     "description": ""
+    },
+    {
+     "plan": 3,
+     "display_name": "物語が終わらない品",
+     "description": ""
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "life_1",
+   "effect": "最大ライフ増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "頑丈な"
+    },
+    {
+     "plan": 2,
+     "display_name": "命太い"
+    },
+    {
+     "plan": 3,
+     "display_name": "健やかな"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "damage_1",
+   "effect": "攻撃力増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "鋭い"
+    },
+    {
+     "plan": 2,
+     "display_name": "荒々しい"
+    },
+    {
+     "plan": 3,
+     "display_name": "容赦ない"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "cast_speed_1",
+   "effect": "攻撃速度増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "素早い"
+    },
+    {
+     "plan": 2,
+     "display_name": "疾い"
+    },
+    {
+     "plan": 3,
+     "display_name": "休まない"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "move_speed_1",
+   "effect": "移動速度増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "軽やかな"
+    },
+    {
+     "plan": 2,
+     "display_name": "駆ける"
+    },
+    {
+     "plan": 3,
+     "display_name": "風追いの"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "armor_1",
+   "effect": "防御力増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "堅い"
+    },
+    {
+     "plan": 2,
+     "display_name": "堅牢な"
+    },
+    {
+     "plan": 3,
+     "display_name": "岩肌の"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "cold_res_1",
+   "effect": "冷気への耐性",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "霜慣れの"
+    },
+    {
+     "plan": 2,
+     "display_name": "寒さ知らずの"
+    },
+    {
+     "plan": 3,
+     "display_name": "凍えない"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "fire_res_1",
+   "effect": "火への耐性",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "炎慣れの"
+    },
+    {
+     "plan": 2,
+     "display_name": "熱さ知らずの"
+    },
+    {
+     "plan": 3,
+     "display_name": "燃えにくい"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "crit_chance_1",
+   "effect": "会心の一撃が出やすい",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "狙い澄ました"
+    },
+    {
+     "plan": 2,
+     "display_name": "急所読みの"
+    },
+    {
+     "plan": 3,
+     "display_name": "一閃の"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "crit_damage_1",
+   "effect": "会心の一撃が重い",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "痛烈な"
+    },
+    {
+     "plan": 2,
+     "display_name": "深手の"
+    },
+    {
+     "plan": 3,
+     "display_name": "骨まで届く"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "cold_dmg_1",
+   "effect": "冷気ダメージ増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "霜降りの"
+    },
+    {
+     "plan": 2,
+     "display_name": "凍てゆく"
+    },
+    {
+     "plan": 3,
+     "display_name": "白く冴えた"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "fire_dmg_1",
+   "effect": "火ダメージ増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "燃え盛る"
+    },
+    {
+     "plan": 2,
+     "display_name": "火照りの"
+    },
+    {
+     "plan": 3,
+     "display_name": "赤熱の"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "melee_dmg_1",
+   "effect": "近接ダメージ増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "斬り込みの"
+    },
+    {
+     "plan": 2,
+     "display_name": "踏み込みの"
+    },
+    {
+     "plan": 3,
+     "display_name": "肉薄の"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "projectile_dmg_1",
+   "effect": "飛び道具ダメージ増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "遠当ての"
+    },
+    {
+     "plan": 2,
+     "display_name": "射抜く"
+    },
+    {
+     "plan": 3,
+     "display_name": "遠くまで届く"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "area_1",
+   "effect": "効果範囲拡大",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "広がりの"
+    },
+    {
+     "plan": 2,
+     "display_name": "大ぶりな"
+    },
+    {
+     "plan": 3,
+     "display_name": "巻き込みの"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "evasion_1",
+   "effect": "回避しやすい",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "身軽な"
+    },
+    {
+     "plan": 2,
+     "display_name": "かすめる"
+    },
+    {
+     "plan": 3,
+     "display_name": "捉えにくい"
+    }
+   ]
+  }
+ ]
+}
