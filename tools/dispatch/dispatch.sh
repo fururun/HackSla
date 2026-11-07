@@ -55,6 +55,8 @@ cd "$ROOT"
 . "$KIT_DIR/agents.conf"
 # shellcheck source=lib.sh
 . "$KIT_DIR/lib.sh"
+# PCごとの設定（Godot の場所など）。Git には入れない
+[ -f "$KIT_DIR/agents.local.conf" ] && . "$KIT_DIR/agents.local.conf"
 
 BASE="${BASE_BRANCH:-$(git symbolic-ref --short HEAD 2>/dev/null)}"
 [ -n "$BASE" ] || die "基準ブランチがわかりません（BASE_BRANCH を agents.conf で指定してください）"
