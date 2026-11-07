@@ -2,6 +2,14 @@ class_name Enemy
 extends Node2D
 ## 個体は状態と描画のみを持つ。移動・寿命の管理は EnemyManager に集約する。
 
+enum State { IDLE, CHASING, ATTACKING, WINDUP }
+
+var ai_enabled: bool = false
+var can_be_pushed: bool = true
+var state: State = State.IDLE
+var pack_id: int = -1
+var attack_timer: float = 0.0
+
 var definition: EnemyDef
 var life: float = 0.0
 var hit_radius: float = 6.0
