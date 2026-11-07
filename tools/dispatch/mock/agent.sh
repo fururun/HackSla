@@ -4,8 +4,10 @@
 #   MOCK_SECS=20 … 作業時間の上限（秒）。監視ボードで「作業中」を眺めたいときに長くする
 #   指示書の本文に MOCK_FAIL と書くと、わざと失敗する（エラー処理のテスト用）
 agent="${1:-unknown}"
-echo "[mock:$agent] 発注書を受け取りました: $PROMPT_FILE"
-head -n 3 "$PROMPT_FILE" | sed "s/^/[mock:$agent] > /"
+echo "[mock:$agent] 受け取った1行の指示: $TASK_LINE"
+[ -f .dispatch_task.md ] || { echo "[mock:$agent] エラー: 作業場所に .dispatch_task.md がありません" >&2; exit 4; }
+echo "[mock:$agent] 発注書を受け取りました: .dispatch_task.md"
+head -n 3 .dispatch_task.md | sed "s/^/[mock:$agent] > /"
 
 max="${MOCK_SECS:-3}"
 total=$(( (RANDOM % max) + 1 ))
@@ -18,7 +20,7 @@ while [ $i -lt "$total" ]; do
   i=$((i + 1))
 done
 
-if grep -q 'MOCK_FAIL' "$PROMPT_FILE"; then
+if grep -q 'MOCK_FAIL' .dispatch_task.md; then
   echo "[mock:$agent] エラー: わざと失敗します" >&2
   exit 3
 fi
@@ -29,7 +31,7 @@ mkdir -p docs/smoke
   echo
   echo "- 実行日時: $(date '+%Y-%m-%d %H:%M:%S')"
   echo "- 作業場所: $(pwd)"
-  echo "- 受け取ったタスク: $(grep -m1 '^## タスク' "$PROMPT_FILE" | sed 's/^## //')"
+  echo "- 受け取ったタスク: $(grep -m1 '^## タスク' .dispatch_task.md | sed 's/^## //')"
 } > "docs/smoke/$agent.md"
 
 echo "[mock:$agent] やったこと: docs/smoke/$agent.md を作成"

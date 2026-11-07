@@ -108,8 +108,15 @@ for f in "${TASK_FILES[@]}"; do
   [ -n "$id" ]    || { echo "  ✗ $f: id がありません" >&2; continue; }
   [ -n "$agent" ] || { echo "  ✗ $f: agent がありません" >&2; continue; }
   case "$agent" in claude|codex|gemini|muse) ;; *) echo "  ✗ $id: agent は claude / codex / gemini / muse のどれかにしてください（今: $agent）" >&2; continue ;; esac
-  if [ "$MOCK" -eq 0 ] && [ -z "$(agent_cmd "$agent")" ]; then
-    echo "  ✗ $id: agents.conf に $agent のコマンドがありません" >&2; continue
+  if [ "$MOCK" -eq 0 ]; then
+    acmd="$(agent_cmd "$agent")"
+    if [ -z "$acmd" ]; then
+      echo "  ✗ $id: agents.conf に $agent のコマンドがありません" >&2; continue
+    fi
+    exe="$(echo "$acmd" | awk '{print $1}')"
+    if ! command -v "$exe" >/dev/null 2>&1; then
+      echo "  ✗ $id: 「$exe」コマンドが見つかりません（$agent のCLIが入っていないか、PATHが通っていません）" >&2; continue
+    fi
   fi
 
   branch="task/$id"
@@ -168,10 +175,21 @@ run_task() {
     cmd="$(agent_cmd "$agent")"
   fi
 
+  # 指示書はファイルで渡す（複数行の日本語を引数にすると、Windowsでは途中で切れるため）
+  cp "$PROMPT_FILE" "$wt/.dispatch_task.md"
+  TASK_LINE="${TASK_LINE:-Read the file .dispatch_task.md in the current directory and follow its instructions exactly.}"
+  export TASK_LINE
+
   start=$(date +%s)
   emit started "$id" "$agent" run="$RUN_ID"
-  ( cd "$wt" && eval "$cmd" ) > "$log" 2>&1 < /dev/null
+  if command -v timeout >/dev/null 2>&1; then
+    ( cd "$wt" && timeout "${TASK_TIMEOUT:-1800}" bash -c "$cmd" ) > "$log" 2>&1 < /dev/null
+  else
+    ( cd "$wt" && eval "$cmd" ) > "$log" 2>&1 < /dev/null
+  fi
   rc=$?
+  [ "$rc" -eq 124 ] && echo "[dispatch] 制限時間（${TASK_TIMEOUT:-1800}秒）を超えたので止めました" >> "$log"
+  rm -f "$wt/.dispatch_task.md"
   secs=$(( $(date +%s) - start ))
 
   changed="なし"; pr="-"
