@@ -6,16 +6,16 @@ extends CharacterBody2D
 signal attacked(skill: SkillDef, hits: int)
 
 const MOVE_SPEED: float = 80.0
-const BASIC_SKILL_ID: String = "slash"
 
 var facing: int = 2  ## Facing の番号（最初は下向き）
-var _cooldowns: Dictionary = {}  ## skill id -> 残り秒
-var _rng := RandomNumberGenerator.new()
+var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
 var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
 
 
 func _ready() -> void:
 	add_to_group("player")
+	caster.name = "SkillCaster"
+	add_child(caster)
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	collision_layer = 2
 	collision_mask = 1
@@ -33,37 +33,32 @@ func _physics_process(delta: float) -> void:
 	if input != Vector2.ZERO and _swing_t <= 0.0:
 		facing = Facing.dir8(input)
 
-	for id: String in _cooldowns.keys():
-		_cooldowns[id] = maxf(0.0, _cooldowns[id] - delta)
 	if _swing_t > 0.0:
 		_swing_t -= delta
 
-	if Input.is_action_pressed("skill_1"):
-		try_basic_attack(get_global_mouse_position())
+	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+		if Input.is_action_pressed("skill_%d" % slot):
+			use_skill(slot, get_global_mouse_position())
 	queue_redraw()
 
 
-## 通常攻撃（スキル枠1）。狙った方向を向いて、扇形の範囲に当てる
-func try_basic_attack(target: Vector2) -> bool:
-	var skill: SkillDef = DataDB.skill(BASIC_SKILL_ID)
-	if skill == null or _cooldowns.get(skill.id, 0.0) > 0.0:
+## スキル枠 slot を狙った位置に向けて出す。出せたら true（空の枠・再使用時間中は false）
+func use_skill(slot: int, target: Vector2) -> bool:
+	caster.fx_parent = get_parent()
+	var hits := caster.cast(slot, target, global_position, Facing.to_vector(facing))
+	if hits < 0:
 		return false
-	var dir := (target - global_position)
-	if dir.length() < 1.0:
-		dir = Facing.to_vector(facing)
-	facing = Facing.dir8(dir)
-	_cooldowns[skill.id] = skill.cooldown
-	_swing_t = 0.12
-
-	var hits := 0
-	for e: Node in get_tree().get_nodes_in_group("enemies"):
-		var enemy := e as Node2D
-		if enemy and Iso.in_ground_arc(global_position, dir, enemy.global_position, skill.range + skill.radius, 60.0):
-			enemy.call("take_hit", skill.roll_damage(_rng), skill)
-			hits += 1
-	SlashFx.spawn(get_parent(), global_position, dir.normalized(), skill.range + skill.radius)
-	attacked.emit(skill, hits)
+	var aim := target - global_position
+	if aim.length() >= CombatConsts.MIN_AIM_DISTANCE:
+		facing = Facing.dir8(aim)
+	_swing_t = CombatConsts.SWING_TIME
+	attacked.emit(caster.last_skill, hits)
 	return true
+
+
+## 通常攻撃（スキル枠1）。互換のために残している
+func try_basic_attack(target: Vector2) -> bool:
+	return use_skill(1, target)
 
 
 # ---- 仮の絵 ----
