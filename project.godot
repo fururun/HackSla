@@ -14,6 +14,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 InputSetup="*res://scripts/core/input_setup.gd"
 DataDB="*res://scripts/data/data_db.gd"
+DebugOverlay="*res://scripts/debug/debug_overlay.gd"
 
 [display]
 
