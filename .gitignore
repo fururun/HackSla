@@ -20,3 +20,6 @@ __pycache__/
 
 # 配布スクリプトが各作業場所に置く指示書（コミットしない）
 .dispatch_task.md
+
+# PCごとの配布設定（Godot の場所など）
+tools/dispatch/agents.local.conf
