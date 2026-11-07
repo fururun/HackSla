@@ -1,8 +1,8 @@
 [
-  { "id": "iron_sword",   "name": "鉄の剣",     "slot": "weapon", "level": 1, "stats": { "damage_pct": 10 } },
-  { "id": "oak_staff",    "name": "樫の杖",     "slot": "weapon", "level": 1, "stats": { "area_pct": 8 } },
-  { "id": "leather_vest", "name": "革の胴着",   "slot": "armor",  "level": 1, "stats": { "armor": 12, "life": 10 } },
-  { "id": "cloth_hood",   "name": "布の頭巾",   "slot": "helmet", "level": 1, "stats": { "armor": 5 } },
-  { "id": "worn_boots",   "name": "古びた靴",   "slot": "boots",  "level": 1, "stats": { "move_speed_pct": 5 } },
-  { "id": "copper_ring",  "name": "銅の指輪",   "slot": "ring",   "level": 1, "stats": { "life": 8 } }
+  { "id": "iron_sword",   "name": "鉄の剣",     "slot": "weapon", "level": 1, "stats": { "damage_pct": 12 } },
+  { "id": "oak_staff",    "name": "樫の杖",     "slot": "weapon", "level": 1, "stats": { "area_pct": 10, "cast_speed_pct": 5 } },
+  { "id": "leather_vest", "name": "革の胴着",   "slot": "armor",  "level": 1, "stats": { "armor": 15, "life": 15 } },
+  { "id": "cloth_hood",   "name": "布の頭巾",   "slot": "helmet", "level": 1, "stats": { "armor": 8, "life": 8 } },
+  { "id": "worn_boots",   "name": "古びた靴",   "slot": "boots",  "level": 1, "stats": { "armor": 5, "move_speed_pct": 8 } },
+  { "id": "copper_ring",  "name": "銅の指輪",   "slot": "ring",   "level": 1, "stats": { "life": 12 } }
 ]
