@@ -6,6 +6,7 @@ const MAP_PATH: String = "res://data/maps/test_01.txt"
 var world: Node2D
 var map: IsoMap
 var player: Player
+var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
 
 
 func _ready() -> void:
@@ -36,14 +37,47 @@ func _ready() -> void:
 		dummy.position = pos
 		world.add_child(dummy)
 
-	_add_enemies()
-	_add_skill_screen()
+	var manager := _add_enemies()
+	stash = Stash.new()
+	_add_skill_screen(stash)
+	_add_progression(manager, stash)
 	add_child(RestartListener.new())
 	_add_help()
 
 
+## 体力・経験値・ドロップ・装備をつなぐ
+func _add_progression(manager: EnemyManager, stash: Stash) -> void:
+	var hud := Hud.new()
+	hud.name = "Hud"
+	add_child(hud)
+	hud.setup(player.vitals)
+
+	# 敵に殴られる／倒した経験値
+	manager.player_hit.connect(player.on_player_hit)
+	manager.enemy_hit.connect(func(enemy: Enemy, _amount: float, killed: bool) -> void:
+		if killed and enemy.definition != null:
+			player.vitals.grant_xp(enemy.definition.xp))
+
+	# ドロップ：倒した敵の位置に出て、歩いて拾う
+	var director := LootDirector.new()
+	director.name = "LootDirector"
+	add_child(director)
+	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)
+	var loot_hud := LootHud.new()
+	loot_hud.name = "LootHud"
+	add_child(loot_hud)
+	loot_hud.setup(stash)
+
+	# 装備のステータスを、体力・スキルのダメージ計算が見ている入れ物に反映する
+	var apply_equipment := func() -> void:
+		player.caster.stats.clear()
+		player.caster.stats.merge(stash.equipment_stats())
+		player.vitals.changed.emit()
+	stash.changed.connect(apply_equipment)
+
+
 ## マップの印（s=群れ小鬼の群れ、b=岩殻）に敵を置く。時間で湧かせず、倒しに行く配置
-func _add_enemies() -> void:
+func _add_enemies() -> EnemyManager:
 	var manager := EnemyManager.new()
 	manager.name = "EnemyManager"
 	manager.enemy_parent = world  # 壁・プレイヤーと同じ Y軸ソートの親に置き、描画順を合わせる
@@ -56,13 +90,14 @@ func _add_enemies() -> void:
 		manager.spawn_pack(swarm, pos, rng)
 	for pos: Vector2 in map.markers.get("b", []):
 		manager.spawn(brute, pos)
+	return manager
 
 
-func _add_skill_screen() -> void:
+func _add_skill_screen(stash: Stash) -> void:
 	var screen := SkillScreen.new()
 	screen.name = "SkillScreen"
 	add_child(screen)
-	screen.setup(player.caster)
+	screen.setup(player.caster, stash)
 
 
 static func load_map(path: String) -> PackedStringArray:

@@ -9,6 +9,11 @@ func add(key: String, value: float) -> void:
 	_values[key] = float(_values.get(key, 0.0)) + value
 
 
+## 中身を空にする（同じ入れ物を共有している側から見える値を、作り直すときに使う）
+func clear() -> void:
+	_values.clear()
+
+
 ## 別の StatBlock の中身を全部足す
 func merge(other: StatBlock) -> void:
 	for key: String in other._values:
