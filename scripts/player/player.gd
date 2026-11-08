@@ -7,12 +7,20 @@ signal attacked(skill: SkillDef, hits: int)
 
 const MOVE_SPEED: float = 80.0
 const AIM_DISTANCE: float = 100.0  ## 向いている方向の、狙う位置までの距離（向きだけが使われる）
+const DODGE_SPEED: float = 230.0  ## 緊急回避の速さ
+const DODGE_SECONDS: float = 0.18  ## 回避で動く時間（距離は約 41）
+const DODGE_INVULN_SECONDS: float = 0.28  ## 回避のあいだ、攻撃を受けない時間（動きが終わったあとも少し残る）
+const DODGE_COOLDOWN: float = 0.9  ## 次に回避できるまでの時間
 const AUTO_AIM_RANGE: float = 80.0  ## この距離（地面の距離）以内に敵がいれば、その敵のほうを向いて攻撃する
 
 var facing: int = 2  ## Facing の番号（最初は下向き）
 var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
 var vitals: PlayerVitals = PlayerVitals.new(caster.stats)  ## 体力・経験値（stats は caster と共有）
 var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
+var _dodge_left: float = 0.0  ## 回避で動いている残り時間
+var _invuln_left: float = 0.0  ## 無敵の残り時間
+var _dodge_cooldown_left: float = 0.0
+var _dodge_dir: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -35,7 +43,17 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		queue_redraw()
 		return
+	_invuln_left = maxf(0.0, _invuln_left - delta)
+	_dodge_cooldown_left = maxf(0.0, _dodge_cooldown_left - delta)
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if Input.is_action_just_pressed("dodge"):
+		start_dodge(input)
+	if _dodge_left > 0.0:
+		_dodge_left -= delta
+		velocity = _dodge_dir * DODGE_SPEED
+		move_and_slide()
+		queue_redraw()
+		return
 	velocity = input * MOVE_SPEED
 	move_and_slide()
 	if input != Vector2.ZERO and _swing_t <= 0.0:
@@ -76,7 +94,29 @@ func nearest_enemy() -> Node2D:
 
 ## 敵に殴られた（EnemyManager.player_hit につなぐ）
 func on_player_hit(damage: float, _source: Node) -> void:
+	if is_invulnerable():
+		return
 	vitals.take_damage(damage)
+
+
+## 緊急回避：動いている向き（止まっているときは向いている向き）へ、すばやく動く。そのあいだは攻撃を受けない。出せたら true
+func start_dodge(input: Vector2 = Vector2.ZERO) -> bool:
+	if vitals.is_dead() or _dodge_cooldown_left > 0.0 or _dodge_left > 0.0:
+		return false
+	_dodge_dir = input.normalized() if input != Vector2.ZERO else Facing.to_vector(facing).normalized()
+	facing = Facing.dir8(_dodge_dir)
+	_dodge_left = DODGE_SECONDS
+	_invuln_left = DODGE_INVULN_SECONDS
+	_dodge_cooldown_left = DODGE_COOLDOWN
+	return true
+
+
+func is_invulnerable() -> bool:
+	return _invuln_left > 0.0
+
+
+func is_dodging() -> bool:
+	return _dodge_left > 0.0
 
 
 ## スキル枠 slot を狙った位置に向けて出す。出せたら true（空の枠・再使用時間中は false）
@@ -138,6 +178,8 @@ func _draw() -> void:
 	if tex == null:
 		return
 	var tint := Color(0.45, 0.4, 0.45) if vitals.is_dead() else Color.WHITE
+	if is_invulnerable():
+		tint = Color(0.7, 0.9, 1.0, 0.55)  # 回避中は、うすく青白く透ける
 	var s := SPRITE_SCALE
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(-s if v["flip"] else s, s))
 	# 絵ごとに幅が違う（斜めは刀の分だけ広い）ので、絵の大きさから足元の中心を決める

@@ -191,7 +191,7 @@ static func load_map(path: String) -> PackedStringArray:
 	return rows
 
 
-const HELP_FULL: String = "WASD: 移動\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nF4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
+const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nF4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
 const HELP_COMPACT: String = "H: 操作ヘルプ"
 const HELP_SHOW_SECONDS: float = 8.0  ## 起動してすぐは操作を出し、この時間がたったら、小さな「H: 操作ヘルプ」だけにする
 

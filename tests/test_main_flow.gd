@@ -225,3 +225,26 @@ func test_equipment_stats_reach_player() -> void:
 	stash.collect(item)
 	t.check(player.vitals.max_life() > life_before, "装備の life が最大ライフに足される")
 	main.queue_free()
+
+
+func test_dodge_moves_and_avoids_damage() -> void:
+	var main: Node = await _start_main()
+	var player := (t as SceneTree).get_first_node_in_group("player") as Player
+	player.global_position = Vector2(100000, 100000)
+	player.facing = 0  # 右向き
+	var start := player.global_position
+	var life: float = player.vitals.life
+	t.check(player.start_dodge(), "回避できる")
+	t.check(player.is_invulnerable(), "回避中は無敵")
+	player.on_player_hit(10.0, null)
+	t.check_eq(player.vitals.life, life, "回避中は、攻撃を受けない")
+	t.check(not player.start_dodge(), "連続では回避できない（再使用時間）")
+	for i in 20:
+		await (t as SceneTree).physics_frame
+	t.check(player.global_position.x > start.x + 20.0, "向いている方向へ動く")
+	player._invuln_left = 0.0
+	player.on_player_hit(10.0, null)
+	t.check(player.vitals.life < life, "回避が終わると、攻撃を受ける")
+	player._dodge_cooldown_left = 0.0
+	t.check(player.start_dodge(Vector2.UP), "時間がたてば、もう一度回避できる")
+	main.queue_free()

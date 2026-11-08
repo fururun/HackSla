@@ -48,6 +48,8 @@ func launch(caster: SkillCaster, def: SkillDef, context: SkillCaster.CastContext
 
 
 func _physics_process(delta: float) -> void:
+	if not is_instance_valid(_caster):
+		return  # 持ち主（キャスター）が先に消えたときは、何もしない
 	advance(delta)
 
 
