@@ -12,6 +12,20 @@ var map: IsoMap
 var player: Player
 var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
 var game_log: GameLog  ## 遊んだ記録とデバッグの記録
+var camera: Camera2D
+var camera_mode: int = 0
+var _camera_label: Label
+
+## カメラの見え方の候補（F4 で順に切り替えて、がくつきの出ないものを探す）。
+## [名前, 引き, 追従をなめらかにする, ピクセルへの吸着]
+const CAMERA_MODES: Array = [
+	["A: 引き0.5・なめらか追従・吸着あり（標準）", 0.5, true, true],
+	["B: 引き0.5・なめらか追従・吸着なし", 0.5, false, false],
+	["C: 引き0.5・追従なし（プレイヤーに固定）・吸着あり", 0.5, false, true],
+	["D: 引き2/3・なめらか追従・吸着あり（ドットがちょうど2ピクセル）", 0.6667, true, true],
+	["E: 引き2/3・追従なし・吸着あり", 0.6667, false, true],
+	["F: 引き1.0・なめらか追従・吸着あり（ドットが3ピクセル）", 1.0, true, true],
+]
 
 
 func _ready() -> void:
@@ -31,13 +45,13 @@ func _ready() -> void:
 	player.position = map.marker("P")
 	world.add_child(player)
 
-	var cam := Camera2D.new()
-	cam.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える
-	cam.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS  # プレイヤーと同じ物理の刻みで追う（がくつき防止）
-	cam.position_smoothing_enabled = true
-	cam.position_smoothing_speed = 8.0
-	cam.offset = Vector2(0, -10)
-	player.add_child(cam)
+	camera = Camera2D.new()
+	camera.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS  # プレイヤーと同じ物理の刻みで追う（がくつき防止）
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed = 8.0
+	camera.offset = Vector2(0, -10)
+	player.add_child(camera)
 
 	for pos: Vector2 in map.markers.get("D", []):
 		var dummy := TrainingDummy.new()
@@ -55,6 +69,36 @@ func _ready() -> void:
 	game_log.setup(player, manager, stash)
 	add_child(RestartListener.new())
 	_add_help()
+
+
+## F4：カメラの見え方を切り替える（がくつきの原因を探すため）
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("cycle_camera"):
+		apply_camera_mode((camera_mode + 1) % CAMERA_MODES.size())
+
+
+func apply_camera_mode(index: int) -> void:
+	camera_mode = index
+	var m: Array = CAMERA_MODES[index]
+	camera.zoom = Vector2.ONE * float(m[1])
+	camera.position_smoothing_enabled = bool(m[2])
+	get_viewport().snap_2d_transforms_to_pixel = bool(m[3])
+	get_viewport().snap_2d_vertices_to_pixel = bool(m[3])
+	camera.reset_smoothing()
+	if _camera_label == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		_camera_label = Label.new()
+		_camera_label.position = Vector2(6, 16)
+		_camera_label.add_theme_font_size_override("font_size", 10)
+		_camera_label.add_theme_color_override("font_color", Color("#ffd34d"))
+		_camera_label.add_theme_constant_override("outline_size", 3)
+		_camera_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		layer.add_child(_camera_label)
+	_camera_label.text = "カメラ %s　(F4で切り替え)" % str(m[0])
+	if game_log != null:
+		game_log.play("camera_mode", {"mode": str(m[0])})
 
 
 ## 体力・経験値・ドロップ・装備をつなぐ
@@ -149,7 +193,7 @@ func _add_help() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var help := Label.new()
-	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　I: 装備　F5: やり直し"
+	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　I: 装備　F4: カメラ切替　F5: やり直し"
 	help.position = Vector2(6, 4)
 	help.add_theme_font_size_override("font_size", 8)
 	help.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))

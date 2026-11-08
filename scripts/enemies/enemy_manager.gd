@@ -11,7 +11,7 @@ signal aoe_burst(enemy: Enemy, radius: float)  ## 範囲攻撃が当たった（
 signal boss_raged(enemy: Enemy)  ## ボスが激昂した（体力が半分以下になった）
 
 const SEPARATION_PASSES: int = 4
-const AOE_FIRST_DELAY_RATIO: float = 0.6  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
+const AOE_FIRST_DELAY_RATIO: float = 0.35  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
 
 func _ready() -> void:
 	aoe_telegraph.connect(_show_aoe_telegraph)

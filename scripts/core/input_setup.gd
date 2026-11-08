@@ -15,6 +15,7 @@ const KEYS: Dictionary = {
 	"toggle_skill_screen": [KEY_K],
 	"toggle_equip_screen": [KEY_I],
 	"restart_game": [KEY_F5],
+	"cycle_camera": [KEY_F4],
 }
 
 const MOUSE: Dictionary = {
