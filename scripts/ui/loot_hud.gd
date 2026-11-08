@@ -31,20 +31,24 @@ func _ready() -> void:
 	layer = 20
 	var root: Control = Control.new()
 	var theme: Theme = Theme.new()
-	theme.default_font_size = 8
+	theme.default_font_size = UiStyle.FONT_STANDARD
 	root.theme = theme
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var panel: PanelContainer = PanelContainer.new()
+	root.add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	panel.offset_left = -180
+	panel.offset_right = -6
+	panel.offset_top = 30
+	panel.add_theme_stylebox_override("panel", UiStyle.panel())
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box: VBoxContainer = VBoxContainer.new()
-	root.add_child(box)
-	box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	box.offset_left = -174
-	box.offset_right = -6
-	box.offset_top = 30
-	box.offset_bottom = 90
+	panel.add_child(box)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_currency = Label.new()
+	UiStyle.label(_currency, UiStyle.FONT_SMALL, UiStyle.ACCENT)
 	box.add_child(_currency)
 	_messages = VBoxContainer.new()
 	box.add_child(_messages)
@@ -62,7 +66,7 @@ func _process(delta: float) -> void:
 
 func _on_picked_up(value: Variant) -> void:
 	var text: String
-	var color: Color = Color.WHITE
+	var color: Color = UiStyle.TEXT
 	if value is ItemInstance:
 		return
 	elif value is GemInstance:
@@ -72,7 +76,7 @@ func _on_picked_up(value: Variant) -> void:
 		text = _gem_name(value)
 	else:
 		text = "通貨 +%d" % int(value)
-		color = Color("ffd36a")
+		color = UiStyle.ACCENT
 	_add_message(text, color)
 
 func _add_message(text: String, color: Color, lines: Array[Dictionary] = []) -> void:
@@ -89,11 +93,11 @@ func _on_equipped(_slot: String, item: ItemInstance, previous: ItemInstance) -> 
 	_add_message("装備した：" + item.display_name(), item.rarity.color, StatLabels.changes(item, previous))
 
 func _on_skipped(item: ItemInstance) -> void:
-	_add_message("見送り：" + item.display_name(), Color("8c929b"))
+	_add_message("見送り：" + item.display_name(), UiStyle.MUTED)
 
 func _on_duplicate_gem(gem: GemInstance) -> void:
 	_duplicate_pending = gem
-	_add_message("所持済み：%s / 通貨 +%d" % [_gem_name(gem), Stash.GEM_DUPLICATE_CURRENCY], Color("ffd36a"))
+	_add_message("所持済み：%s / 通貨 +%d" % [_gem_name(gem), Stash.GEM_DUPLICATE_CURRENCY], UiStyle.ACCENT)
 
 func _refresh() -> void:
 	if _currency == null:
@@ -107,11 +111,12 @@ func _refresh() -> void:
 		label.text = entry["text"]
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.add_theme_color_override("font_color", entry["color"])
+		UiStyle.label(label, UiStyle.FONT_STANDARD, entry["color"])
 		_messages.add_child(label)
 		for line: Dictionary in entry["lines"]:
 			var detail: Label = Label.new()
 			detail.text = "  " + line["text"]
 			detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			detail.add_theme_color_override("font_color", line["color"])
+			UiStyle.label(detail, UiStyle.FONT_SMALL, line["color"])
+			detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			_messages.add_child(detail)

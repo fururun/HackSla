@@ -3,10 +3,10 @@ extends CanvasLayer
 ## 仮の装備画面。一覧の供給元は後で所持品へ差し替えられる。
 
 const VISIBLE_SLOTS: int = 2
-const FONT_SIZE: int = 8
-const PANEL_COLOR: Color = Color("#18202b")
-const TEXT_COLOR: Color = Color("#e6e0ce")
-const ACCENT_COLOR: Color = Color("#e5b66d")
+const FONT_SIZE: int = UiStyle.FONT_STANDARD
+const PANEL_COLOR: Color = UiStyle.PANEL
+const TEXT_COLOR: Color = UiStyle.TEXT
+const ACCENT_COLOR: Color = UiStyle.ACCENT
 const TAG_NAMES: Dictionary = {
 	"physical": "物理", "fire": "火", "cold": "冷気", "lightning": "雷",
 	"melee": "近接", "projectile": "飛び道具", "area": "範囲",
@@ -163,10 +163,11 @@ func _build_ui() -> void:
 	_root.add_theme_color_override("font_color", TEXT_COLOR)
 	add_child(_root)
 	var backdrop: ColorRect = ColorRect.new()
-	backdrop.color = Color("#0d111bef")
+	backdrop.color = UiStyle.BACKDROP
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(backdrop)
 	var title: Label = _label("スキル装備  /  ゲーム停止中")
+	UiStyle.label(title, UiStyle.FONT_HEADING, UiStyle.ACCENT)
 	title.position = Vector2(12, 8)
 	_root.add_child(title)
 	var close_button: Button = _button("閉じる [K]")
@@ -180,11 +181,13 @@ func _build_ui() -> void:
 	right.add_child(_choice_title)
 	_choices = _scroll_box(right, 84)
 	_details = _label("")
+	UiStyle.label(_details, UiStyle.FONT_SMALL, UiStyle.MUTED)
 	_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(_details)
 	var bottom: VBoxContainer = _panel(Vector2(12, 180), Vector2(456, 64))
 	_chains = _scroll_box(bottom, 54)
 	var help: Label = _label("左: 枠を選択 → 右: 候補をクリックで装備   /   枠を右クリックで外す")
+	UiStyle.label(help, UiStyle.FONT_SMALL, UiStyle.MUTED)
 	help.position = Vector2(12, 251)
 	_root.add_child(help)
 
@@ -193,12 +196,7 @@ func _panel(at: Vector2, dimensions: Vector2) -> VBoxContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.position = at
 	panel.size = dimensions
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = PANEL_COLOR
-	style.content_margin_left = 6
-	style.content_margin_right = 6
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
+	var style: StyleBoxFlat = UiStyle.panel()
 	panel.add_theme_stylebox_override("panel", style)
 	_root.add_child(panel)
 	var box: VBoxContainer = VBoxContainer.new()
@@ -223,6 +221,7 @@ func _scroll_box(parent: Control, height: float) -> VBoxContainer:
 func _label(text: String) -> Label:
 	var label: Label = Label.new()
 	label.text = text
+	UiStyle.label(label)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
@@ -232,15 +231,7 @@ func _button(text: String) -> Button:
 	button.text = text
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", FONT_SIZE)
-	for state: String in ["normal", "hover", "pressed"]:
-		var style: StyleBoxFlat = StyleBoxFlat.new()
-		style.bg_color = Color("#293649") if state != "normal" else Color("#202a38")
-		style.content_margin_left = 3
-		style.content_margin_right = 3
-		style.content_margin_top = 1
-		style.content_margin_bottom = 1
-		button.add_theme_stylebox_override(state, style)
+	UiStyle.button(button)
 	return button
 
 
@@ -319,6 +310,7 @@ func _add_choice(id: String, title: String, description: String, values: String)
 	button.mouse_entered.connect(_show_details.bind(values))
 	_choices.add_child(button)
 	var label: Label = _label(description)
+	UiStyle.label(label, UiStyle.FONT_SMALL, UiStyle.MUTED)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_choices.add_child(label)
 

@@ -2,26 +2,29 @@ class_name Hud
 extends CanvasLayer
 ## HUD：左下に体力の棒とレベル・経験値の棒。レベルアップと死亡のメッセージ。
 
-const FONT_SIZE: int = 8
+const FONT_SIZE: int = UiStyle.FONT_STANDARD
 const BAR_W: float = 120.0
-const BAR_H: float = 10.0
+const BAR_H: float = 14.0
 const MARGIN: float = 6.0
 const SCREEN_H: float = 270.0
-const TEXT_COLOR: Color = Color("#e6e0ce")
-const BAR_BG: Color = Color("#18202b")
-const LIFE_COLOR: Color = Color("#b8322f")
-const XP_COLOR: Color = Color("#4b8fd6")
+const TEXT_COLOR: Color = UiStyle.TEXT
+const BAR_BG: Color = UiStyle.BAR_BG
+const LIFE_COLOR: Color = UiStyle.LIFE
+const XP_COLOR: Color = UiStyle.XP
 const LEVELUP_TIME: float = 1.5
 
 var _vitals: PlayerVitals
 var _root: Control
-var _life_bar: ColorRect
+var _life_bar: Panel
 var _life_label: Label
-var _xp_bar: ColorRect
+var _xp_bar: Panel
 var _xp_label: Label
 var _levelup_label: Label
 var _dead_label: Label
 var _levelup_t: float = 0.0
+var _pulse_time: float = 0.0
+const LOW_LIFE_RATIO: float = 0.3
+const PULSE_PERIOD: float = 0.6
 
 
 func setup(vitals: PlayerVitals) -> void:
@@ -45,14 +48,14 @@ func _build() -> void:
 	_life_label = _make_label(_life_bar)
 	_xp_bar = _make_bar(Vector2(MARGIN, SCREEN_H - MARGIN - BAR_H), XP_COLOR)
 	_xp_label = _make_label(_xp_bar)
-	_levelup_label = _make_message("レベルアップ！", Color("#ffd34d"), Vector2(200, 70))
-	_dead_label = _make_message("やられた　F5 でやり直し", Color("#ff7a70"), Vector2(170, 130))
+	_levelup_label = _make_message("レベルアップ！", UiStyle.ACCENT, Vector2(200, 70))
+	_dead_label = _make_message("やられた　F5 でやり直し", UiStyle.WARNING, Vector2(170, 130))
 
 
 func _make_message(text: String, color: Color, pos: Vector2) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_color_override("font_color", color)
+	UiStyle.label(label, UiStyle.FONT_HEADING, color)
 	label.position = pos
 	label.visible = false
 	_root.add_child(label)
@@ -60,9 +63,10 @@ func _make_message(text: String, color: Color, pos: Vector2) -> Label:
 
 
 ## 背景つきの棒。子の "fill" が中身
-func _make_bar(pos: Vector2, color: Color) -> ColorRect:
-	var bg := ColorRect.new()
-	bg.color = BAR_BG
+func _make_bar(pos: Vector2, color: Color) -> Panel:
+	var bg := Panel.new()
+	bg.add_theme_stylebox_override("panel", UiStyle.bar_background())
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.position = pos
 	bg.size = Vector2(BAR_W, BAR_H)
 	var fill := ColorRect.new()
@@ -71,21 +75,28 @@ func _make_bar(pos: Vector2, color: Color) -> ColorRect:
 	fill.position = Vector2(1, 1)
 	fill.size = Vector2(BAR_W - 2, BAR_H - 2)
 	bg.add_child(fill)
+	var light: ColorRect = ColorRect.new()
+	light.name = "light"
+	light.color = color.lightened(0.22)
+	light.size = Vector2(BAR_W - 2, (BAR_H - 2) / 2)
+	light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fill.add_child(light)
 	_root.add_child(bg)
 	return bg
 
 
-func _make_label(bar: ColorRect) -> Label:
+func _make_label(bar: Panel) -> Label:
 	var label := Label.new()
-	label.add_theme_color_override("font_color", TEXT_COLOR)
-	label.position = Vector2(3, -2)
+	UiStyle.label(label)
+	label.position = Vector2(4, -1)
 	bar.add_child(label)
 	return label
 
 
-func _set_fill(bar: ColorRect, ratio: float) -> void:
+func _set_fill(bar: Panel, ratio: float) -> void:
 	var fill: ColorRect = bar.get_node("fill")
 	fill.size.x = (BAR_W - 2) * clampf(ratio, 0.0, 1.0)
+	(fill.get_node("light") as ColorRect).size.x = fill.size.x
 
 
 func _refresh() -> void:
@@ -108,6 +119,14 @@ func _on_leveled_up(_level: int) -> void:
 
 
 func _process(delta: float) -> void:
+	if _vitals != null and _life_bar != null:
+		_pulse_time = fmod(_pulse_time + delta, PULSE_PERIOD)
+		var low: bool = _vitals.life > 0.0 and _vitals.life <= _vitals.max_life() * LOW_LIFE_RATIO
+		var pulse: float = (sin(_pulse_time / PULSE_PERIOD * TAU) + 1.0) * 0.5 if low else 0.0
+		var color: Color = LIFE_COLOR.lerp(UiStyle.WARNING, pulse)
+		var fill: ColorRect = _life_bar.get_node("fill")
+		fill.color = color
+		(fill.get_node("light") as ColorRect).color = color.lightened(0.22)
 	if _levelup_t > 0.0:
 		_levelup_t -= delta
 		if _levelup_t <= 0.0:
