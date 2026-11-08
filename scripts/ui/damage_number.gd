@@ -2,6 +2,10 @@ class_name DamageNumber
 extends Label
 ## プールは表示先の所有物。親の破棄と一緒に解放し、静的なノード参照を残さない。
 
+const LARGE_DAMAGE: float = 100.0
+const DAMAGE_SIZE_BONUS: int = 4
+const DAMAGE_OUTLINE: int = 3
+
 const POOL_META: StringName = &"damage_number_pool"
 
 var _t: float = 0.0
@@ -33,7 +37,7 @@ static func spawn(parent: Node, pos: Vector2, amount: float) -> DamageNumber:
 func _init() -> void:
 	add_theme_font_size_override("font_size", FeedbackConfig.FONT_SIZE)
 	add_theme_color_override("font_color", Color.WHITE)
-	add_theme_constant_override("outline_size", FeedbackConfig.OUTLINE_SIZE)
+	add_theme_constant_override("outline_size", DAMAGE_OUTLINE)
 	add_theme_color_override("font_outline_color", Color.BLACK)
 	size = FeedbackConfig.NUMBER_SIZE
 	horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -43,6 +47,9 @@ func _init() -> void:
 
 func _activate(pos: Vector2, amount: float) -> void:
 	text = str(roundi(amount))
+	var emphasis: float = clampf(amount / LARGE_DAMAGE, 0.0, 1.0)
+	add_theme_font_size_override("font_size", FeedbackConfig.FONT_SIZE + roundi(DAMAGE_SIZE_BONUS * emphasis))
+	add_theme_color_override("font_color", Color.WHITE.lerp(UiStyle.ACCENT, emphasis))
 	_t = 0.0
 	active = true
 	modulate = Color.WHITE

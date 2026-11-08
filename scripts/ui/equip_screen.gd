@@ -77,7 +77,7 @@ func slot_entries() -> Array[Dictionary]:
 	for slot: String in SLOT_NAMES:
 		var item: ItemInstance = _stash.equipment.get(slot) if _stash != null else null
 		entries.append({"slot": slot, "name": item.display_name() if item != null else "—",
-			"color": item.rarity.color if item != null else SkillScreen.TEXT_COLOR,
+			"color": item.rarity.color if item != null else UiStyle.TEXT,
 			"stats": item.total_stats() if item != null else {}})
 	return entries
 
@@ -86,19 +86,21 @@ func _build_ui() -> void:
 	add_child(_root)
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var theme: Theme = Theme.new()
-	theme.default_font_size = SkillScreen.FONT_SIZE
+	theme.default_font_size = UiStyle.FONT_STANDARD
 	_root.theme = theme
-	_root.add_theme_color_override("font_color", SkillScreen.TEXT_COLOR)
+	_root.add_theme_color_override("font_color", UiStyle.TEXT)
 	var backdrop: ColorRect = ColorRect.new()
 	_root.add_child(backdrop)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color("0d111bef")
+	backdrop.color = UiStyle.BACKDROP
 	var title: Label = _label("装備  /  ゲーム停止中")
+	UiStyle.label(title, UiStyle.FONT_HEADING, UiStyle.ACCENT)
 	title.position = Vector2(12, 8)
 	title.size = Vector2(350, 18)
 	_root.add_child(title)
 	var button: Button = Button.new()
 	button.text = "閉じる [I]"
+	UiStyle.button(button)
 	button.position = Vector2(394, 6)
 	button.size = Vector2(74, 18)
 	button.pressed.connect(close)
@@ -107,6 +109,7 @@ func _build_ui() -> void:
 	_totals = _panel(Vector2(274, 32), Vector2(194, 122))
 	_details = _panel(Vector2(274, 164), Vector2(194, 76))
 	var help: Label = _label("部位をクリックすると、付与効果をすべて表示")
+	UiStyle.label(help, UiStyle.FONT_SMALL, UiStyle.MUTED)
 	help.position = Vector2(12, 251)
 	help.size = Vector2(456, 18)
 	_root.add_child(help)
@@ -115,9 +118,7 @@ func _panel(at: Vector2, dimensions: Vector2) -> VBoxContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.position = at
 	panel.size = dimensions
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = SkillScreen.PANEL_COLOR
-	style.set_content_margin_all(6)
+	var style: StyleBoxFlat = UiStyle.panel()
 	panel.add_theme_stylebox_override("panel", style)
 	_root.add_child(panel)
 	var scroll: ScrollContainer = ScrollContainer.new()
@@ -132,6 +133,7 @@ func _panel(at: Vector2, dimensions: Vector2) -> VBoxContainer:
 func _label(text: String) -> Label:
 	var label: Label = Label.new()
 	label.text = text
+	UiStyle.label(label)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
@@ -154,6 +156,7 @@ func _refresh() -> void:
 	for entry: Dictionary in slot_entries():
 		var button: Button = Button.new()
 		button.text = SLOT_NAMES[entry["slot"]] + "  " + entry["name"]
+		UiStyle.button(button)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.add_theme_color_override("font_color", entry["color"])
 		button.pressed.connect(_select.bind(entry["slot"]))

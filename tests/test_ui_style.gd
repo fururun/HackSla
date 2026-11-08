@@ -1,0 +1,65 @@
+extends RefCounted
+var t: Variant
+
+func test_style_definitions() -> void:
+	t.check(UiStyle.FONT_HEADING > UiStyle.FONT_STANDARD and UiStyle.FONT_STANDARD > UiStyle.FONT_SMALL, "文字サイズの階層")
+	t.check(UiStyle.TEXT.get_luminance() > UiStyle.PANEL.get_luminance(), "文字と背景の明度差")
+	t.check(UiStyle.ACCENT != UiStyle.WARNING and UiStyle.BORDER != UiStyle.PANEL, "強調・警告・枠を定義")
+	var style: StyleBoxFlat = UiStyle.panel()
+	t.check_eq(style.border_width_left, 1, "1ドット枠")
+	t.check_eq(style.corner_radius_top_left, 0, "角は丸めない")
+	t.check_eq(style.content_margin_left, float(UiStyle.PADDING), "内側の余白")
+	t.check_eq(UiStyle.bar_background().bg_color, UiStyle.BAR_BG, "棒の背景")
+	style.bg_color = Color.RED
+	t.check_eq(UiStyle.panel().bg_color, UiStyle.PANEL, "スタイルは共有変更されない")
+	var label: Label = Label.new()
+	UiStyle.label(label)
+	t.check_eq(label.get_theme_font_size("font_size"), UiStyle.FONT_STANDARD, "標準文字")
+	t.check(label.get_theme_constant("outline_size") > 0, "文字の縁取り")
+	label.free()
+
+func test_skill_bar_states_and_live_loadout() -> void:
+	var caster: SkillCaster = SkillCaster.new()
+	var bar: SkillBar = SkillBar.new()
+	bar.setup(caster)
+	t.check_eq(bar.displayed_slot_count(), 3, "初期は装備中の3枠")
+	t.check(bar.slot_state(1)["ready"], "使用可能")
+	t.check(bar.slot_state(4)["empty"] and not bar.slot_state(4)["ready"], "空枠は使用不可")
+	caster.cast(2, Vector2.RIGHT, Vector2.ZERO)
+	t.check(not bar.slot_state(2)["ready"] and bar.slot_state(2)["left"] > 0.0, "実際のCDを表示")
+	t.check(not bar.slot_state(1)["chain"], "未発見チェインは隠す")
+	caster.chain.discovered[DataDB.chains[0].id] = true
+	t.check(bar.slot_state(1)["chain"], "発見済みのみ光る")
+	var tree: SceneTree = t as SceneTree
+	tree.root.add_child(bar)
+	t.check_eq(bar._slots.size(), 3, "表示ノード数")
+	bar._process(0.0)
+	caster.tick(100.0)
+	bar._process(0.0)
+	t.check(bar.slot_state(2)["ready"], "CD完了で使用可能")
+	t.check(bar._slots[1]["flash"] > 0.0, "完了時フラッシュ")
+	bar._process(SkillBar.FLASH_TIME)
+	t.check_eq(bar._slots[1]["flash"], 0.0, "光は一瞬")
+	caster.loadout.set_skill(6, "fire_bolt")
+	t.check_eq(bar._slots.size(), 6, "後方の装備枠まで表示")
+	t.check(bar.slot_state(4)["empty"], "途中の空枠は保持")
+	caster.loadout.clear_skill(6)
+	t.check_eq(bar._slots.size(), 3, "装備解除を反映")
+	for slot: int in range(1, 7):
+		t.check_eq(SkillBar.key_label(slot), ["左", "右", "Q", "E", "R", "F"][slot - 1], "操作の割当")
+	bar.setup(caster)
+	t.check_eq(bar._slots.size(), 3, "再setupで増殖しない")
+	bar.free()
+	caster.free()
+
+func test_damage_emphasis_resets_on_pool_reuse() -> void:
+	var parent: Node = Node.new()
+	var number: DamageNumber = DamageNumber.spawn(parent, Vector2.ZERO, DamageNumber.LARGE_DAMAGE)
+	var large_size: int = number.get_theme_font_size("font_size")
+	t.check(number.get_theme_color("font_color").is_equal_approx(UiStyle.ACCENT), "大ダメージは金色")
+	number._process(FeedbackConfig.NUMBER_LIFE)
+	var reused: DamageNumber = DamageNumber.spawn(parent, Vector2.ZERO, 1.0)
+	t.check_eq(reused, number, "プール再利用")
+	t.check(reused.get_theme_font_size("font_size") < large_size, "小ダメージでサイズを戻す")
+	t.check(reused.get_theme_constant("outline_size") >= 3, "太い縁取り")
+	parent.free()
