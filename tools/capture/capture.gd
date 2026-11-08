@@ -9,14 +9,14 @@ extends SceneTree
 ## オプション:
 ##   --scene=res://scenes/main/main.tscn   撮る画面
 ##   --frames=60                            撮るまで待つフレーム数
-##   --scale=3                              拡大率（ドット絵をくっきり拡大）
+##   --scale=1                              拡大率（画面そのままの大きさで撮る。縮小表示された画面を拡大したいときだけ増やす）
 ##   --demo=attack                          プレイヤーを案山子の前に動かして斬撃させてから撮る
 
 var _opts: Dictionary = {
 	"scene": "res://scenes/main/main.tscn",
 	"out": "shots/capture.png",
 	"frames": "60",
-	"scale": "3",
+	"scale": "1",
 	"demo": "",
 }
 
