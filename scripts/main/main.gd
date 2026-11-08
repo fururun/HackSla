@@ -92,7 +92,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	stash.changed.connect(apply_equipment)
 
 
-## マップの印（s=群れ小鬼の群れ、b=岩殻）に敵を置く。時間で湧かせず、倒しに行く配置
+## マップの印（s=スライムの群れ、b=岩殻）に敵を置く。時間で湧かせず、倒しに行く配置
 func _add_enemies() -> EnemyManager:
 	var manager := EnemyManager.new()
 	manager.name = "EnemyManager"

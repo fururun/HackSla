@@ -72,7 +72,7 @@ func test_text_adopted_set() -> void:
 	t.check_eq(db.chains[0].name, "霜砕き", "チェイン名もスキル名と揃う")
 	t.check_eq(db.support("scatter").name, "三つ又", "暫定採用: 補助 3方向")
 	t.check_eq(db.support("burst_on_kill").name, "はじけ仕舞い", "暫定採用: 補助 爆発")
-	t.check_eq(db.enemy("swarmling").name, "群れ歯", "暫定採用: 小魔物")
+	t.check_eq(db.enemy("swarmling").name, "スライム", "雑魚敵はスライム（ふるるん指定）")
 	t.check_eq(db.enemy("brute").name, "岩のろ", "暫定採用: 岩魔物")
 	t.check_eq(db.enemy("training_dummy").name, "不倒さん", "暫定採用: 的")
 	t.check_eq(db.text_of("skill", "slash").reading(), "はらいたち", "読み仮名を引ける")

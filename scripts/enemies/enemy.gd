@@ -114,7 +114,7 @@ func _make_figure(flash: bool) -> ArrayMesh:
 	var light: Color = Color.WHITE if flash else base.lightened(LIGHTEN)
 	var edge: Color = Color.WHITE if flash else OUTLINE
 	if definition.behavior == "tank":
-		# 重い岩殻。横幅と肩の段差で群れ小鬼と区別する。
+		# 重い岩殻。横幅と肩の段差でスライムと区別する。
 		figure.add_rect(Rect2(-8, -20, 16, 17), edge)
 		figure.add_rect(Rect2(-11, -17, 22, 10), edge)
 		figure.add_rect(Rect2(-7, -19, 14, 7), light)
@@ -128,22 +128,19 @@ func _make_figure(flash: bool) -> ArrayMesh:
 		figure.add_rect(Rect2(-3, -14, 2, 1), Color.WHITE if flash else EYE)
 		figure.add_rect(Rect2(2, -14, 2, 1), Color.WHITE if flash else EYE)
 	else:
-		# 段を付けた耳・大きな目・二本の牙。すべて整数の矩形。
-		figure.add_rect(Rect2(-7, -19, 3, 5), edge)
-		figure.add_rect(Rect2(4, -19, 3, 5), edge)
-		figure.add_rect(Rect2(-6, -18, 1, 3), light)
-		figure.add_rect(Rect2(5, -18, 1, 3), light)
-		figure.add_rect(Rect2(-5, -17, 10, 9), edge)
-		figure.add_rect(Rect2(-4, -16, 8, 7), base)
-		figure.add_rect(Rect2(-4, -16, 8, 2), light)
-		figure.add_rect(Rect2(-4, -8, 8, 6), edge)
-		figure.add_rect(Rect2(-3, -8, 6, 5), dark)
-		figure.add_rect(Rect2(-5, -2, 4, 2), edge)
-		figure.add_rect(Rect2(1, -2, 4, 2), edge)
-		figure.add_rect(Rect2(-3, -14, 3, 2), Color.WHITE if flash else EYE)
-		figure.add_rect(Rect2(1, -14, 3, 2), Color.WHITE if flash else EYE)
-		figure.add_rect(Rect2(-2, -14, 1, 2), Color.WHITE if flash else PUPIL)
-		figure.add_rect(Rect2(2, -14, 1, 2), Color.WHITE if flash else PUPIL)
-		figure.add_rect(Rect2(-2, -10, 1, 2), Color.WHITE if flash else FANG)
-		figure.add_rect(Rect2(2, -10, 1, 2), Color.WHITE if flash else FANG)
+		# スライム：ぷるんとした半球。段を付けたドーム、下に広がる裾、つやのある光、まるい目と小さな口。
+		# 輪郭（暗）→ 本体（base）→ 下の影（dark）→ 光（light）→ 目 の順に、整数の矩形を重ねる。
+		for row: Array in [[-14, -14, 3], [-13, -13, 5], [-12, -12, 6], [-11, -11, 7], [-10, -5, 8], [-4, -2, 9], [-1, -1, 8]]:
+			figure.add_rect(Rect2(-row[2], row[0], row[2] * 2, row[1] - row[0] + 1), edge)
+		for row: Array in [[-13, -13, 2], [-12, -12, 4], [-11, -11, 5], [-10, -10, 6], [-9, -5, 7], [-4, -2, 8]]:
+			figure.add_rect(Rect2(-row[2], row[0], row[2] * 2, row[1] - row[0] + 1), base)
+		figure.add_rect(Rect2(-8, -3, 16, 2), dark)
+		figure.add_rect(Rect2(-7, -5, 14, 1), dark)
+		figure.add_rect(Rect2(-5, -12, 3, 2), light)
+		figure.add_rect(Rect2(-6, -10, 2, 2), light)
+		figure.add_rect(Rect2(-5, -8, 4, 4), Color.WHITE if flash else EYE)
+		figure.add_rect(Rect2(1, -8, 4, 4), Color.WHITE if flash else EYE)
+		figure.add_rect(Rect2(-3, -7, 2, 3), Color.WHITE if flash else PUPIL)
+		figure.add_rect(Rect2(3, -7, 2, 3), Color.WHITE if flash else PUPIL)
+		figure.add_rect(Rect2(-1, -3, 2, 1), Color.WHITE if flash else PUPIL)
 	return figure.make_mesh()

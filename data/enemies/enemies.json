@@ -1,7 +1,7 @@
 [
   {
     "id": "swarmling",
-    "name": "群れ小鬼",
+    "name": "スライム",
     "behavior": "melee_swarm",
     "life": 20,
     "speed": 58,
@@ -10,7 +10,7 @@
     "attack_interval": 1,
     "xp": 3,
     "pack": [8, 14],
-    "color": "#c9a24a",
+    "color": "#5fcf7a",
     "aggro_range": 120,
     "windup": 0
   },

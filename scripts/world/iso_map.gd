@@ -5,7 +5,7 @@ extends Node2D
 ##
 ## マップの記号:
 ##   # 壁    . 床    P プレイヤーの開始位置    D 案山子    C 宝箱
-##   s 群れ小鬼の群れ（T08 で使う）    b 岩殻（T08 で使う）
+##   s スライムの群れ（T08 で使う）    b 岩殻（T08 で使う）
 
 const FLOOR_A := Vector2i(0, 0)
 const FLOOR_B := Vector2i(1, 0)

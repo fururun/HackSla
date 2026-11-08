@@ -160,9 +160,9 @@
    "candidates": [
     {
      "plan": 1,
-     "display_name": "群れ歯",
-     "reading": "むれば",
-     "description": "一匹は弱いが、歯をむいて群れで押し寄せる小さな魔物。"
+     "display_name": "スライム",
+     "reading": "すらいむ",
+     "description": "ぷるぷる弾みながら、数で押し寄せてくる小さな魔物。"
     },
     {
      "plan": 2,
