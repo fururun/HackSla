@@ -35,6 +35,8 @@ const NEAREST_CANDIDATES: int = 8  ## 近い敵を選ぶとき、道のりを比
 enum SkillMode { ALL_READY, CHAIN_PRIORITY, CHAIN_GREEDY }
 var skill_mode: SkillMode = SkillMode.ALL_READY
 var chain_wait_seconds: float = 0.0  ## チェインの相棒の再使用まで、この秒数以内なら、ほかのスキルを出さずに待つ（0 なら待たない）
+var auto_support: bool = true  ## 補助ジェムを、持っているものから、自動でつける（F7 で入り切り）
+var stash: Stash  ## 持っている補助ジェムを調べるため
 var enabled: bool = false
 var route: Route = Route.NEAREST_ENEMY
 var open_chests: bool = true
@@ -80,9 +82,48 @@ func toggle_chests() -> bool:
 	return open_chests
 
 
+## 補助ジェムの良さ（その枠のスキルに付けたときの、おおよその強さ。1.0 が、付けないとき）。
+## ダメージ ÷ 再使用時間の倍率に、弾の数・範囲・跳ね返り・撃破時の爆発（群れで効く分）を足す
+static func support_score(support: SupportDef) -> float:
+	var m: Dictionary = support.modifiers
+	var damage: float = float(m.get("damage_mult", 1.0))
+	var cooldown: float = maxf(float(m.get("cooldown_mult", 1.0)), 0.1)
+	var score: float = damage / cooldown
+	score *= 1.0 + 0.4 * float(m.get("projectile_count", 0))
+	score *= 1.0 + 0.8 * (float(m.get("area_mult", 1.0)) - 1.0)
+	score *= 1.0 + 0.15 * float(m.get("hop_count", 0))
+	score *= 1.0 + 0.3 * float(m.get("explode_on_kill", 0.0)) * float(m.get("explode_damage_ratio", 0.0))
+	return score
+
+
+## 持っている補助ジェムのうち、その枠のスキルに付けられて、いちばん良いものを、各枠につける。
+## いま付いているものより良いときだけ、付け替える。付け替えた数を返す
+func equip_supports(caster: SkillCaster) -> int:
+	if stash == null:
+		return 0
+	var changed: int = 0
+	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+		var skill: SkillDef = caster.loadout.skill(slot)
+		if skill == null:
+			continue
+		var current: SupportDef = caster.loadout.support(slot)
+		var best: SupportDef = current
+		var best_score: float = support_score(current) if current != null else 1.0
+		for support: SupportDef in DataDB.supports.values():
+			if not support.can_support(skill) or not stash.has_gem(GemInstance.Kind.SUPPORT, support.id):
+				continue
+			var score: float = support_score(support)
+			if score > best_score + 0.0001:
+				best = support
+				best_score = score
+		if best != current and best != null and caster.loadout.set_support(slot, best.id):
+			changed += 1
+	return changed
+
+
 func settings_text() -> String:
 	var head: String = "自動戦闘：敵を全滅させた" if cleared else "自動戦闘 ON"
-	return "%s　ルート: %s（F3）　宝箱: %s（F6）　F2で止める" % [head, ROUTE_NAMES[route], "開ける" if open_chests else "開けない"]
+	return "%s　ルート: %s（F3）　宝箱: %s（F6）　補助: %s（F7）　F2で止める" % [head, ROUTE_NAMES[route], "開ける" if open_chests else "開けない", "自動" if auto_support else "手動"]
 
 
 # ---- 床の地図（A*） ----

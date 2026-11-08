@@ -90,6 +90,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("autobattle_route"):
 		autopilot.cycle_route()
 		set_autopilot(autopilot.enabled)
+	if event.is_action_pressed("autobattle_support"):
+		autopilot.auto_support = not autopilot.auto_support
+		_apply_auto_support()
+		set_autopilot(autopilot.enabled)
 	if event.is_action_pressed("autobattle_chests"):
 		autopilot.toggle_chests()
 		set_autopilot(autopilot.enabled)
@@ -97,9 +101,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		apply_camera_mode((camera_mode + 1) % CAMERA_MODES.size())
 
 
+## 自動戦闘が入っていて、補助ジェムを自動でつける設定なら、いま持っているジェムで、各枠につける
+func _apply_auto_support() -> void:
+	if autopilot.enabled and autopilot.auto_support and player != null:
+		var changed: int = autopilot.equip_supports(player.caster)
+		if changed > 0 and game_log != null:
+			game_log.play("auto_support", {"changed": changed})
+
+
 ## 自動戦闘の表示（画面の上の中央）
 func set_autopilot(on: bool) -> void:
 	autopilot.enabled = on
+	_apply_auto_support()
 	if _autopilot_label == null:
 		var layer := CanvasLayer.new()
 		layer.layer = 100
@@ -182,6 +195,8 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)
 	autopilot.director = director
 	autopilot.map = map
+	autopilot.stash = stash
+	stash.changed.connect(_apply_auto_support)  # 新しい補助ジェムを拾ったら、付け直す
 	director.is_valid_position = func(pos: Vector2) -> bool: return map.is_floor_at(pos, true)  # 壁の中・壁ぎわに置かない
 	# 宝箱：近づくと開いて、まとまった数のドロップが出る（最初の広場に置く）
 	for pos: Vector2 in map.markers.get("C", []):

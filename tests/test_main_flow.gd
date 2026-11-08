@@ -736,3 +736,25 @@ func test_autopilot_default_casts_all_ready_skills() -> void:
 	player.caster._cooldowns[1] = 1.0
 	t.check_eq(pilot.skills_to_cast(player), [1, 3] as Array[int], "再使用待ちのものは出さない")
 	player.free()
+
+
+func test_autopilot_auto_equips_best_owned_supports() -> void:
+	var player := Player.new()
+	var pilot := Autopilot.new()
+	var stash := Stash.new()  # 初期の補助ジェム：拡散・撃破時爆発
+	pilot.stash = stash
+	var loadout: SkillLoadout = player.caster.loadout
+	loadout.set_skill(1, "slash")  # 近接
+	loadout.set_skill(2, "frost_bloom")  # 範囲
+	loadout.set_skill(3, "fire_bolt")  # 飛び道具
+	t.check(Autopilot.support_score(DataDB.support("scatter")) > Autopilot.support_score(DataDB.support("rapid_cast")), "拡散は、連続使用より、評価が高い")
+	t.check_eq(pilot.equip_supports(player.caster), 3, "3つの枠に、補助ジェムがつく")
+	t.check_eq(loadout.support_id(1), "burst_on_kill", "近接には、拡散は付けられないので、撃破時爆発")
+	t.check_eq(loadout.support_id(2), "burst_on_kill", "範囲にも、撃破時爆発")
+	t.check_eq(loadout.support_id(3), "scatter", "飛び道具には、拡散")
+	t.check_eq(pilot.equip_supports(player.caster), 0, "もう一度やっても、変わらない")
+	# 持っていない補助ジェムは付けない。新しく持てば、良ければ付け替える
+	t.check(not stash.has_gem(GemInstance.Kind.SUPPORT, "chain_hop"), "飛び跳ねは、まだ持っていない")
+	stash.add_gem(GemInstance.new(GemInstance.Kind.SUPPORT, "chain_hop"))
+	t.check_eq(pilot.equip_supports(player.caster), 0, "拡散より弱い補助ジェムを拾っても、付け替えない")
+	player.free()

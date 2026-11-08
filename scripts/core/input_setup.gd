@@ -21,6 +21,7 @@ const KEYS: Dictionary = {
 	"heal": [KEY_G],
 	"autobattle_route": [KEY_F3],
 	"autobattle_chests": [KEY_F6],
+	"autobattle_support": [KEY_F7],
 	"dodge": [KEY_SPACE],
 }
 
