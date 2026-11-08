@@ -62,9 +62,8 @@ func _ready() -> void:
 func open() -> void:
 	if _opened or not is_inside_tree():
 		return
-	_was_paused = get_tree().paused
 	_opened = true
-	get_tree().paused = true
+	PauseHolder.acquire(self, get_tree())
 	if _root != null:
 		_root.show()
 	_refresh()
@@ -74,8 +73,7 @@ func close() -> void:
 	if not _opened:
 		return
 	_opened = false
-	if is_inside_tree():
-		get_tree().paused = _was_paused
+	PauseHolder.release(self, get_tree() if is_inside_tree() else null)
 	if _root != null:
 		_root.hide()
 

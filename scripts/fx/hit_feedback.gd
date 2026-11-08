@@ -14,6 +14,7 @@ var _camera: Camera2D
 var _camera_offset: Vector2
 var _last_usec: int = 0
 var _saved_time_scale: float = 1.0
+var _stop_end_usec: int = 0  ## ヒットストップを終える実時間の時刻
 var _stop_timer: SceneTreeTimer
 
 
@@ -64,6 +65,7 @@ func request_hitstop() -> void:
 	Engine.time_scale = minf(_saved_time_scale, FeedbackConfig.HITSTOP_SCALE)
 	var duration: float = minf(FeedbackConfig.HITSTOP_SECONDS, FeedbackConfig.HITSTOP_MAX_SECONDS)
 	_next_stop_usec = now + int((duration + FeedbackConfig.HITSTOP_RECOVERY_SECONDS) * 1000000.0)
+	_stop_end_usec = now + int(duration * 1000000.0)
 	_stop_timer = get_tree().create_timer(duration, true, false, true)
 	_stop_timer.timeout.connect(_restore_time_scale)
 
@@ -99,6 +101,9 @@ func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_usec()
 	var elapsed: float = float(now - _last_usec) / 1000000.0
 	_last_usec = now
+	# タイマーが届かなかったときの保険：実時間で終わりの時刻を過ぎたら、時間の流れを必ず戻す
+	if _stop_owner == self and now >= _stop_end_usec:
+		_restore_time_scale()
 	_pulse_left = maxf(0.0, _pulse_left - elapsed)
 	_counter.scale = Vector2.ONE * lerpf(1.0, FeedbackConfig.COUNTER_PULSE_SCALE, _pulse_left / FeedbackConfig.COUNTER_PULSE_SECONDS)
 	if _shake_left > 0.0:

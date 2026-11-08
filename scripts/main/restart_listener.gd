@@ -14,6 +14,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func restart() -> void:
 	var tree := get_tree()
+	PauseHolder.reset()  # 開いている画面の数え直し（シーンを作り直すので）
 	tree.paused = false
 	Engine.time_scale = 1.0  # ヒットストップ中に押しても、時間が遅いまま残らないように戻す
 	tree.reload_current_scene()

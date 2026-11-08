@@ -9,6 +9,8 @@ extends Node
 const KEEP_FILES: int = 20
 const SNAPSHOT_INTERVAL: float = 10.0
 const LOW_FPS: float = 40.0  ## これを下回ったら、デバッグのログに警告を書く
+const HITCH_MS: int = 250  ## 1フレームにこれ以上かかったら（実時間）、「引っかかり」としてデバッグのログに書く
+const SLOW_WARN_MS: int = 1500  ## 時間の流れが遅いまま、これ以上続いたら警告する（ヒットストップの戻り忘れ）
 const REAL_DIR: String = "user://logs"
 const TOOL_DIR: String = "user://logs_tools"  ## テスト・撮影（--script）で動かしたときは、遊んだログと混ざらないよう別の場所へ
 
@@ -31,6 +33,12 @@ var _logger: _EngineLogger
 var _player: Node
 var _manager: Node
 var _closed: bool = false
+var _last_frame_ms: int = 0
+var _frames_seen: int = 0
+var _was_paused: bool = false
+var _warned_stuck: bool = false
+var _slow_ms: int = 0
+var _warned_slow: bool = false
 
 
 ## エンジンのエラー・警告を、デバッグのログに流す（別スレッドから呼ばれることがある）
@@ -46,6 +54,10 @@ class _EngineLogger extends Logger:
 ## 遊ぶときの保存先。テスト・撮影のときは別の場所
 static func default_dir() -> String:
 	return TOOL_DIR if OS.get_cmdline_args().has("--script") else REAL_DIR
+
+
+func _init() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS  # 一時停止中も動いて、止まっているときの様子を記録する
 
 
 ## ログのファイルを開く。dir を省略すると default_dir()
@@ -96,8 +108,35 @@ func setup(player: Node, manager: Node, stash: Object = null) -> void:
 		chest.connect("opened", _on_chest_opened)
 
 
-func _process(delta: float) -> void:
-	_snapshot_left -= delta
+## 止まって見えるときの手がかりを残すため、ゲームが止まっていても（一時停止・ヒットストップ）動く。
+## 時間は実時間で測る（ゲームの時間は、止まると進まないため）。
+func _process(_delta: float) -> void:
+	var now := Time.get_ticks_msec()
+	var frame_ms := now - _last_frame_ms
+	_last_frame_ms = now
+	if frame_ms > HITCH_MS and _last_frame_ms > 0 and _frames_seen > 5:
+		debug("HITCH frame=%dms time_scale=%.2f paused=%s enemies=%d" % [frame_ms, Engine.time_scale, str(get_tree().paused), get_tree().get_nodes_in_group("enemies").size()])
+	_frames_seen += 1
+	var paused := get_tree().paused
+	if paused != _was_paused:
+		_was_paused = paused
+		play("paused" if paused else "resumed", {"screens_open": PauseHolder.count()})
+		if not paused and PauseHolder.count() > 0:
+			debug("WARNING resumed while screens are open")
+	if paused and PauseHolder.count() == 0 and not _warned_stuck:
+		_warned_stuck = true
+		debug("WARNING paused but no screen is open (stuck pause)")
+	elif not paused:
+		_warned_stuck = false
+	if Engine.time_scale < 1.0:
+		_slow_ms += frame_ms
+		if _slow_ms > SLOW_WARN_MS and not _warned_slow:
+			_warned_slow = true
+			debug("WARNING time_scale=%.2f for %dms (stuck hit-stop?)" % [Engine.time_scale, _slow_ms])
+	else:
+		_slow_ms = 0
+		_warned_slow = false
+	_snapshot_left -= frame_ms / 1000.0
 	if _snapshot_left <= 0.0:
 		_snapshot_left = SNAPSHOT_INTERVAL
 		snapshot()
@@ -113,7 +152,7 @@ func snapshot() -> void:
 		pos = (_player as Node2D).global_position
 		var v: Object = _player.get("vitals")
 		life = float(v.get("life")) if v != null else -1.0
-	debug("snapshot fps=%d enemies=%d life=%.0f level=%d pos=(%.0f,%.0f) kills=%d" % [fps, enemies, life, level, pos.x, pos.y, kills])
+	debug("snapshot fps=%d enemies=%d life=%.0f level=%d pos=(%.0f,%.0f) kills=%d paused=%s time_scale=%.2f" % [fps, enemies, life, level, pos.x, pos.y, kills, str(get_tree().paused), Engine.time_scale])
 	if fps < LOW_FPS and fps > 0:
 		debug("WARNING low fps=%d enemies=%d" % [fps, enemies])
 
