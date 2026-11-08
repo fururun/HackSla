@@ -9,10 +9,10 @@ with open(path, encoding='utf-8') as f:
 changes = {
     'swarmling': {'life': 30, 'speed': 64, 'damage': 6, 'xp': 4, 'pack': [10, 16]},
     'brute': {'life': 520, 'speed': 34, 'damage': 20, 'xp': 26},
-    'rock_lord': {'life': 9000, 'damage': 32, 'xp': 220,
-                  'aoe_radius': 70, 'aoe_damage': 40, 'aoe_interval': 4.5, 'aoe_windup': 1.2,
+    'rock_lord': {'life': 9000, 'damage': 32, 'xp': 220, 'speed': 62, 'attack_range': 34,
+                  'aoe_radius': 86, 'aoe_damage': 40, 'aoe_interval': 4.5, 'aoe_windup': 0.9,
                   'rage_below': 0.5, 'rage_speed_mult': 1.5, 'rage_interval_mult': 0.45,
-                  'rain_radius': 36, 'rain_damage': 28, 'rain_interval': 3.0, 'rain_windup': 1.0, 'rain_count': 4},
+                  'rain_radius': 42, 'rain_damage': 28, 'rain_interval': 3.0, 'rain_windup': 0.8, 'rain_count': 6},
 }
 for e in enemies:
     for k, v in changes.get(e['id'], {}).items():

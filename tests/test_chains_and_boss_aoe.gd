@@ -168,6 +168,62 @@ func test_rock_rain_targets_the_player_and_can_be_dodged() -> void:
 	(w[0] as Node).queue_free()
 
 
+func test_rock_rain_leads_a_running_player_and_drops_in_sequence() -> void:
+	var w := _boss_world()
+	var world: Node = w[0]
+	var manager: EnemyManager = w[1]
+	var boss: Enemy = w[2]
+	var def: EnemyDef = boss.definition
+	boss.raged = true
+	boss.aoe_timer = 999.0
+	boss.rain_timer = 0.0
+	for old: Node in (t as SceneTree).get_nodes_in_group("player"):
+		old.remove_from_group("player")  # 他のテストの残りが、先に見つからないように
+	var runner := CharacterBody2D.new()
+	runner.add_to_group("player")
+	world.add_child(runner)
+	runner.global_position = Vector2(200, 0)
+	runner.velocity = Vector2(80, 0)  # 右へ走り続けている
+	await (t as SceneTree).process_frame  # ノードを木に入れ終えてから（グループの検索は、木の中だけ）
+	t.check(manager.is_inside_tree() and (t as SceneTree).get_first_node_in_group("player") == runner, "走っているプレイヤーが見つかる")
+	manager._update_enemy(boss, runner.global_position, 0.05)
+	t.check_eq(boss.rain_spots.size(), def.rain_count, "岩落としの円が出る")
+	var first: Vector2 = boss.rain_spots[0]["pos"]
+	var now_x := runner.global_position.x
+	t.check(absf(first.x - (now_x + 80.0 * def.rain_windup)) < 0.01 and first.x > now_x + 10.0, "1つ目は、走っている先を読んで落ちる（いまの足元ではない）。実際 %.1f（足元 %.1f）" % [first.x, now_x])
+	t.check(Iso.ground_distance(boss.rain_spots[1]["pos"], Vector2(200, 0)) < 0.01, "2つ目は、いまの足元（立ち止まった人に）")
+	var lefts: Array[float] = []
+	for s: Dictionary in boss.rain_spots:
+		lefts.append(float(s["left"]))
+	var increasing := true
+	for i in range(1, lefts.size()):
+		if lefts[i] <= lefts[i - 1]:
+			increasing = false
+	t.check(increasing, "円は、順番に時間をずらして落ちる")
+	# まっすぐ走り続けても、読まれて当たる
+	var hits := [0]
+	manager.player_hit.connect(func(damage: float, _s: Enemy) -> void:
+		if is_equal_approx(damage, def.rain_damage):
+			hits[0] += 1)
+	boss.rain_spots.clear()
+	boss.rain_timer = 0.0
+	var elapsed := 0.0
+	while elapsed < def.rain_interval * 3.0 + 2.0:
+		runner.global_position += runner.velocity * 0.05
+		boss.global_position = Vector2(runner.global_position.x - 600.0, 0)  # ボスは遠くに置く（岩落としだけを見る）
+		manager._update_enemy(boss, runner.global_position, 0.05)
+		elapsed += 0.05
+	t.check(hits[0] >= 1, "まっすぐ走り続けても、岩落ては当たる（読まれる）")
+	world.queue_free()
+
+
+func test_boss_can_not_be_outrun_for_long() -> void:
+	var def: EnemyDef = _db().enemy("rock_lord")
+	t.check(def.speed >= Player.MOVE_SPEED * 0.7, "ボスの速さは、プレイヤーの7割以上（逃げ回るだけでは、離れ続けない）")
+	t.check(def.speed * def.rage_speed_mult >= Player.MOVE_SPEED, "激昂中は、プレイヤーの速さ以上")
+	t.check(def.aoe_windup <= 1.0, "範囲攻撃の予告は、1秒以内")
+
+
 func test_boss_is_tough_enough() -> void:
 	var def: EnemyDef = _db().enemy("rock_lord")
 	# 砕氷（約84）を、およそ0.4秒に1回当て続けても、30秒はかかる体力

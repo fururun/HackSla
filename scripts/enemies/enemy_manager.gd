@@ -11,6 +11,7 @@ signal aoe_burst(enemy: Enemy, radius: float)  ## 範囲攻撃が当たった（
 signal boss_raged(enemy: Enemy)  ## ボスが激昂した（体力が半分以下になった）
 
 const SEPARATION_PASSES: int = 4
+const RAIN_STAGGER_SECONDS: float = 0.15  ## 岩落としの円を、1つずつ遅らせて落とす間隔
 const AOE_FIRST_DELAY_RATIO: float = 0.35  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
 
 func _ready() -> void:
@@ -150,14 +151,24 @@ func _update_rain(enemy: Enemy, target: Vector2, delta: float) -> void:
 	enemy.rain_timer -= delta
 	if enemy.rain_timer <= 0.0:
 		enemy.rain_timer = def.rain_interval
+		# 動いているプレイヤーに当てるため、予告のあいだに進む先を読む（走り続ければ避けられる、をなくす）
+		var player: Node = get_tree().get_first_node_in_group("player") if is_inside_tree() else null
+		var velocity: Vector2 = Vector2.ZERO
+		if player != null and player.get("velocity") != null:
+			velocity = player.get("velocity")
+		var predicted: Vector2 = target + velocity * def.rain_windup
 		for i: int in def.rain_count:
-			# 1つ目は、プレイヤーのいまの足元。残りは、そのまわり
-			var pos: Vector2 = target
-			if i > 0:
+			# 1つ目は、進む先（読み）。2つ目は、いまの足元（立ち止まった人に）。残りは、進む先のまわり
+			var pos: Vector2 = predicted
+			if i == 1:
+				pos = target
+			elif i > 1:
 				var angle: float = TAU * float(i) / float(maxi(def.rain_count, 1)) + enemy.rain_timer
-				pos = target + Vector2(cos(angle), sin(angle) * 0.5) * def.rain_radius * 1.6
-			enemy.rain_spots.append({"pos": pos, "left": def.rain_windup})
-			_show_rain_telegraph(pos, def.rain_radius, def.rain_windup)
+				pos = predicted + Vector2(cos(angle), sin(angle) * 0.5) * def.rain_radius * 1.6
+			# 順番に時間をずらして落とす（1回の移動では、全部は避けきれない）
+			var delay: float = float(i) * RAIN_STAGGER_SECONDS
+			enemy.rain_spots.append({"pos": pos, "left": def.rain_windup + delay})
+			_show_rain_telegraph(pos, def.rain_radius, def.rain_windup + delay)
 
 
 func _show_rain_telegraph(pos: Vector2, radius: float, windup: float) -> void:
