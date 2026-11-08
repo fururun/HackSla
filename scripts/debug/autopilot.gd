@@ -214,6 +214,7 @@ func _nearest_by_path(player: Node2D, include_boss: bool = true) -> Node2D:
 
 
 func _nearest_chest(player: Node2D) -> Node2D:
+	var limit: float = CHEST_DETOUR_PATH if route == Route.BOSS_RUSH else 100000.0  # 全滅ルートは、どれだけ遠くても開けに行く
 	var best: Node2D = null
 	var best_len: int = 1 << 30
 	for node: Node in player.get_tree().get_nodes_in_group("chests"):
@@ -221,7 +222,7 @@ func _nearest_chest(player: Node2D) -> Node2D:
 		if chest == null or chest.is_open or _in_boss_zone(player, chest.global_position) or _is_ignored(chest.global_position):
 			continue
 		var length: int = path_length(player.global_position, chest.global_position)
-		if length >= 0 and length <= CHEST_DETOUR_PATH and length < best_len:
+		if length >= 0 and float(length) <= limit and length < best_len:
 			best_len = length
 			best = chest
 	return best
