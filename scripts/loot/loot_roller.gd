@@ -18,19 +18,24 @@ func _init(rng: RandomNumberGenerator) -> void:
 	_rng = rng
 
 
-func roll_rarity() -> RarityDef:
-	return _weighted_pick(DataDB.rarities) as RarityDef
+func roll_rarity(min_tier: int = 0) -> RarityDef:
+	if min_tier <= 0:
+		return _weighted_pick(DataDB.rarities) as RarityDef
+	var allowed: Array = DataDB.rarities.filter(func(r: RarityDef) -> bool: return r.tier >= min_tier)
+	if allowed.is_empty():
+		return _weighted_pick(DataDB.rarities) as RarityDef
+	return _weighted_pick(allowed) as RarityDef
 
 
 ## レベルに合う土台、または抽選可能なレアリティがなければ null。
-func roll_item(level: int) -> ItemInstance:
+func roll_item(level: int, min_tier: int = 0) -> ItemInstance:
 	var bases: Array[ItemBaseDef] = []
 	for base: ItemBaseDef in DataDB.bases.values():
 		if base.level <= level:
 			bases.append(base)
 	if bases.is_empty():
 		return null
-	var rarity: RarityDef = roll_rarity()
+	var rarity: RarityDef = roll_rarity(min_tier)
 	if rarity == null:
 		return null
 	var item: ItemInstance = ItemInstance.new()
@@ -70,6 +75,10 @@ func roll_drops(enemy: EnemyDef, level: int, owned_gems: Dictionary = {}) -> Arr
 				drops.append(gem)
 				continue
 		currency += enemy.xp * CURRENCY_PER_XP
+	for i: int in enemy.guaranteed_items:  # レアモンスターは、レア以上の装備を必ず落とす
+		var bonus: ItemInstance = roll_item(level, enemy.guaranteed_min_tier)
+		if bonus != null:
+			drops.append(bonus)
 	if currency > 0:
 		drops.append(currency)
 	return drops

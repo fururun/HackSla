@@ -44,6 +44,9 @@ var shot_speed: float = 0.0  ## 弾の速さ（地面のドット/秒）
 var shot_count: int = 1  ## 1回に撃つ数（2つ以上は扇形に広がる）
 var shot_spread: float = 0.0  ## 扇形の、いちばん外どうしの角度（度）
 var shot_range: float = 0.0  ## この距離（地面）以内にプレイヤーがいたら撃つ。弾は、この1.3倍まで飛ぶ
+var tint: Color = Color.WHITE  ## 岩殻の絵にかける色（色違いのレアモンスター用。白なら、そのまま）
+var guaranteed_items: int = 0  ## 倒したとき、必ず落とす装備の数（レアモンスター用）
+var guaranteed_min_tier: int = 0  ## その装備の、最低のレアリティの段階
 var scale: float = 1.0  ## 絵と当たりの大きさの倍率（ボスは大きい）
 var is_boss: bool = false  ## true なら、画面の上にボスの体力の棒を出す
 
@@ -107,6 +110,9 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 	e.shot_range = float(d.get("shot_range", 0))
 	if e.shot_damage > 0.0 and (e.shot_interval <= 0.0 or e.shot_speed <= 0.0 or e.shot_range <= 0.0 or e.shot_count < 1):
 		errors.append("enemy %s: shot_damage があるときは、shot_interval / speed / range / count も必要です" % e.id)
+	e.tint = Color.from_string(str(d.get("tint", "#ffffff")), Color.WHITE)
+	e.guaranteed_items = int(d.get("guaranteed_items", 0))
+	e.guaranteed_min_tier = int(d.get("guaranteed_min_tier", 0))
 	e.scale = float(d.get("scale", 1.0))
 	e.is_boss = bool(d.get("boss", false))
 	if e.scale <= 0.0:

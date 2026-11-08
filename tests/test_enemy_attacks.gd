@@ -330,3 +330,34 @@ func test_boss_aoe_is_wider_when_raged() -> void:
 	manager._physics_process(def.aoe_windup + 0.05)
 	t.check_eq(hits.size(), 1, "広がった範囲の中なら、当たる")
 	await _cleanup(manager, player)
+
+
+func test_rare_gilded_golem() -> void:
+	var def: EnemyDef = _def("gilded_golem")
+	t.check(def != null, "レアモンスターの定義がある")
+	if def == null:
+		return
+	t.check_eq(def.behavior, "tank", "岩殻と同じ見た目（色違い）")
+	t.check(def.tint != Color.WHITE, "色違い")
+	t.check(def.life > _def("brute").life, "ふつうの岩殻より硬い")
+	# 倒すと、レア以上の装備を必ず落とす
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var roller := LootRoller.new(rng)
+	for trial: int in 30:
+		var drops: Array = roller.roll_drops(def, 10)
+		var items: Array = drops.filter(func(v: Variant) -> bool: return v is ItemInstance)
+		var good: int = 0
+		for item: ItemInstance in items:
+			if item.rarity.tier >= def.guaranteed_min_tier:
+				good += 1
+		t.check(good >= def.guaranteed_items, "レア以上の装備を、必ず落とす（試行 %d）" % trial)
+	# ふつうの岩殻は、保証がない（最低段階を指定した抽選でだけ、レア以上になる）
+	var item_min: ItemInstance = roller.roll_item(10, 4)
+	t.check(item_min != null and item_min.rarity.tier >= 4, "最低の段階を指定すると、それ以上が出る")
+
+
+func test_rare_golem_spawns_on_the_field_sometimes() -> void:
+	var main_script: GDScript = load("res://scripts/main/main.gd")
+	t.check(main_script.RARE_CHANCE_AT_BRUTE > 0.0 and main_script.RARE_CHANCE_AT_BRUTE < 0.5, "岩殻の印で、低めの確率で入れ替わる")
+	t.check(main_script.RARE_CHANCE_AT_PACK > 0.0 and main_script.RARE_CHANCE_AT_PACK < 0.2, "群れの近くには、もっと低い確率")

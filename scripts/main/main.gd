@@ -2,6 +2,8 @@ extends Node2D
 ## テスト用のメイン画面：マップを作り、プレイヤーと案山子を置く。
 
 const MAP_PATH: String = "res://data/maps/field_01.txt"  ## 広いマップ。作り方は tools/maps/make_field_01.py、設計は docs/map_field_01.md
+const RARE_CHANCE_AT_BRUTE: float = 0.3  ## 岩殻の印で、レアモンスター（黄金の岩殻）に入れ替わる確率
+const RARE_CHANCE_AT_PACK: float = 0.06  ## スライムの群れの印で、近くにレアモンスターも現れる確率
 const SMALL_PACK_SIZE: int = 6  ## マップの印 f の群れの数
 ## カメラの引き（拡大率）。1.0 で、画面が 480x270 ドットの範囲。0.5 なら、2倍の範囲（960x540）が見える。
 ## 画面を3倍に拡大して描く（1440x810）とき、2/3 なら、ドット1つがちょうど画面の2ピクセルになって、にじまない。
@@ -186,8 +188,13 @@ func _add_enemies() -> EnemyManager:
 		manager.spawn_pack(swarm, pos, rng, SMALL_PACK_SIZE)  # 小さな群れ（序盤用）
 	for pos: Vector2 in map.markers.get("s", []):
 		manager.spawn_pack(swarm, pos, rng)
+	var rare: EnemyDef = DataDB.enemy("gilded_golem")  # 低い確率で出る、色違いのレアモンスター
 	for pos: Vector2 in map.markers.get("b", []):
-		manager.spawn(brute, pos)
+		manager.spawn(rare if rng.randf() < RARE_CHANCE_AT_BRUTE else brute, pos)
+	for key: String in ["f", "s"]:
+		for pos: Vector2 in map.markers.get(key, []):
+			if rng.randf() < RARE_CHANCE_AT_PACK:
+				manager.spawn(rare, pos + Vector2(16, 0))
 	var spitter: EnemyDef = DataDB.enemy("spitter")
 	for pos: Vector2 in map.markers.get("r", []):  # 遠くから撃つスライム（2〜3匹）
 		manager.spawn_pack(spitter, pos, rng)

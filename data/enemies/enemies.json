@@ -71,6 +71,33 @@
     "charge_length": 90
   },
   {
+    "id": "gilded_golem",
+    "name": "黄金の岩殻",
+    "behavior": "tank",
+    "life": 900,
+    "speed": 50,
+    "damage": 24,
+    "attack_range": 18,
+    "attack_interval": 1.4,
+    "xp": 80,
+    "pack": [
+      1,
+      1
+    ],
+    "color": "#e6c040",
+    "tint": "#ffcf40",
+    "aggro_range": 110,
+    "windup": 0.3,
+    "charge_damage": 28,
+    "charge_interval": 6.0,
+    "charge_windup": 0.6,
+    "charge_speed": 140,
+    "charge_width": 22,
+    "charge_length": 80,
+    "guaranteed_items": 2,
+    "guaranteed_min_tier": 2
+  },
+  {
     "id": "rock_lord",
     "name": "岩殻の主",
     "behavior": "tank",

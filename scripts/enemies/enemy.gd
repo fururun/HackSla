@@ -12,6 +12,7 @@ const GOLEM_PATH: String = "res://art/sprites/enemies/rockgolem_front.png"
 const GOLEM_SIZE: Vector2 = Vector2(30, 30)  ## 岩殻の絵の大きさ。足元の中心が原点
 const GOLEM_FLASH := Color(3.0, 3.0, 3.0, 1.0)
 const RAGE_TINT := Color(1.0, 0.42, 0.36, 1.0)  ## 激昂したボスは、さらに赤くなる
+const TINT_BOOST: float = 1.6  ## 色違いの岩殻は、絵が暗くならないよう、色を明るめにかける
 const WINDUP_TINT := Color(1.6, 0.55, 0.45, 1.0)  ## 攻撃の直前の、赤い光
 const BOSS_TINT := Color(1.0, 0.72, 0.72, 1.0)  ## ボスは、岩殻の絵を赤みがかった色にして、ふつうの岩殻と見分ける
 const DEFAULT_HIT_RADIUS: float = 6.0
@@ -142,6 +143,8 @@ func _draw() -> void:
 				tint = WINDUP_TINT  # 殴る・突進の直前は、赤く光る（見てから避けられる）
 			elif definition.is_boss:
 				tint = RAGE_TINT if raged else BOSS_TINT
+			elif definition.tint != Color.WHITE:
+				tint = Color(definition.tint.r * TINT_BOOST, definition.tint.g * TINT_BOOST, definition.tint.b * TINT_BOOST, 1.0)  # 色違いは、明るく染める
 			var s: float = definition.scale  # ボスは大きく描く（足元の中心が原点のまま）
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2(s, s))
 			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), tint)
