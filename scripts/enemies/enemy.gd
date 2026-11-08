@@ -11,6 +11,7 @@ const FANG := Color("#eee3c9")
 const GOLEM_PATH: String = "res://art/sprites/enemies/rockgolem_front.png"
 const GOLEM_SIZE: Vector2 = Vector2(30, 30)  ## 岩殻の絵の大きさ。足元の中心が原点
 const GOLEM_FLASH := Color(3.0, 3.0, 3.0, 1.0)
+const RAGE_TINT := Color(1.0, 0.42, 0.36, 1.0)  ## 激昂したボスは、さらに赤くなる
 const BOSS_TINT := Color(1.0, 0.72, 0.72, 1.0)  ## ボスは、岩殻の絵を赤みがかった色にして、ふつうの岩殻と見分ける
 const DEFAULT_HIT_RADIUS: float = 6.0
 const TANK_HIT_RADIUS: float = 10.0  ## 岩殻は大きいので、押し合いの半径も大きい
@@ -34,6 +35,9 @@ var pack_id: int = -1
 var attack_timer: float = 0.0
 var aoe_timer: float = 0.0  ## 範囲攻撃までの待ち（秒）
 var aoe_windup_left: float = 0.0  ## 範囲攻撃の予告のあいだ、残りの秒（0 なら予告していない）
+var raged: bool = false  ## 激昂している（ボスの体力が半分以下）
+var rain_timer: float = 0.0  ## 岩落としまでの待ち（秒）
+var rain_spots: Array = []  ## 予告中の岩落とし。{"pos": 地面の位置, "left": 残りの秒}
 
 var definition: EnemyDef
 var life: float = 0.0
@@ -115,7 +119,11 @@ func _draw() -> void:
 		# 岩殻はドット絵（AI が描いたもの）。被弾の点滅は明るく飛ばす
 		var tex := _golem_texture()
 		if tex != null:
-			var tint: Color = GOLEM_FLASH if is_flashing() else (BOSS_TINT if definition.is_boss else Color.WHITE)
+			var tint: Color = Color.WHITE
+			if is_flashing():
+				tint = GOLEM_FLASH
+			elif definition.is_boss:
+				tint = RAGE_TINT if raged else BOSS_TINT
 			var s: float = definition.scale  # ボスは大きく描く（足元の中心が原点のまま）
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2(s, s))
 			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), tint)

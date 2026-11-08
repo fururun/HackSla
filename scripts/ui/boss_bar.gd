@@ -113,7 +113,8 @@ func fill_ratio() -> float:
 func _refresh() -> void:
 	if _boss == null or not is_instance_valid(_boss):
 		return
-	_name_label.text = _boss_name
+	_name_label.text = _boss_name + ("　激昂！" if _boss.raged else "")
+	_fill.color = UiStyle.WARNING if _boss.raged else UiStyle.LIFE  # 激昂したら、棒が明るい赤になる
 	_fill.size.x = (BAR_SIZE.x - 2.0) * clampf(_boss.life / _max_life, 0.0, 1.0)
 
 

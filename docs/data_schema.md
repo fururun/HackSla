@@ -82,6 +82,12 @@
 | aoe_damage | 数 | 範囲攻撃のダメージ（円の中にいたときだけ） |
 | aoe_interval | 秒 | 範囲攻撃の間隔。最初の1回は、動き出してからこの 0.6 倍の時間のあと |
 | aoe_windup | 秒 | 予告の時間。足元に赤い円が満ちていき、満ちきったときに当たる。そのあいだ本人は足を止める（避ける時間） |
+| rage_below | 割合 | 体力がこの割合以下になると激昂する（0.5＝半分）。省略時 0（激昂しない） |
+| rage_speed_mult | 倍率 | 激昂中の、動く速さの倍率。省略時 1 |
+| rage_interval_mult | 倍率 | 激昂中の、範囲攻撃の間隔の倍率（小さいほど頻繁）。省略時 1 |
+| rain_radius | ドット | 岩落とし（激昂中に、プレイヤーの足元を狙う小さな円）の半径。省略時 0（岩落としなし）。あるときは rain_damage / rain_interval / rain_windup / rain_count も必要 |
+| rain_damage / rain_interval / rain_windup | 数・秒・秒 | 岩落とし1つのダメージ、間隔、予告の時間 |
+| rain_count | 数 | 1回に落とす数（1つ目はプレイヤーの足元、残りはそのまわり） |
 | attack_range | ドット | 攻撃が届く距離 |
 | attack_interval | 秒 | 攻撃の間隔 |
 | xp | 数 | 倒したときの経験値 |

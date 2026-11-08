@@ -98,6 +98,82 @@ func test_boss_aoe_hits_inside_radius_only() -> void:
 	(w2[0] as Node).queue_free()
 
 
+func test_boss_rages_below_half_life_and_gets_faster_with_rock_rain() -> void:
+	var w := _boss_world()
+	var manager: EnemyManager = w[1]
+	var boss: Enemy = w[2]
+	var def: EnemyDef = boss.definition
+	var raged_signals := [0]
+	manager.boss_raged.connect(func(_e: Enemy) -> void: raged_signals[0] += 1)
+	manager._update_enemy(boss, Vector2(1000, 0), 0.05)
+	t.check(not boss.raged, "体力が満タンなら、激昂しない")
+	boss.life = def.life * def.rage_below + 1.0
+	manager._update_enemy(boss, Vector2(1000, 0), 0.05)
+	t.check(not boss.raged, "半分より上なら、まだ激昂しない")
+	boss.life = def.life * def.rage_below
+	manager._update_enemy(boss, Vector2(1000, 0), 0.05)
+	t.check(boss.raged and raged_signals[0] == 1, "体力が半分以下になると、激昂する（信号は1回だけ）")
+	manager._update_enemy(boss, Vector2(1000, 0), 0.05)
+	t.check_eq(raged_signals[0], 1, "激昂の信号は、2回目以降は出ない")
+	# 激昂中は速い
+	boss.aoe_timer = 999.0
+	boss.global_position = Vector2.ZERO
+	var step := Vector2(1000, 0)
+	manager._update_enemy(boss, step, 1.0)
+	var raged_move := boss.global_position.length()
+	boss.raged = false
+	boss.life = def.life  # 体力を戻さないと、すぐ激昂し直す
+	boss.global_position = Vector2.ZERO
+	manager._update_enemy(boss, step, 1.0)
+	t.check(raged_move > boss.global_position.length() * 1.3, "激昂中は、速く動く")
+	(w[0] as Node).queue_free()
+
+
+func test_rock_rain_targets_the_player_and_can_be_dodged() -> void:
+	var w := _boss_world()
+	var manager: EnemyManager = w[1]
+	var boss: Enemy = w[2]
+	var def: EnemyDef = boss.definition
+	boss.raged = true
+	boss.aoe_timer = 999.0  # 岩落としだけを見る
+	boss.rain_timer = 0.0
+	var hits := [0]
+	manager.player_hit.connect(func(damage: float, _s: Enemy) -> void:
+		if is_equal_approx(damage, def.rain_damage):
+			hits[0] += 1)
+	# 動かずに立っている（足元に落ちる）
+	var target := Vector2(300, 0)
+	manager._update_enemy(boss, target, 0.05)
+	t.check_eq(boss.rain_spots.size(), def.rain_count, "岩落としの円が、決まった数だけ出る")
+	t.check(Iso.ground_distance(boss.rain_spots[0]["pos"], target) < 0.01, "1つ目は、プレイヤーのいまの足元")
+	boss.global_position = Vector2.ZERO
+	var elapsed := 0.0
+	while elapsed < def.rain_windup + 0.1:
+		boss.global_position = Vector2.ZERO
+		manager._update_enemy(boss, target, 0.05)
+		elapsed += 0.05
+	t.check(hits[0] >= 1, "予告のあいだ動かなければ、当たる")
+	# 予告のあいだに離れれば、当たらない
+	hits[0] = 0
+	boss.rain_spots.clear()
+	boss.rain_timer = 0.0
+	manager._update_enemy(boss, target, 0.05)
+	var away := target + Vector2(def.rain_radius * 5.0, 0)
+	elapsed = 0.0
+	while elapsed < def.rain_windup + 0.1:
+		boss.global_position = Vector2.ZERO
+		manager._update_enemy(boss, away, 0.05)
+		elapsed += 0.05
+	t.check_eq(hits[0], 0, "予告のあいだに円の外へ出れば、当たらない")
+	(w[0] as Node).queue_free()
+
+
+func test_boss_is_tough_enough() -> void:
+	var def: EnemyDef = _db().enemy("rock_lord")
+	# 砕氷（約84）を、およそ0.4秒に1回当て続けても、30秒はかかる体力
+	t.check(def.life / (84.0 / 0.4) >= 30.0, "最も強いチェインを当て続けても、30秒以上かかる（体力 %d）" % int(def.life))
+
+
 func test_boss_stands_still_while_telegraphing() -> void:
 	var w := _boss_world()
 	var manager: EnemyManager = w[1]

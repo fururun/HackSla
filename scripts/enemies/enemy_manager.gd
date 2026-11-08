@@ -8,6 +8,7 @@ signal enemy_hit(enemy: Enemy, amount: float, killed: bool)
 signal player_hit(damage: float, source: Enemy)
 signal aoe_telegraph(enemy: Enemy, radius: float, windup: float)  ## 範囲攻撃の予告が始まった
 signal aoe_burst(enemy: Enemy, radius: float)  ## 範囲攻撃が当たった（予告が終わった）
+signal boss_raged(enemy: Enemy)  ## ボスが激昂した（体力が半分以下になった）
 
 const SEPARATION_PASSES: int = 4
 const AOE_FIRST_DELAY_RATIO: float = 0.6  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
@@ -53,6 +54,9 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	enemy.hit_radius = (Enemy.TANK_HIT_RADIUS if def.behavior == "tank" else Enemy.DEFAULT_HIT_RADIUS) * def.scale
 	enemy.aoe_timer = def.aoe_interval * AOE_FIRST_DELAY_RATIO  # 範囲攻撃は、動き出してから少し待ってから
 	enemy.aoe_windup_left = 0.0
+	enemy.raged = false
+	enemy.rain_spots.clear()
+	enemy.rain_timer = 0.0
 	enemy.life = def.life
 	enemy.global_position = pos
 	enemy.ai_enabled = def.behavior == "melee_swarm" or def.behavior == "tank"
@@ -105,7 +109,7 @@ func _update_aoe(enemy: Enemy, target: Vector2, delta: float) -> void:
 		enemy.aoe_windup_left -= delta
 		if enemy.aoe_windup_left <= 0.0:
 			enemy.aoe_windup_left = 0.0
-			enemy.aoe_timer = def.aoe_interval
+			enemy.aoe_timer = def.aoe_interval * (def.rage_interval_mult if enemy.raged else 1.0)
 			if Iso.ground_distance(enemy.global_position, target) <= def.aoe_radius:
 				player_hit.emit(def.aoe_damage, enemy)
 			aoe_burst.emit(enemy, def.aoe_radius)
@@ -116,10 +120,57 @@ func _update_aoe(enemy: Enemy, target: Vector2, delta: float) -> void:
 		aoe_telegraph.emit(enemy, def.aoe_radius, def.aoe_windup)
 
 
+## 激昂（体力が rage_below 以下になったボス）：動きが速くなり、範囲攻撃の間隔が短くなり、
+## プレイヤーの足元を狙う「岩落とし」（rain_*）を始める
+func _update_rage(enemy: Enemy) -> void:
+	var def: EnemyDef = enemy.definition
+	if enemy.raged or def.rage_below <= 0.0 or def.life <= 0.0:
+		return
+	if enemy.life <= def.life * def.rage_below:
+		enemy.raged = true
+		enemy.rain_timer = def.rain_interval * 0.5  # 激昂してすぐは、少し待ってから
+		boss_raged.emit(enemy)
+		enemy.queue_redraw()
+
+
+## 岩落とし：プレイヤーのいまいる場所と、そのまわりに、小さな赤い円を出す。予告のあと、円の中にいたらダメージ。
+## 本人は、動きながら撃つ（範囲攻撃と違って、足を止めない）
+func _update_rain(enemy: Enemy, target: Vector2, delta: float) -> void:
+	var def: EnemyDef = enemy.definition
+	if not enemy.raged or def.rain_radius <= 0.0:
+		return
+	# 予告中の円を進める
+	for spot: Dictionary in enemy.rain_spots.duplicate():
+		spot["left"] = float(spot["left"]) - delta
+		if float(spot["left"]) <= 0.0:
+			enemy.rain_spots.erase(spot)
+			if Iso.ground_distance(spot["pos"], target) <= def.rain_radius:
+				player_hit.emit(def.rain_damage, enemy)
+	enemy.rain_timer -= delta
+	if enemy.rain_timer <= 0.0:
+		enemy.rain_timer = def.rain_interval
+		for i: int in def.rain_count:
+			# 1つ目は、プレイヤーのいまの足元。残りは、そのまわり
+			var pos: Vector2 = target
+			if i > 0:
+				var angle: float = TAU * float(i) / float(maxi(def.rain_count, 1)) + enemy.rain_timer
+				pos = target + Vector2(cos(angle), sin(angle) * 0.5) * def.rain_radius * 1.6
+			enemy.rain_spots.append({"pos": pos, "left": def.rain_windup})
+			_show_rain_telegraph(pos, def.rain_radius, def.rain_windup)
+
+
+func _show_rain_telegraph(pos: Vector2, radius: float, windup: float) -> void:
+	var fx := AoeTelegraph.new()
+	(enemy_parent if enemy_parent != null else self).add_child(fx)
+	fx.play(pos, radius, windup)
+
+
 func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 	if enemy.state == Enemy.State.IDLE or not enemy.ai_enabled:
 		return
 	var def: EnemyDef = enemy.definition
+	_update_rage(enemy)
+	_update_rain(enemy, target, delta)
 	if def.aoe_radius > 0.0:
 		_update_aoe(enemy, target, delta)
 		if enemy.aoe_windup_left > 0.0:
@@ -131,7 +182,8 @@ func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 	elif distance > def.attack_range:
 		enemy.state = Enemy.State.CHASING
 		enemy.attack_timer = 0.0
-		var step: float = minf(def.speed * delta, distance - def.attack_range)
+		var speed: float = def.speed * (def.rage_speed_mult if enemy.raged else 1.0)
+		var step: float = minf(speed * delta, distance - def.attack_range)
 		enemy.global_position += (target - enemy.global_position) * (step / distance)
 		return
 	else:
