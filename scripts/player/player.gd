@@ -14,7 +14,6 @@ var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
 
 
 func _ready() -> void:
-	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR  # 大きい絵を縮めて描くので、ぼかしつきで縮める
 	add_to_group("player")
 	caster.name = "SkillCaster"
 	add_child(caster)
@@ -77,8 +76,8 @@ func try_basic_attack(target: Vector2) -> bool:
 
 # ---- 絵（art/sprites/player/。作り方は make_player.py） ----
 const SPRITE_DIR: String = "res://art/sprites/player/"
-const SPRITE_SIZE: Vector2 = Vector2(96, 96)  ## 絵の大きさ（元の絵のドット数）。足元の中心が原点
-const SPRITE_SCALE: float = 0.5  ## ゲーム内での縮小率。キャラの高さ（約92ドット）が、画面上で約46ドットになる
+const SPRITE_SIZE: Vector2 = Vector2(30, 30)  ## 絵の大きさ（ドット数）。足元の中心が原点。高解像度の元は player_hi_*.png
+const SPRITE_SCALE: float = 1.0  ## 絵の拡大率（絵はすでにゲームの大きさに縮めてある）
 const BOB_INTERVAL_MS: int = 140  ## 歩いているときの上下の揺れの間隔
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 
