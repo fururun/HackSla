@@ -86,6 +86,8 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	enemy.raged = false
 	enemy.rain_spots.clear()
 	enemy.rain_timer = 0.0
+	enemy._strike_msec = -100000
+	enemy._last_anim_texture = null
 	enemy.charge_phase = 0
 	enemy.charge_timer = def.charge_interval * AOE_FIRST_DELAY_RATIO
 	enemy.charge_left = 0.0
@@ -145,6 +147,7 @@ func _update_aoe(enemy: Enemy, target: Vector2, delta: float) -> void:
 		if enemy.aoe_windup_left <= 0.0:
 			enemy.aoe_windup_left = 0.0
 			enemy.aoe_timer = def.aoe_interval * (def.rage_interval_mult if enemy.raged else 1.0)
+			enemy.play_strike()
 			if Iso.ground_distance(enemy.global_position, target) <= enemy.aoe_radius_now:
 				player_hit.emit(def.aoe_damage, enemy)
 			aoe_burst.emit(enemy, enemy.aoe_radius_now)
@@ -248,6 +251,7 @@ func _update_charge(enemy: Enemy, target: Vector2, delta: float) -> bool:
 				enemy.charge_phase = 2
 				enemy.charge_left = def.charge_length / def.charge_speed
 				enemy.charge_hit = false
+				enemy.play_strike()
 				charge_started.emit(enemy)
 				enemy.queue_redraw()
 			return true
@@ -312,6 +316,7 @@ func _fire(enemy: Enemy, target: Vector2) -> void:
 		parent.add_child(node)
 		node.global_position = enemy.global_position
 		_bullets.append({"node": node, "dir": dir, "left": def.shot_range * 1.3, "damage": def.shot_damage, "speed": def.shot_speed, "source": enemy, "color": color})
+	enemy.play_strike()
 	shot_fired.emit(enemy)
 
 
@@ -356,6 +361,8 @@ func _update_ranged(enemy: Enemy, target: Vector2, delta: float) -> void:
 
 
 func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
+	if enemy.definition != null and enemy.definition.behavior != "dummy":
+		enemy.update_anim()  # 動きの絵が変わったときだけ、描き直す
 	if enemy.state == Enemy.State.IDLE or not enemy.ai_enabled:
 		return
 	var def: EnemyDef = enemy.definition
@@ -403,6 +410,7 @@ func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 		# 0間隔の不正データでも1フレームに複数回発信しない。
 		enemy.state = Enemy.State.ATTACKING
 		enemy.attack_timer = maxf(def.attack_interval, def.windup)
+		enemy.play_strike()
 		player_hit.emit(def.damage, enemy)
 	else:
 		enemy.state = Enemy.State.CHASING

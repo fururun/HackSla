@@ -18,6 +18,15 @@ const BOSS_TINT := Color(1.0, 0.72, 0.72, 1.0)  ## ボスは、岩殻の絵を�
 const DEFAULT_HIT_RADIUS: float = 6.0
 const TANK_HIT_RADIUS: float = 10.0  ## 岩殻は大きいので、押し合いの半径も大きい
 static var _golem: Texture2D
+const ANIM_DIR: String = "res://art/sprites/enemies/"
+const WALK_FRAME_MS: int = 140  ## 岩殻の歩きの1コマの長さ
+const WALK_FRAMES: int = 4
+const STRIKE_FRAME_MS: int = 90  ## 叩きつけたあとの、3コマ（叩きつけ・沈む・戻る）の1コマの長さ
+const STRIKE_FRAMES: int = 3
+const SLIME_MOVE_MS: int = 120  ## スライムの跳ねる動きの1コマの長さ
+const SLIME_ATTACK_MS: int = 70  ## スライムの体当たりの1コマの長さ（4コマ）
+const SPIT_RECOVER_MS: int = 110  ## 毒を吐いたあと（吐く・戻る）の1コマの長さ
+static var _anim_sets: Dictionary = {}  ## 名前 -> Array[Texture2D]（コマの順）
 const SLIME_RIM := Color("#9be860")  ## スライムの縁と目（明るい黄緑）
 const SLIME_SHINE := Color("#c8f77a")  ## スライムのつや
 const SLIME_UNDER := Color("#10304a")  ## スライムの下の影（紺）
@@ -47,6 +56,8 @@ var aoe_windup_left: float = 0.0  ## 範囲攻撃の予告のあいだ、残り�
 var raged: bool = false  ## 激昂している（ボスの体力が半分以下）
 var rain_timer: float = 0.0  ## 岩落としまでの待ち（秒）
 var aoe_radius_now: float = 0.0  ## いまの範囲攻撃の半径（激昂中は広い）
+var _strike_msec: int = -100000  ## 最後に叩きつけた（殴った・範囲攻撃・突進・弾）時刻
+var _last_anim_texture: Texture2D  ## 前回描いた動きの絵（変わったときだけ描き直す）
 var charge_phase: int = 0  ## 0:なし 1:予告中 2:突進中
 var charge_timer: float = 0.0  ## 次の突進までの秒
 var charge_left: float = 0.0  ## 予告または突進の、残りの秒
@@ -134,7 +145,9 @@ func _draw() -> void:
 	draw_rect(Rect2(-hit_radius, -2, hit_radius * 2, 4), SHADOW)
 	if definition.behavior == "tank":
 		# 岩殻はドット絵（AI が描いたもの）。被弾の点滅は明るく飛ばす
-		var tex := _golem_texture()
+		var tex := golem_anim_texture()
+		if tex == null:
+			tex = _golem_texture()
 		if tex != null:
 			var tint: Color = Color.WHITE
 			if is_flashing():
@@ -147,9 +160,14 @@ func _draw() -> void:
 				tint = Color(definition.tint.r * TINT_BOOST, definition.tint.g * TINT_BOOST, definition.tint.b * TINT_BOOST, 1.0)  # 色違いは、明るく染める
 			var s: float = definition.scale  # ボスは大きく描く（足元の中心が原点のまま）
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2(s, s))
-			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), tint)
+			draw_texture(tex, Vector2(-tex.get_size().x * 0.5, -tex.get_size().y), tint)
 			draw_set_transform(Vector2.ZERO)
 		_draw_life_bar()
+		return
+	var anim: Texture2D = current_anim_texture()
+	if anim != null:
+		# スライムの動きの絵（ChatGPT製）。被弾の点滅は、明るく飛ばす。絵の下の端は、足元の影の下の端（y=1）
+		draw_texture(anim, Vector2(-anim.get_size().x * 0.5, 1.0 - anim.get_size().y), GOLEM_FLASH if is_flashing() else Color.WHITE)
 		return
 	var key: String = definition.behavior + definition.color.to_html() + str(is_flashing())
 	if not _figures.has(key):
@@ -179,6 +197,97 @@ func _draw_life_bar() -> void:
 	draw_rect(Rect2(-w * 0.5 - 1, top - 1, w + 2, 5), Color(0, 0, 0, 0.85))
 	draw_rect(Rect2(-w * 0.5, top, w, 3), Color("#3a1414"))
 	draw_rect(Rect2(-w * 0.5, top, w * life_ratio(), 3), fill_color)
+
+
+## 動きの絵（名前_0.png, 名前_1.png ...）のうち index コマ目。絵がなければ null
+static func anim_texture(anim_name: String, index: int) -> Texture2D:
+	if not _anim_sets.has(anim_name):
+		var frames: Array[Texture2D] = []
+		for i: int in 8:
+			var path: String = ANIM_DIR + "%s_%d.png" % [anim_name, i]
+			if not ResourceLoader.exists(path):
+				break
+			frames.append(load(path) as Texture2D)
+		_anim_sets[anim_name] = frames
+	var set: Array = _anim_sets[anim_name]
+	if index < 0 or index >= set.size():
+		return null
+	return set[index]
+
+
+## 叩きつけ・殴り・範囲攻撃・突進・弾の、「振り下ろした瞬間」を知らせる（岩殻の絵が、叩きつけの動きになる）
+func play_strike() -> void:
+	_strike_msec = Time.get_ticks_msec()
+	queue_redraw()
+
+
+## 攻撃の予告・ためのあいだ（岩殻は腕を振り上げた絵になる）
+func is_winding_up() -> bool:
+	return state == State.WINDUP or aoe_windup_left > 0.0 or charge_phase == 1
+
+
+## いまの動きの絵（岩殻・スライム・毒吐きスライム）。なければ null（岩殻は立ち絵、スライムは、コードで描いた絵）
+func current_anim_texture() -> Texture2D:
+	if definition == null:
+		return null
+	match definition.behavior:
+		"tank":
+			return golem_anim_texture()
+		"melee_swarm":
+			return _slime_anim_texture()
+		"ranged":
+			return _spitter_anim_texture()
+	return null
+
+
+## スライム：体当たりのあと（4コマ）／動いているとき（跳ねる4コマ）／待機（跳ねる動きの最初のコマ）
+func _slime_anim_texture() -> Texture2D:
+	var now: int = Time.get_ticks_msec()
+	var since: int = now - _strike_msec
+	if since >= 0 and since < SLIME_ATTACK_MS * 4:
+		return anim_texture("slime_attack", since / SLIME_ATTACK_MS)
+	if state == State.CHASING:
+		var phase: int = int(get_instance_id() % 1000)
+		return anim_texture("slime_move", ((now + phase) / SLIME_MOVE_MS) % 4)
+	return anim_texture("slime_move", 0)
+
+
+## 毒吐きスライム：吐いたあと（吐く→戻る）／吐く前のため（縮む→膨らむ）／動いているとき／待機
+func _spitter_anim_texture() -> Texture2D:
+	var now: int = Time.get_ticks_msec()
+	var since: int = now - _strike_msec
+	if since >= 0 and since < SPIT_RECOVER_MS * 2:
+		return anim_texture("spitter_attack", 2 + since / SPIT_RECOVER_MS)
+	if shot_windup_left > 0.0:
+		var half: bool = shot_windup_left > definition.shot_windup * 0.5
+		return anim_texture("spitter_attack", 0 if half else 1)
+	if state == State.CHASING:
+		var phase: int = int(get_instance_id() % 1000)
+		return anim_texture("spitter_move", ((now + phase) / SLIME_MOVE_MS) % 4)
+	return anim_texture("spitter_move", 0)
+
+
+## 岩殻の、いまの動きの絵：叩きつけたあと（叩きつけ→沈む→戻る）、予告中（腕を振り上げる）、歩いているとき（4コマ）。
+## どれでもなければ null（立ち絵）
+func golem_anim_texture() -> Texture2D:
+	var now: int = Time.get_ticks_msec()
+	var since: int = now - _strike_msec
+	if since >= 0 and since < STRIKE_FRAME_MS * STRIKE_FRAMES:
+		return anim_texture("rockgolem_attack", 2 + since / STRIKE_FRAME_MS)
+	if is_winding_up():
+		return anim_texture("rockgolem_attack", 1)
+	if state == State.CHASING:
+		var phase: int = int(get_instance_id() % 1000)  # 個体ごとに、歩きの位相をずらす
+		return anim_texture("rockgolem_walk", ((now + phase) / WALK_FRAME_MS) % WALK_FRAMES)
+	return null
+
+
+## 動きの絵が変わったときだけ、描き直す（EnemyManager が、岩殻だけに毎フレーム呼ぶ）
+func update_anim() -> void:
+	var tex: Texture2D = current_anim_texture()
+	if tex != _last_anim_texture:
+		_last_anim_texture = tex
+		queue_redraw()
 
 
 static func _golem_texture() -> Texture2D:

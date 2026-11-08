@@ -596,3 +596,66 @@ func test_attack_animation_frames() -> void:
 	player.play_attack_animation()
 	t.check(player.is_attack_animating(), "スキルを使うと再生が始まる")
 	player.free()
+
+
+func test_golem_animation_frames_and_state() -> void:
+	for anim: String in ["rockgolem_walk", "rockgolem_attack"]:
+		var count: int = 4 if anim.ends_with("walk") else 5
+		for i: int in count:
+			var tex: Texture2D = load("res://art/sprites/enemies/%s_%d.png" % [anim, i])
+			t.check(tex != null and tex.get_size() == Vector2(40, 32), "岩殻の絵 %s の%dコマ目（40x32）" % [anim, i])
+			var img: Image = tex.get_image()
+			var opaque: int = 0
+			for y: int in 32:
+				for x: int in 40:
+					if img.get_pixel(x, y).a > 0.5:
+						opaque += 1
+			t.check(opaque > 200, "岩殻の絵 %s の%dコマ目に、岩が描かれている" % [anim, i])
+	var enemy := Enemy.new()
+	enemy.definition = EnemyDef.new()
+	enemy.definition.behavior = "tank"
+	t.check(enemy.golem_anim_texture() == null, "立っているときは、立ち絵（動きの絵なし）")
+	enemy.state = Enemy.State.CHASING
+	t.check(enemy.golem_anim_texture() != null, "歩いているときは、歩きの絵")
+	enemy.state = Enemy.State.WINDUP
+	t.check(enemy.golem_anim_texture() == Enemy.anim_texture("rockgolem_attack", 1), "殴る前は、腕を振り上げた絵")
+	enemy.state = Enemy.State.ATTACKING
+	enemy.play_strike()
+	t.check(enemy.golem_anim_texture() == Enemy.anim_texture("rockgolem_attack", 2), "叩きつけた瞬間は、叩きつけの絵")
+	enemy.free()
+
+
+func test_slime_animation_frames_and_state() -> void:
+	var expected: Dictionary = {"slime_move": 4, "slime_attack": 4, "spitter_move": 4, "spitter_attack": 4}
+	for anim: String in expected:
+		for i: int in int(expected[anim]):
+			var tex: Texture2D = load("res://art/sprites/enemies/%s_%d.png" % [anim, i])
+			t.check(tex != null and tex.get_size() == Vector2(24, 18), "スライムの絵 %s の%dコマ目（24x18）" % [anim, i])
+			var img: Image = tex.get_image()
+			var opaque: int = 0
+			for y: int in 18:
+				for x: int in 24:
+					if img.get_pixel(x, y).a > 0.5:
+						opaque += 1
+			t.check(opaque > 40, "スライムの絵 %s の%dコマ目に、スライムが描かれている" % [anim, i])
+	var slime := Enemy.new()
+	slime.definition = EnemyDef.new()
+	slime.definition.behavior = "melee_swarm"
+	t.check(slime.current_anim_texture() == Enemy.anim_texture("slime_move", 0), "待機は、跳ねる動きの最初のコマ")
+	slime.state = Enemy.State.CHASING
+	t.check(slime.current_anim_texture() != null, "動いているときは、跳ねる絵")
+	slime.play_strike()
+	t.check(slime.current_anim_texture() == Enemy.anim_texture("slime_attack", 0), "体当たりの瞬間は、体当たりの絵")
+	slime.free()
+	var spitter := Enemy.new()
+	spitter.definition = EnemyDef.new()
+	spitter.definition.behavior = "ranged"
+	spitter.definition.shot_windup = 0.5
+	spitter.shot_windup_left = 0.45
+	t.check(spitter.current_anim_texture() == Enemy.anim_texture("spitter_attack", 0), "吐く前のため（前半）は、縮んだ絵")
+	spitter.shot_windup_left = 0.1
+	t.check(spitter.current_anim_texture() == Enemy.anim_texture("spitter_attack", 1), "吐く前のため（後半）は、膨らんだ絵")
+	spitter.shot_windup_left = 0.0
+	spitter.play_strike()
+	t.check(spitter.current_anim_texture() == Enemy.anim_texture("spitter_attack", 2), "吐いた瞬間は、吐く絵")
+	spitter.free()
