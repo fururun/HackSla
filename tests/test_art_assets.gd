@@ -34,6 +34,28 @@ func test_player_views_cover_eight_directions() -> void:
 	t.check(Player.view_for(0)["flip"] != Player.view_for(4)["flip"], "右と左は反転が逆")
 
 
+func test_walk_motion_cycles_and_stops_when_idle() -> void:
+	var idle := Player.walk_pose(false, 12345)
+	t.check(idle["bob"] == 0.0 and idle["lift_left"] == 0.0 and idle["lift_right"] == 0.0, "止まっているときは、動かない")
+	var seen_bob := {}
+	var seen_left := {}
+	var seen_right := {}
+	for frame in 4:
+		var p := Player.walk_pose(true, frame * Player.WALK_FRAME_MS)
+		seen_bob[p["bob"]] = true
+		seen_left[p["lift_left"]] = true
+		seen_right[p["lift_right"]] = true
+		t.check(not (p["lift_left"] > 0.0 and p["lift_right"] > 0.0), "両足を同時には上げない（コマ %d）" % frame)
+	t.check_eq(seen_bob.size(), 2, "体は、上がる・下がるの2通り")
+	t.check_eq(seen_left.size(), 2, "左足は、上がる・下がるがある")
+	t.check_eq(seen_right.size(), 2, "右足は、上がる・下がるがある")
+	t.check_eq(Player.walk_pose(true, 0), Player.walk_pose(true, 4 * Player.WALK_FRAME_MS), "4コマで一巡する")
+	# 絵の下から足として動かす行数が、絵より小さい
+	for view in ["front", "back", "side", "diag_down", "diag_up"]:
+		var tex := load("res://art/sprites/player/player_%s.png" % view) as Texture2D
+		t.check(tex != null and tex.get_height() > Player.LEG_ROWS * 2, "足の行数が絵に収まる: %s" % view)
+
+
 func test_drop_icon_choice() -> void:
 	t.check_eq(GroundDrop.icon_name(GemInstance.new(GemInstance.Kind.SKILL, "slash")), "gem_skill", "スキルジェム")
 	t.check_eq(GroundDrop.icon_name(GemInstance.new(GemInstance.Kind.SUPPORT, "scatter")), "gem_support", "補助ジェム")

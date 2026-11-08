@@ -104,7 +104,8 @@ func try_basic_attack(target: Vector2) -> bool:
 const SPRITE_DIR: String = "res://art/sprites/player/"
 const SPRITE_SIZE: Vector2 = Vector2(30, 30)  ## 絵の大きさ（ドット数）。足元の中心が原点。高解像度の元は player_hi_*.png
 const SPRITE_SCALE: float = 1.0  ## 絵の拡大率（絵はすでにゲームの大きさに縮めてある）
-const BOB_INTERVAL_MS: int = 140  ## 歩いているときの上下の揺れの間隔
+const WALK_FRAME_MS: int = 110  ## 歩きのモーションの1コマの長さ（ミリ秒）。4コマで1歩ずつ（右足・左足）
+const LEG_ROWS: int = 6  ## 絵の下から、足として動かす行数
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 
 
@@ -136,12 +137,31 @@ func _draw() -> void:
 	var tex := _texture(v["view"])
 	if tex == null:
 		return
-	var bob := 0.0
-	if velocity != Vector2.ZERO and (Time.get_ticks_msec() / BOB_INTERVAL_MS) % 2 == 1:
-		bob = -1.0  # 歩いているとき、1ドットだけ上下に揺れる
 	var tint := Color(0.45, 0.4, 0.45) if vitals.is_dead() else Color.WHITE
 	var s := SPRITE_SCALE
-	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2(-s if v["flip"] else s, s))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2(-s if v["flip"] else s, s))
 	# 絵ごとに幅が違う（斜めは刀の分だけ広い）ので、絵の大きさから足元の中心を決める
 	var size := tex.get_size()
-	draw_texture(tex, Vector2(-size.x * 0.5, -size.y), tint)
+	var pose := walk_pose(velocity != Vector2.ZERO and not vitals.is_dead(), Time.get_ticks_msec())
+	# 歩きのモーション：上半身は上下に弾み、足（下の LEG_ROWS 行を、左右に分けたもの）は交互に持ち上がる。
+	# 上半身の絵は、足の1行ぶん下まで重ねて描き、弾んでもすき間が空かないようにする
+	var upper_h := size.y - LEG_ROWS
+	var half_w := floorf(size.x * 0.5)
+	draw_texture_rect_region(tex, Rect2(-size.x * 0.5, -size.y + pose["bob"], size.x, upper_h + 1.0),
+		Rect2(0, 0, size.x, upper_h + 1.0), tint)
+	draw_texture_rect_region(tex, Rect2(-size.x * 0.5, -LEG_ROWS - pose["lift_left"], half_w, LEG_ROWS),
+		Rect2(0, upper_h, half_w, LEG_ROWS), tint)
+	draw_texture_rect_region(tex, Rect2(-size.x * 0.5 + half_w, -LEG_ROWS - pose["lift_right"], size.x - half_w, LEG_ROWS),
+		Rect2(half_w, upper_h, size.x - half_w, LEG_ROWS), tint)
+
+
+## 歩きのモーション（4コマ）。上半身の上下（bob）と、左足・右足を持ち上げるドット数。止まっているときは、すべて 0。
+## 0:右足を上げる → 1:体が弾む → 2:左足を上げる → 3:体が弾む、の繰り返し
+static func walk_pose(moving: bool, time_ms: int) -> Dictionary:
+	if not moving:
+		return {"bob": 0.0, "lift_left": 0.0, "lift_right": 0.0}
+	match (time_ms / WALK_FRAME_MS) % 4:
+		0: return {"bob": 0.0, "lift_left": 0.0, "lift_right": 1.0}
+		1: return {"bob": -1.0, "lift_left": 0.0, "lift_right": 0.0}
+		2: return {"bob": 0.0, "lift_left": 1.0, "lift_right": 0.0}
+		_: return {"bob": -1.0, "lift_left": 0.0, "lift_right": 0.0}
