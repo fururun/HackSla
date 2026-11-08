@@ -52,7 +52,11 @@ func test_loop_keeps_playing_and_size_fits_reach() -> void:
 	t.check(fx.busy, "ループは止まらない")
 	fx.stop()
 	fx.play("area_cold", Vector2.ZERO, 48.0)
-	t.check_eq(snappedf(fx.scale.x, 0.001), snappedf(48.0 / float(SheetFx.def_of("area_cold")["ref"]), 0.001), "範囲の半径に合わせて拡大縮小される")
+	var cold := SheetFx.def_of("area_cold")
+	t.check_eq(snappedf(fx.scale.x, 0.001), snappedf(48.0 * float(cold["fit"]) / float(cold["ref"]), 0.001), "範囲の半径（×収める割合）に合わせて拡大縮小される")
+	# 左向きの回転は反転後の向きに合わせて符号が逆になる（斜め下向きが斜め上向きにならない）
+	t.check(SheetFx.rotation_for(Vector2(-1, 0.5)) < 0.0 and SheetFx.rotation_for(Vector2(1, 0.5)) > 0.0, "左向きの傾きは右向きと符号が逆")
+	t.check_eq(snappedf(SheetFx.rotation_for(Vector2(1, 0)), 0.001), 0.0, "真右は傾きなし")
 	fx.play("slash", Vector2.ZERO, 40.0, 0.0, true)
 	t.check(fx.scale.x < 0.0, "左向きは左右反転")
 	fx.free()

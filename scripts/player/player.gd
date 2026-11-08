@@ -76,7 +76,7 @@ func try_basic_attack(target: Vector2) -> bool:
 
 # ---- 絵（art/sprites/player/。作り方は make_player.py） ----
 const SPRITE_DIR: String = "res://art/sprites/player/"
-const SPRITE_SIZE: Vector2 = Vector2(20, 24)  ## 絵の大きさ。足元の中心が原点
+const SPRITE_SIZE: Vector2 = Vector2(36, 36)  ## 絵の大きさ。足元の中心が原点
 const BOB_INTERVAL_MS: int = 140  ## 歩いているときの上下の揺れの間隔
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 

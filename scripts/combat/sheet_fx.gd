@@ -65,6 +65,7 @@ static func def_of(key: String) -> Dictionary:
 		"speed": float(entry.get("speed", 1.0)),
 		"ref": float(entry.get("ref", 0.0)),
 		"scale": float(entry.get("scale", 1.0)),
+		"fit": float(entry.get("fit", 1.0)),  # 範囲の大きさに対する絵の大きさの割合（地面の輪を別に描くとき、絵を内側に収める）
 		"loop": bool(entry.get("loop", false)),
 	}
 	_defs[key] = def
@@ -93,6 +94,15 @@ static func explosion_key() -> String:
 
 # ---- 再生 ----
 
+## 画面上の向き dir（画像は右向き）に合わせた回転。左向き（dir.x < 0）は左右反転（scale.x が負）で使うので、
+## 反転した絵を回す向きは逆になる。反転後の絵は左を向いており、回転 r で (−cos r, −sin r) の向きになるため、
+## 目的の向き (−cos φ, +sin φ)（φ = (−dir.x, dir.y) の角度）にするには r = −φ。
+static func rotation_for(dir: Vector2) -> float:
+	if dir.x < 0.0:
+		return -Vector2(-dir.x, dir.y).angle()
+	return dir.angle()
+
+
 ## size_px が正なら、絵の ref（届く距離）がそのドット数になるよう拡大縮小する。0以下なら設定の scale のまま
 func play(key: String, pos: Vector2, size_px: float = 0.0, rot: float = 0.0, mirror: bool = false) -> bool:
 	var def := def_of(key)
@@ -104,7 +114,7 @@ func play(key: String, pos: Vector2, size_px: float = 0.0, rot: float = 0.0, mir
 	offset = -(def["pivot"] as Vector2)
 	var s: float = float(def["scale"])
 	if size_px > 0.0 and float(def["ref"]) > 0.0:
-		s = size_px / float(def["ref"])
+		s = size_px * float(def["fit"]) / float(def["ref"])
 	s = clampf(s, MIN_SCALE, MAX_SCALE)
 	scale = Vector2(-s if mirror else s, s)
 	rotation = rot

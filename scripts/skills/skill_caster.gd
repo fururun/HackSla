@@ -26,6 +26,7 @@ var fx_created: int = 0  ## エフェクトの部品を new した回数（プ�
 var _cooldowns: PackedFloat32Array = PackedFloat32Array()
 var _free_projectiles: Array[SkillProjectile] = []
 var _fx_pool: Array[SheetFx] = []
+var _rings: Array[GroundRing] = []
 
 
 func _init() -> void:
@@ -105,7 +106,7 @@ func _cast_melee(skill: SkillDef, ctx: CastContext, origin: Vector2, aim: Vector
 			hits += 1
 	# 画像は右向き。左向きのときは左右を反転し、傾きは反転後の角度にする（上下が逆さにならないように）
 	var mirror := aim.x < 0.0
-	var rot := Vector2(-aim.x, aim.y).angle() if mirror else aim.angle()
+	var rot := SheetFx.rotation_for(aim)
 	_play_fx(SheetFx.key_for_skill(skill), origin, reach, rot, mirror)
 	return hits
 
@@ -118,6 +119,7 @@ func _cast_area(skill: SkillDef, ctx: CastContext, origin: Vector2, dmg_mult: fl
 		if e != null and Iso.in_ground_circle(origin, e.global_position, radius):
 			_hit(e, _damage(skill, dmg_mult), skill, ctx)
 			hits += 1
+	_play_ring(origin, radius, CombatConsts.ELEMENT_COLORS.get(skill.element, Color.WHITE))
 	_play_fx(SheetFx.key_for_skill(skill), origin, radius)
 	return hits
 
@@ -162,6 +164,7 @@ func _flush_explosions(ctx: CastContext) -> void:
 		var ex: Dictionary = ctx.queue[i]
 		i += 1
 		var pos: Vector2 = ex["pos"]
+		_play_ring(pos, CombatConsts.EXPLOSION_RADIUS, Color("#ffb03d"))
 		_play_fx(SheetFx.explosion_key(), pos, CombatConsts.EXPLOSION_RADIUS)
 		for n: Node in enemies():
 			var e := n as Node2D
@@ -210,6 +213,26 @@ func _take_projectile() -> SkillProjectile:
 
 func recycle_projectile(p: SkillProjectile) -> void:
 	_free_projectiles.append(p)
+
+
+## 範囲の輪（地面の円）を1つ出す。使い回しで、同時数の上限を超えたら一番古いものを再利用する
+func _play_ring(pos: Vector2, radius: float, color: Color) -> void:
+	if fx_parent == null:
+		return
+	var ring: GroundRing = null
+	for r: GroundRing in _rings:
+		if not r.busy:
+			ring = r
+			break
+	if ring == null:
+		if _rings.size() < CombatConsts.MAX_RINGS:
+			ring = GroundRing.new()
+			fx_parent.add_child(ring)
+			_rings.append(ring)
+		else:
+			ring = _rings.pop_front()
+			_rings.append(ring)
+	ring.play(pos, radius, color)
 
 
 ## スプライトシートのエフェクトを1つ再生する。使い回し（プール）で、同時数の上限を超えたら一番古いものを再利用する。

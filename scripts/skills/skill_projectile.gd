@@ -126,7 +126,7 @@ func _update_art() -> void:
 		add_child(_art)
 	var screen_dir := Vector2(_dir.x, _dir.y * 0.5)
 	var mirror := screen_dir.x < 0.0
-	var rot := Vector2(-screen_dir.x, screen_dir.y).angle() if mirror else screen_dir.angle()
+	var rot := SheetFx.rotation_for(screen_dir)
 	_art.play(SheetFx.key_for_skill(skill), Vector2.ZERO, 0.0, rot, mirror)
 	_art.position = CombatConsts.PROJECTILE_FX_OFFSET
 
