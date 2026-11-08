@@ -16,6 +16,7 @@ const ENGAGE_DISTANCE: float = 26.0  ## この距離（地面）まで敵に近�
 const FIGHT_FIRST_DISTANCE: float = 90.0  ## この距離以内に敵がいたら、拾う・宝箱より戦いを先にする（ボスへ直行のときは、先へ進む）
 const DODGE_WATCH_DISTANCE: float = 150.0  ## 予告を出している敵が、この距離以内なら避ける
 const CHEST_DETOUR_PATH: float = 40.0  ## 宝箱へ寄り道するのは、道のりがこのマス数以内のとき
+const CHEST_NEARBY_PATH: float = 14.0  ## 全滅ルートでも、通り道のこのマス数以内の宝箱は、敵より先に開ける（素通りしない）
 const PATH_REFRESH_SECONDS: float = 0.5
 const WAYPOINT_REACHED: float = 4.0  ## 道しるべの点に、これだけ近づいたら、次の点へ
 const EDGE_WEIGHT: float = 4.0  ## 壁ぎわのマスの通りにくさ（通路の真ん中を通るようにする）
@@ -123,7 +124,11 @@ func position_of(cell: Vector2i) -> Vector2:
 func path_length(from: Vector2, to: Vector2) -> int:
 	if not _ensure_grid():
 		return -1
-	var path: Array[Vector2i] = _astar.get_id_path(cell_of(from), cell_of(to))
+	var from_cell: Vector2i = cell_of(from)
+	var to_cell: Vector2i = cell_of(to)
+	if not _astar.is_in_boundsv(from_cell) or not _astar.is_in_boundsv(to_cell):
+		return -1  # 地図の外
+	var path: Array[Vector2i] = _astar.get_id_path(from_cell, to_cell)
 	return path.size() - 1 if not path.is_empty() else -1
 
 
@@ -213,8 +218,10 @@ func _nearest_by_path(player: Node2D, include_boss: bool = true) -> Node2D:
 	return best
 
 
-func _nearest_chest(player: Node2D) -> Node2D:
-	var limit: float = CHEST_DETOUR_PATH if route == Route.BOSS_RUSH else 100000.0  # 全滅ルートは、どれだけ遠くても開けに行く
+func _nearest_chest(player: Node2D, max_path: float = -1.0) -> Node2D:
+	var limit: float = max_path
+	if limit < 0.0:
+		limit = CHEST_DETOUR_PATH if route == Route.BOSS_RUSH else 100000.0  # 全滅ルートは、どれだけ遠くても開けに行く
 	var best: Node2D = null
 	var best_len: int = 1 << 30
 	for node: Node in player.get_tree().get_nodes_in_group("chests"):
@@ -253,7 +260,13 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 			if goal_pos != null:
 				goal_kind = "拾う"
 				stop_distance = 3.0
-		# 全滅ルート：ボス以外の敵を全部倒す → 宝箱 → ボス。ボスへ直行：宝箱（寄り道）→ ボス
+		# 全滅ルート：近くの宝箱 → ボス以外の敵を全部倒す → 遠くの宝箱 → ボス。ボスへ直行：宝箱（寄り道）→ ボス
+		if goal_pos == null and open_chests and route == Route.NEAREST_ENEMY:
+			var near_chest: Node2D = _nearest_chest(player, CHEST_NEARBY_PATH)
+			if near_chest != null:
+				goal_pos = near_chest.global_position
+				goal_kind = "宝箱"
+				stop_distance = 3.0
 		if goal_pos == null and route == Route.NEAREST_ENEMY:
 			var enemy: Node2D = _nearest_by_path(player, false)
 			if enemy != null:

@@ -516,40 +516,37 @@ func test_autopilot_clears_rooms_before_chests_and_boss() -> void:
 	pilot.director = null
 	pilot.open_chests = true
 	pilot.route = Autopilot.Route.NEAREST_ENEMY
-	# 宝箱が近くにあっても、部屋に敵が残っているあいだは、敵を先に倒しに行く
-	var chest: TreasureChest = null
-	for c: Node in tree.get_nodes_in_group("chests"):
-		if chest == null or Iso.ground_distance(c.global_position, map.marker("P")) < Iso.ground_distance(chest.global_position, map.marker("P")):
-			chest = c as TreasureChest
-	player.global_position = chest.global_position + Vector2(40, 0)
+	var chests: Array[Node] = tree.get_nodes_in_group("chests")
+	# すぐ近くの宝箱は、素通りせずに開ける
+	var near_chest: TreasureChest = null
+	for c: Node in chests:
+		if near_chest == null or Iso.ground_distance(c.global_position, map.marker("P")) < Iso.ground_distance(near_chest.global_position, map.marker("P")):
+			near_chest = c as TreasureChest
+	player.global_position = near_chest.global_position + Vector2(40, 0)
 	pilot.move_input(player, 0.016)
-	t.check_eq(pilot.goal_kind, "敵", "敵が残っているあいだは、宝箱より敵を先にする")
-	# ボス以外を全部倒したら、宝箱（ボスの部屋の外）へ
+	t.check_eq(pilot.goal_kind, "宝箱", "すぐ近くの宝箱は、素通りせずに開ける")
+	# 遠い宝箱しか残っていないあいだは、敵を先に倒す
+	var far_chest: TreasureChest = null
+	for c2: Node in chests:
+		if far_chest == null or Iso.ground_distance(c2.global_position, map.marker("P")) > Iso.ground_distance(far_chest.global_position, map.marker("P")):
+			far_chest = c2 as TreasureChest
+	for c3: Node in chests:
+		(c3 as TreasureChest).is_open = c3 != far_chest
+	player.global_position = map.marker("P")
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "敵", "遠い宝箱は、敵が残っているあいだは後回し")
+	# ボス以外を全部倒したら、遠い宝箱へ
 	for n: Node in tree.get_nodes_in_group("enemies"):
 		if n is Enemy and not n.definition.is_boss:
 			n.take_hit(1000000.0, DataDB.skill("slash"))
 	pilot.move_input(player, 0.016)
-	t.check_eq(pilot.goal_kind, "宝箱", "ボス以外を倒したら、宝箱へ")
+	t.check_eq(pilot.goal_kind, "宝箱", "ボス以外を倒したら、遠い宝箱へも行く")
 	# 宝箱を全部開けたら、ボスへ
-	for c2: Node in tree.get_nodes_in_group("chests"):
-		(c2 as TreasureChest).is_open = true
+	far_chest.is_open = true
 	pilot.move_input(player, 0.016)
 	t.check_eq(pilot.goal_kind, "ボス", "宝箱が済んだら、ボスへ")
 	# ボスの部屋には、宝箱を置かない
 	var boss: Enemy = pilot.find_boss(player) as Enemy
-	for c4: Node in tree.get_nodes_in_group("chests"):
+	for c4: Node in chests:
 		t.check(Iso.ground_distance(c4.global_position, boss.global_position) > Autopilot.BOSS_AVOID_DISTANCE, "ボスの部屋のまわりに、宝箱はない")
-	# 遠くの宝箱でも、敵を倒しきったら開けに行く
-	for c5: Node in tree.get_nodes_in_group("chests"):
-		(c5 as TreasureChest).is_open = false
-	var far_chest: TreasureChest = null
-	for c6: Node in tree.get_nodes_in_group("chests"):
-		if far_chest == null or Iso.ground_distance(c6.global_position, map.marker("P")) > Iso.ground_distance(far_chest.global_position, map.marker("P")):
-			far_chest = c6 as TreasureChest
-	for c7: Node in tree.get_nodes_in_group("chests"):
-		if c7 != far_chest:
-			(c7 as TreasureChest).is_open = true
-	player.global_position = map.marker("P")
-	pilot.move_input(player, 0.016)
-	t.check_eq(pilot.goal_kind, "宝箱", "いちばん遠い宝箱でも、開けに行く")
 	main.queue_free()
