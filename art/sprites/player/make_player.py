@@ -276,6 +276,6 @@ def side():
 here = os.path.dirname(os.path.abspath(__file__))
 for name, fn in (('front', front), ('back', back), ('side', side)):
     img = fn()
-    save(img, os.path.join(here, 'player_%s.png' % name))
-    save(img, os.path.join(here, 'preview_%s.png' % name), 8)
+    save(img, os.path.join(here, 'player_proc_%s.png' % name))
+    save(img, os.path.join(here, 'preview_proc_%s.png' % name), 8)
 print('ok', W, H)

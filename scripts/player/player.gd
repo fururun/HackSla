@@ -14,6 +14,7 @@ var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
 
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR  # 大きい絵を縮めて描くので、ぼかしつきで縮める
 	add_to_group("player")
 	caster.name = "SkillCaster"
 	add_child(caster)
@@ -76,7 +77,8 @@ func try_basic_attack(target: Vector2) -> bool:
 
 # ---- 絵（art/sprites/player/。作り方は make_player.py） ----
 const SPRITE_DIR: String = "res://art/sprites/player/"
-const SPRITE_SIZE: Vector2 = Vector2(36, 36)  ## 絵の大きさ。足元の中心が原点
+const SPRITE_SIZE: Vector2 = Vector2(96, 96)  ## 絵の大きさ（元の絵のドット数）。足元の中心が原点
+const SPRITE_SCALE: float = 0.5  ## ゲーム内での縮小率。キャラの高さ（約92ドット）が、画面上で約46ドットになる
 const BOB_INTERVAL_MS: int = 140  ## 歩いているときの上下の揺れの間隔
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 
@@ -111,9 +113,6 @@ func _draw() -> void:
 	if velocity != Vector2.ZERO and (Time.get_ticks_msec() / BOB_INTERVAL_MS) % 2 == 1:
 		bob = -1.0  # 歩いているとき、1ドットだけ上下に揺れる
 	var tint := Color(0.45, 0.4, 0.45) if vitals.is_dead() else Color.WHITE
-	var half := SPRITE_SIZE.x * 0.5
-	if v["flip"]:
-		draw_set_transform(Vector2(half, bob), 0.0, Vector2(-1, 1))
-	else:
-		draw_set_transform(Vector2(-half, bob), 0.0, Vector2(1, 1))
-	draw_texture(tex, Vector2(0, -SPRITE_SIZE.y), tint)
+	var s := SPRITE_SCALE
+	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2(-s if v["flip"] else s, s))
+	draw_texture(tex, Vector2(-SPRITE_SIZE.x * 0.5, -SPRITE_SIZE.y), tint)
