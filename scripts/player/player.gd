@@ -6,6 +6,7 @@ extends CharacterBody2D
 signal attacked(skill: SkillDef, hits: int)
 
 const MOVE_SPEED: float = 80.0
+const AIM_DISTANCE: float = 100.0  ## 向いている方向の、狙う位置までの距離（向きだけが使われる）
 
 var facing: int = 2  ## Facing の番号（最初は下向き）
 var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
@@ -44,8 +45,13 @@ func _physics_process(delta: float) -> void:
 
 	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
 		if Input.is_action_pressed("skill_%d" % slot):
-			use_skill(slot, get_global_mouse_position())
+			use_skill(slot, aim_target())
 	queue_redraw()
+
+
+## スキルを出す向き：キャラクターが向いている方向（8方向）。マウスの位置は使わない
+func aim_target() -> Vector2:
+	return global_position + Facing.to_vector(facing).normalized() * AIM_DISTANCE
 
 
 ## 敵に殴られた（EnemyManager.player_hit につなぐ）

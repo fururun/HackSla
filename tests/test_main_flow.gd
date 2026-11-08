@@ -13,6 +13,20 @@ func _start_main() -> Node:
 	return main
 
 
+func test_skills_aim_where_the_character_faces() -> void:
+	var main: Node = await _start_main()
+	var player := (t as SceneTree).get_first_node_in_group("player") as Player
+	for index: int in 8:
+		player.facing = index
+		var dir := player.aim_target() - player.global_position
+		t.check_eq(Facing.dir8(dir), index, "向き %d の方向に狙いが出る" % index)
+	player.facing = 6  # 上向き
+	t.check(player.aim_target().y < player.global_position.y, "上向きなら上に狙う")
+	player.facing = 0  # 右向き
+	t.check(player.aim_target().x > player.global_position.x and is_equal_approx(player.aim_target().y, player.global_position.y), "右向きなら真横に狙う")
+	main.queue_free()
+
+
 func test_enemy_hit_hurts_player() -> void:
 	var main: Node = await _start_main()
 	var player := (t as SceneTree).get_first_node_in_group("player") as Player
