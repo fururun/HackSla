@@ -30,27 +30,6 @@ func test_skills_aim_where_the_character_faces() -> void:
 	main.queue_free()
 
 
-func test_movement_follows_the_floor_axes() -> void:
-	# 床のマスの向き：D=右下、A=左上、W=右上、S=左下（画面の斜め）
-	var east := Player.velocity_for(Vector2(1, 0))
-	t.check(east.x > 0.0 and east.y > 0.0 and is_equal_approx(east.y, east.x * 0.5), "D は右下（床の軸に沿う）")
-	var north := Player.velocity_for(Vector2(0, -1))
-	t.check(north.x > 0.0 and north.y < 0.0 and is_equal_approx(-north.y, north.x * 0.5), "W は右上")
-	var west := Player.velocity_for(Vector2(-1, 0))
-	t.check(west.x < 0.0 and west.y < 0.0, "A は左上")
-	var south := Player.velocity_for(Vector2(0, 1))
-	t.check(south.x < 0.0 and south.y > 0.0, "S は左下")
-	# 2つ押すと、画面の上下左右
-	t.check_eq(snappedf(Player.velocity_for(Vector2(1, -1).normalized()).y, 0.001), 0.0, "W+D は真横（右）")
-	t.check(Player.velocity_for(Vector2(1, -1).normalized()).x > 0.0, "W+D は右向き")
-	t.check_eq(snappedf(Player.velocity_for(Vector2(1, 1).normalized()).x, 0.001), 0.0, "S+D は真下")
-	# 地面の上での速さは、どの向きでも同じ
-	var base := Iso.ground_distance(Vector2.ZERO, Player.velocity_for(Vector2(1, 0)))
-	for key: Vector2 in [Vector2(0, -1), Vector2(-1, 0), Vector2(0, 1), Vector2(1, -1).normalized(), Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(), Vector2(-1, -1).normalized()]:
-		t.check(absf(Iso.ground_distance(Vector2.ZERO, Player.velocity_for(key)) - base) < 0.01, "地面の速さが同じ: %s" % str(key))
-	t.check(absf(base - Player.MOVE_SPEED) < 0.01, "地面の速さは MOVE_SPEED")
-
-
 func test_skills_turn_toward_a_nearby_enemy() -> void:
 	var main: Node = await _start_main()
 	var tree: SceneTree = t

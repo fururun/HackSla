@@ -36,10 +36,10 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	velocity = Player.velocity_for(input)
+	velocity = input * MOVE_SPEED
 	move_and_slide()
 	if input != Vector2.ZERO and _swing_t <= 0.0:
-		facing = Facing.dir8(velocity)
+		facing = Facing.dir8(input)
 
 	if _swing_t > 0.0:
 		_swing_t -= delta
@@ -48,15 +48,6 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_pressed("skill_%d" % slot):
 			use_skill(slot, aim_target())
 	queue_redraw()
-
-
-## 操作の入力（key：右が +x、下が +y）から、画面上の速度を作る。
-## 床のマスは斜め（ひし形）に並んでいるので、キーは床の軸に沿って動く：
-## W=右上、D=右下、S=左下、A=左上。W+D で真右、のように2つ押すと画面の上下左右にも動ける。
-## 速さは、どの向きでも地面の上で同じ（地面の距離は縦を2倍にして測る）。
-static func velocity_for(key: Vector2) -> Vector2:
-	var screen := Vector2(key.x - key.y, (key.x + key.y) * 0.5)
-	return screen * (MOVE_SPEED / sqrt(2.0))
 
 
 ## スキルを出す向き：近くに敵がいれば、いちばん近い敵のほう。いなければ、キャラクターが向いている方向（8方向）。

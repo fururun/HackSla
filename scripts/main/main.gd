@@ -128,7 +128,7 @@ func _add_help() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var help := Label.new()
-	help.text = "WASD: 移動(床の向きに沿う)　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　I: 装備　F5: やり直し"
+	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　I: 装備　F5: やり直し"
 	help.position = Vector2(6, 4)
 	help.add_theme_font_size_override("font_size", 8)
 	help.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
