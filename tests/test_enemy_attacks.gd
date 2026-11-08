@@ -277,3 +277,26 @@ func test_field_has_spitter_markers() -> void:
 	for row: String in rows:
 		count += row.count("r")
 	t.check(count >= 4, "マップに、遠距離スライムの印がある")
+
+
+func test_attacks_do_not_interrupt_each_other() -> void:
+	var nodes: Array[Node2D] = _setup()
+	var manager: EnemyManager = nodes[0]
+	var player: Node2D = nodes[1]
+	var def: EnemyDef = _def("rock_lord")
+	var enemy: Enemy = manager.spawn(def, Vector2.ZERO)
+	enemy.state = Enemy.State.CHASING
+	player.position = Vector2(60, 0)
+	enemy.charge_timer = 0.0
+	enemy.aoe_timer = 0.0  # 突進と叩きつけが同時に始まりたがる
+	enemy.shot_timer = 0.0
+	manager._physics_process(0.02)
+	var started: int = int(enemy.charge_phase != 0) + int(enemy.aoe_windup_left > 0.0) + int(enemy.shot_windup_left > 0.0)
+	t.check_eq(started, 1, "攻撃は、同時に1つしか始まらない")
+	# 突進の予告のあいだは、叩きつけのタイマーが割り込まない
+	if enemy.charge_phase == 1:
+		var aoe_before: float = enemy.aoe_timer
+		manager._physics_process(def.charge_windup * 0.5)
+		t.check_eq(enemy.aoe_timer, aoe_before, "突進の予告中は、ほかの攻撃のタイマーが進まない")
+		t.check_eq(enemy.aoe_windup_left, 0.0, "突進の予告中に、叩きつけが始まらない")
+	await _cleanup(manager, player)

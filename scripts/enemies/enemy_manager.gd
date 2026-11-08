@@ -287,7 +287,7 @@ func _update_shot(enemy: Enemy, target: Vector2, delta: float) -> bool:
 	if enemy.shot_timer <= 0.0 and Iso.ground_distance(enemy.global_position, target) <= def.shot_range:
 		if def.shot_windup <= 0.0:
 			_fire(enemy, target)
-			enemy.shot_timer = def.shot_interval
+			enemy.shot_timer = def.shot_interval * (def.rage_interval_mult if enemy.raged else 1.0)
 			return false
 		enemy.shot_windup_left = def.shot_windup
 		shot_charging.emit(enemy, def.shot_windup)
@@ -363,14 +363,21 @@ func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 	if def.behavior == "ranged":
 		_update_ranged(enemy, target, delta)
 		return
+	# 攻撃は同時に1つだけ。始まっている攻撃（突進・撃つ前のため・叩きつけの予告）を最後までやってから、次を始める
+	if enemy.charge_phase != 0:
+		_update_charge(enemy, target, delta)
+		return
+	if enemy.shot_windup_left > 0.0:
+		_update_shot(enemy, target, delta)
+		return
 	if def.aoe_radius > 0.0:
 		_update_aoe(enemy, target, delta)
 		if enemy.aoe_windup_left > 0.0:
 			return  # 予告のあいだは、動かない・殴らない
 	if _update_charge(enemy, target, delta):
-		return  # 突進の予告・突進のあいだは、ほかのことをしない
+		return  # 突進の予告が始まった
 	if _update_shot(enemy, target, delta):
-		return  # 撃つ前のためのあいだは、動かない
+		return  # 撃つ前のためが始まった
 	var distance: float = Iso.ground_distance(enemy.global_position, target)
 	if enemy.state == Enemy.State.WINDUP:
 		# ため中は足を止め、振り終わりに射程を再確認する（離れれば回避できる）。
@@ -441,7 +448,7 @@ func _physics_process(delta: float) -> void:
 	last_pair_checks = 0
 	_cell_size = 1.0
 	for enemy: Enemy in _active:
-		enemy.can_be_pushed = enemy.ai_enabled and enemy.state != Enemy.State.WINDUP
+		enemy.can_be_pushed = enemy.ai_enabled and enemy.state != Enemy.State.WINDUP and enemy.charge_phase == 0  # ため中・突進中は押されない（帯からずれない）
 		_cell_size = maxf(_cell_size, enemy.hit_radius * 2.0)
 	for pass_index: int in SEPARATION_PASSES:
 		_separate()
