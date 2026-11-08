@@ -8,6 +8,12 @@ const SHADOW := Color(0, 0, 0, 0.35)
 const EYE := Color("#fff0bd")
 const PUPIL := Color("#272034")
 const FANG := Color("#eee3c9")
+const GOLEM_PATH: String = "res://art/sprites/enemies/rockgolem_front.png"
+const GOLEM_SIZE: Vector2 = Vector2(30, 30)  ## 岩殻の絵の大きさ。足元の中心が原点
+const GOLEM_FLASH := Color(3.0, 3.0, 3.0, 1.0)
+const DEFAULT_HIT_RADIUS: float = 6.0
+const TANK_HIT_RADIUS: float = 10.0  ## 岩殻は大きいので、押し合いの半径も大きい
+static var _golem: Texture2D
 const SLIME_RIM := Color("#9be860")  ## スライムの縁と目（明るい黄緑）
 const SLIME_SHINE := Color("#c8f77a")  ## スライムのつや
 const SLIME_UNDER := Color("#10304a")  ## スライムの下の影（紺）
@@ -102,12 +108,24 @@ func _draw() -> void:
 	if definition == null:
 		return
 	draw_rect(Rect2(-hit_radius, -2, hit_radius * 2, 4), SHADOW)
+	if definition.behavior == "tank":
+		# 岩殻はドット絵（AI が描いたもの）。被弾の点滅は明るく飛ばす
+		var tex := _golem_texture()
+		if tex != null:
+			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), GOLEM_FLASH if is_flashing() else Color.WHITE)
+		return
 	var key: String = definition.behavior + definition.color.to_html() + str(is_flashing())
 	if not _figures.has(key):
 		_figures[key] = _make_figure(is_flashing())
 	draw_set_transform(Vector2(_lean, 0))
 	draw_mesh(_figures[key], null)
 	draw_set_transform(Vector2.ZERO)
+
+
+static func _golem_texture() -> Texture2D:
+	if _golem == null:
+		_golem = load(GOLEM_PATH) as Texture2D
+	return _golem
 
 
 func _make_figure(flash: bool) -> ArrayMesh:

@@ -6,6 +6,9 @@ extends Node2D
 signal opened(chest: TreasureChest)
 
 const OPEN_RADIUS: float = 20.0  ## 地面の距離（Iso.ground_distance）
+const SPRITE_DIR: String = "res://art/sprites/objects/"
+const SPRITE_SIZE: Vector2 = Vector2(30, 26)  ## 絵の大きさ。足元の中心が原点
+static var _textures: Dictionary = {}  ## closed / open -> Texture2D
 
 var is_open: bool = false
 
@@ -34,15 +37,13 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, 9.0, Color(0, 0, 0, 0.35))  # 影
 	draw_set_transform(Vector2.ZERO)
-	var wood := Color("#8a5a2b")
-	var dark := Color("#5e3b1a")
-	var gold := Color("#e0b83c")
-	draw_rect(Rect2(-8, -9, 16, 9), wood)  # 箱の本体
-	draw_rect(Rect2(-8, -9, 16, 2), dark)
-	draw_rect(Rect2(-1, -6, 2, 4), gold)  # 錠前
-	if is_open:
-		draw_rect(Rect2(-8, -16, 16, 4), dark)  # 開いた蓋（後ろに倒れている）
-		draw_rect(Rect2(-6, -9, 12, 3), Color("#2a1a0c"))  # 空の中
-	else:
-		draw_rect(Rect2(-8, -14, 16, 5), wood.lightened(0.1))  # 閉じた蓋
-		draw_rect(Rect2(-8, -14, 16, 1), gold)
+	var tex := _texture(is_open)
+	if tex != null:
+		draw_texture(tex, Vector2(-SPRITE_SIZE.x * 0.5, -SPRITE_SIZE.y))
+
+
+static func _texture(open: bool) -> Texture2D:
+	var key := "open" if open else "closed"
+	if not _textures.has(key):
+		_textures[key] = load(SPRITE_DIR + "chest_%s.png" % key) as Texture2D
+	return _textures[key]

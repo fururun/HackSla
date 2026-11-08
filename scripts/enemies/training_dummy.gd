@@ -57,24 +57,17 @@ func _process(delta: float) -> void:
 	_label.text = "DPS %d" % roundi(dps) if dps > 0.0 else ""
 
 
+const SPRITE_PATH: String = "res://art/sprites/objects/training_dummy.png"
+const SPRITE_SIZE: Vector2 = Vector2(24, 34)  ## 絵の大きさ。足元の中心が原点
+const FLASH_TINT := Color(3.0, 3.0, 3.0, 1.0)  ## 被弾の点滅（明るく飛ばす）
+static var _texture: Texture2D
+
+
 func _draw() -> void:
 	draw_rect(Rect2(-7, -2, 14, 4), SHADOW)
-	var flash: bool = _flash > 0.0
-	var edge: Color = Color.WHITE if flash else OUTLINE
-	var wood: Color = Color.WHITE if flash else WOOD
-	var straw: Color = Color.WHITE if flash else STRAW
-	draw_rect(Rect2(-2, -24, 4, 25), edge)
-	draw_rect(Rect2(-1, -23, 2, 23), wood)
-	draw_rect(Rect2(-10, -19, 20, 5), edge)
-	draw_rect(Rect2(-9, -18, 18, 3), wood)
-	draw_rect(Rect2(-5, -19, 10, 13), edge)
-	draw_rect(Rect2(-4, -18, 8, 11), straw)
-	for x: int in range(-3, 4, 2):
-		draw_rect(Rect2(x, -17, 1, 11), Color.WHITE if flash else STRAW_SHADE)
-	draw_circle(Vector2(0, -25), 5, edge, true, -1.0, false)
-	draw_circle(Vector2(0, -25), 4, Color.WHITE if flash else STRAW_LIGHT, true, -1.0, false)
-	draw_rect(Rect2(-2, -28, 1, 5), straw)
-	draw_rect(Rect2(1, -28, 1, 5), straw)
-	draw_rect(Rect2(-2, -26, 1, 1), edge)
-	draw_rect(Rect2(2, -26, 1, 1), edge)
-	draw_rect(Rect2(-4, -11, 8, 2), wood)
+	if _texture == null:
+		_texture = load(SPRITE_PATH) as Texture2D
+	if _texture == null:
+		return
+	var tint: Color = FLASH_TINT if _flash > 0.0 else Color.WHITE
+	draw_texture(_texture, Vector2(-SPRITE_SIZE.x * 0.5, -SPRITE_SIZE.y), tint)

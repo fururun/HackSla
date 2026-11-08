@@ -57,10 +57,38 @@ func _draw() -> void:
 	if beam:
 		draw_line(Vector2(0, -3), Vector2(0, -45), Color(tint, 0.22), 7.0)
 		draw_line(Vector2(0, -3), Vector2(0, -45), tint.lightened(0.4), 1.0)
-	if value is GemInstance:
-		draw_colored_polygon(PackedVector2Array([Vector2(0, -7), Vector2(4, -3), Vector2(0, 0), Vector2(-4, -3)]), tint)
-	else:
-		draw_rect(Rect2(-3, -5, 6, 4), tint)
+	if value is ItemInstance:
+		# 装備はレアリティの色の台座を敷く（絵だけだと、レアリティが地面から分からない）
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
+		draw_circle(Vector2.ZERO, 6.5, Color(tint, 0.55))
+		draw_set_transform(Vector2.ZERO)
+	var tex := _icon(value)
+	if tex != null:
+		draw_texture(tex, Vector2(-ICON_SIZE * 0.5, -ICON_SIZE + 1.0))
+
+
+const ICON_DIR: String = "res://art/sprites/icons/"
+const ICON_SIZE: float = 14.0
+static var _icons: Dictionary = {}  ## 名前 -> Texture2D
+
+
+## 落ちているものの種類から、アイコンを選ぶ（スキルジェム・補助ジェム・剣・防具・指輪・硬貨）
+static func icon_name(payload: Variant) -> String:
+	if payload is GemInstance:
+		return "gem_support" if payload.kind == GemInstance.Kind.SUPPORT else "gem_skill"
+	if payload is ItemInstance:
+		match str(payload.base.slot):
+			"weapon": return "sword"
+			"ring", "amulet": return "ring"
+			_: return "armor"
+	return "coin"
+
+
+static func _icon(payload: Variant) -> Texture2D:
+	var n := icon_name(payload)
+	if not _icons.has(n):
+		_icons[n] = load(ICON_DIR + "icon_%s.png" % n) as Texture2D
+	return _icons[n]
 
 func draw_ellipse_shadow() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
