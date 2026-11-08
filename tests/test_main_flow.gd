@@ -48,20 +48,31 @@ func test_boss_is_placed_big_and_bar_follows_its_life() -> void:
 	for child: Node in main.get_children():
 		if child is BossBar:
 			bar = child
-	t.check(bar != null, "ボスの体力の棒がある")
+	t.check(not boss.life_bar_visible(), "ボスが待機のあいだは、頭の上の棒を出さない")
+	boss.state = Enemy.State.CHASING
+	t.check(boss.life_bar_visible(), "ボスが動き出したら、頭の上に棒を出す")
+	t.check(is_equal_approx(boss.life_ratio(), 1.0), "最初は満タン")
+	boss.take_hit(boss.definition.life * 0.5, DataDB.skill("slash"))
+	t.check(absf(boss.life_ratio() - 0.5) < 0.02, "体力が半分になると、棒も半分")
+	# 中ボス（岩殻）も、傷つくと頭の上に棒が出る。スライムには出ない
+	var brute: Enemy = null
+	var slime: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and not n.definition.is_boss and n.active:
+			if n.definition.behavior == "tank" and brute == null:
+				brute = n
+			elif n.definition.behavior != "tank" and slime == null:
+				slime = n
+	if brute != null:
+		t.check(not brute.life_bar_visible(), "中ボスも、待機中は棒を出さない")
+		brute.take_hit(10.0, DataDB.skill("slash"))
+		t.check(brute.life_bar_visible(), "中ボスは、傷つくと頭の上に棒が出る")
+	if slime != null:
+		slime.take_hit(1.0, DataDB.skill("slash"))
+		t.check(not slime.life_bar_visible(), "スライムには棒を出さない")
 	if bar != null:
-		bar.tick(1.0)
-		t.check(not bar.is_showing(), "ボスが待機のあいだは、棒を出さない")
-		boss.state = Enemy.State.CHASING
-		bar.tick(1.0)
-		t.check(bar.is_showing(), "ボスが動き出したら、棒を出す")
-		t.check(is_equal_approx(bar.fill_ratio(), 1.0), "最初は満タン")
-		boss.take_hit(boss.definition.life * 0.5, DataDB.skill("slash"))
-		bar.tick(0.0)
-		t.check(absf(bar.fill_ratio() - 0.5) < 0.02, "体力が半分になると、棒も半分")
 		boss.take_hit(boss.life + 1.0, DataDB.skill("slash"))
-		bar.tick(0.0)
-		t.check(not bar.is_showing(), "倒したら、棒は消える")
+		t.check(bar.is_victory_showing(), "倒したら、撃破の文字が出る")
 	main.queue_free()
 
 

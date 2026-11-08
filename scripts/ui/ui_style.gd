@@ -12,9 +12,9 @@ const BACKDROP: Color = Color("#0d111bf5")
 const BAR_BG: Color = Color("#0e1620")
 const LIFE: Color = Color("#ac484b")
 const XP: Color = Color("#4b8fd6")
-const FONT_STANDARD: int = 10
-const FONT_HEADING: int = 12
-const FONT_SMALL: int = 8
+const FONT_STANDARD: int = 8
+const FONT_HEADING: int = 10
+const FONT_SMALL: int = 7
 const PADDING: int = 6
 const BORDER_WIDTH: int = 1
 

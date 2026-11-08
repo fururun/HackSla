@@ -40,7 +40,7 @@ func update_name_visibility(player_position: Vector2) -> void:
 	if nearby and _name_label == null:
 		_name_label = Label.new()
 		_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_name_label.add_theme_font_size_override("font_size", 8)
+		_name_label.add_theme_font_size_override("font_size", 7)
 		_name_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 		_name_label.add_theme_constant_override("shadow_outline_size", 2)
 		_name_label.text = _item_name

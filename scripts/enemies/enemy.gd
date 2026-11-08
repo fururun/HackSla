@@ -30,7 +30,14 @@ enum State { IDLE, CHASING, ATTACKING, WINDUP }
 
 var ai_enabled: bool = false
 var can_be_pushed: bool = true
-var state: State = State.IDLE
+var state: State = State.IDLE:
+	set(value):
+		if value != state:
+			state = value
+			if definition != null and definition.behavior == "tank":
+				queue_redraw()  # 動き出したら、頭の上の体力の棒を出す
+		else:
+			state = value
 var pack_id: int = -1
 var attack_timer: float = 0.0
 var aoe_timer: float = 0.0  ## 範囲攻撃までの待ち（秒）
@@ -128,6 +135,7 @@ func _draw() -> void:
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2(s, s))
 			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), tint)
 			draw_set_transform(Vector2.ZERO)
+		_draw_life_bar()
 		return
 	var key: String = definition.behavior + definition.color.to_html() + str(is_flashing())
 	if not _figures.has(key):
@@ -135,6 +143,28 @@ func _draw() -> void:
 	draw_set_transform(Vector2(_lean, 0))
 	draw_mesh(_figures[key], null)
 	draw_set_transform(Vector2.ZERO)
+
+
+## 頭の上の体力の棒（ボス・中ボス＝岩殻）。動き出したか、傷ついたら出す
+func life_bar_visible() -> bool:
+	return active and definition != null and definition.behavior == "tank" \
+		and (state != State.IDLE or life < definition.life)
+
+
+func life_ratio() -> float:
+	return clampf(life / maxf(definition.life, 1.0), 0.0, 1.0)
+
+
+func _draw_life_bar() -> void:
+	if not life_bar_visible():
+		return
+	var s: float = definition.scale
+	var w: float = 24.0 * s if definition.is_boss else 24.0
+	var top: float = -GOLEM_SIZE.y * s - 6.0
+	var fill_color: Color = Color("#ff4a3a") if raged else Color("#d9382f")
+	draw_rect(Rect2(-w * 0.5 - 1, top - 1, w + 2, 5), Color(0, 0, 0, 0.85))
+	draw_rect(Rect2(-w * 0.5, top, w, 3), Color("#3a1414"))
+	draw_rect(Rect2(-w * 0.5, top, w * life_ratio(), 3), fill_color)
 
 
 static func _golem_texture() -> Texture2D:

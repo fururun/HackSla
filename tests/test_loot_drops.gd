@@ -112,7 +112,7 @@ func test_loot_hud() -> void:
 	await tree.process_frame
 	var rect: Rect2 = hud._currency.get_global_rect()
 	t.check(rect.position.x >= 300 and rect.end.x <= 480, "HUDは画面右端の内側")
-	t.check_eq(hud._currency.get_theme_font_size("font_size"), 8, "HUDの文字サイズ")
+	t.check_eq(hud._currency.get_theme_font_size("font_size"), UiStyle.FONT_SMALL, "HUDの文字サイズ")
 	stash.collect(5)
 	t.check_eq(hud._currency.text, "通貨 5", "通貨表示を更新")
 	t.check(not hud._panel.visible or hud._recent.size() > 0, "通知がないときは、枠を出さない（画面にかぶらない）")
