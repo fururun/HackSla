@@ -173,7 +173,7 @@ func _build_ui() -> void:
 	close_button.size = Vector2(74, 18)
 	close_button.pressed.connect(close)
 	_root.add_child(close_button)
-	_slots = _panel(Vector2(12, 32), Vector2(158, 138))
+	_slots = _scroll_box(_panel(Vector2(12, 32), Vector2(158, 138)), 128)  # 枠が多くてもスクロールで見られる
 	var right: VBoxContainer = _panel(Vector2(180, 32), Vector2(288, 138))
 	_choice_title = _label("")
 	right.add_child(_choice_title)
