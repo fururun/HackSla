@@ -101,3 +101,10 @@ if by_source:
         print('  %-22s %8.0f  %5.1f%%' % (key, value, 100.0 * value / total_taken))
 print('
 回避の回数(1プレイ):', stat([r.get('dodges', 0) for r in runs], '%.0f'))
+
+heal_used = [r.get('heals', {}).get('used', r['player'].get('heals_used', 0)) for r in runs]
+print('回復を使った回数(1プレイ):', stat(heal_used, '%.1f'))
+ratios = [e['life_before_ratio'] for r in runs for e in r.get('heals', {}).get('events', [])]
+if ratios:
+    print('回復を使う前の体力(割合):', stat(ratios, '%.2f'))
+print('回復を使い切ったプレイ: %d / %d' % (sum(1 for r in runs if r.get('heals', {}).get('left', 1) == 0), len(runs)))

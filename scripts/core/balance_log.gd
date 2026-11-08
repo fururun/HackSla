@@ -33,6 +33,7 @@ var _kills_by_enemy: Dictionary = {}
 var _damage_dealt: float = 0.0
 var _damage_taken: float = 0.0
 var _heals_used: int = 0
+var _heal_events: Array[Dictionary] = []  ## 回復を使った時刻・使う前の体力・回復した量
 var _boss_wake: float = -1.0
 var _boss_rage: float = -1.0
 var _boss_kill: float = -1.0
@@ -70,7 +71,7 @@ func setup(manager: EnemyManager, player: Player, stash: Stash, director: LootDi
 	player.caster.cast_done.connect(_on_cast_done)
 	player.damaged.connect(_on_player_damaged)
 	player.dodged.connect(func() -> void: _dodges += 1)
-	player.vitals.healed.connect(func(_amount: float) -> void: _heals_used += 1)
+	player.vitals.healed.connect(_on_healed)
 	player.vitals.died.connect(func() -> void: finish("death"))
 	stash.equipped.connect(func(_slot: String, _new_item: ItemInstance, _old_item: ItemInstance) -> void: _equips += 1)
 	stash.skipped.connect(func(_item: ItemInstance) -> void: _skipped += 1)
@@ -142,6 +143,14 @@ func _on_player_damaged(amount: float, source: Node) -> void:
 		"life_before": roundi(_player.vitals.life) if _player != null else 0, "boss": boss_attack})
 	if _recent_hits.size() > RECENT_HITS:
 		_recent_hits.pop_front()
+
+
+## 回復を使った：時刻・使う前の体力（割合）・回復した量
+func _on_healed(amount: float) -> void:
+	_heals_used += 1
+	var max_life: float = maxf(_player.vitals.max_life(), 1.0) if _player != null else 1.0
+	var life_after: float = _player.vitals.life if _player != null else 0.0
+	_heal_events.append({"t": snappedf(_time, 0.1), "life_before_ratio": snappedf((life_after - amount) / max_life, 0.01), "amount": roundi(amount)})
 
 
 func _on_cast_done(_slot: int, skill: SkillDef, _hits: int, chained: bool) -> void:
@@ -271,6 +280,7 @@ func build_record(reason: String) -> Dictionary:
 		"damage_taken": roundi(_damage_taken),
 		"damage_taken_by": _damage_taken_by,
 		"dodges": _dodges,
+		"heals": {"used": _heals_used, "left": _player.vitals.heal_charges if _player != null else 0, "max": PlayerVitals.MAX_HEAL_CHARGES, "events": _heal_events},
 		"death": _death_snapshot() if reason == "death" else {},
 		"avg_dps": snappedf(_damage_dealt / maxf(_time, 1.0), 0.1),
 		"max_dps": snappedf(max_dps, 0.1),

@@ -1013,3 +1013,22 @@ func test_balance_log_records_death_cause() -> void:
 	t.check(float(record["damage_taken_by"].get("rock_lord:charge", 0.0)) > 0.0, "攻撃の種類ごとのダメージの内訳")
 	t.check_eq(int(record["dodges"]), 1, "回避の回数")
 	main.queue_free()
+
+
+func test_balance_log_records_heals() -> void:
+	var main: Node = await _start_main()
+	var log: BalanceLog = main.balance_log
+	var player := (t as SceneTree).get_first_node_in_group("player") as Player
+	log.tick(12.0)
+	player.vitals.life = 20.0
+	player.vitals.use_heal()
+	player.vitals.life = 30.0
+	player.vitals.use_heal()
+	var record: Dictionary = log.build_record("test")
+	var heals: Dictionary = record["heals"]
+	t.check_eq(int(heals["used"]), 2, "回復を使った回数")
+	t.check_eq(int(heals["left"]), 1, "回復の残り")
+	t.check_eq(int(heals["max"]), 3, "はじめの回数")
+	t.check_eq((heals["events"] as Array).size(), 2, "使うたびの記録")
+	t.check(float(heals["events"][0]["t"]) >= 12.0 and float(heals["events"][0]["life_before_ratio"]) < 0.3, "使った時刻と、使う前の体力")
+	main.queue_free()
