@@ -6,6 +6,9 @@ const MELEE_HALF_ANGLE_DEG: float = 60.0  ## 近接の扇形の半分の角度
 const MIN_AIM_DISTANCE: float = 1.0  ## これより近い狙い位置は「向き指定なし」として扱う
 const SWING_TIME: float = 0.12  ## 発動後に向きを固定する時間（見た目）
 
+const CHAIN_AFTERSHOCK_RATIO: float = 0.5  ## チェイン技の絵が出た場所（狙った先）に起きる、追加のダメージ（その技のダメージの何割か）
+const CHAIN_AFTERSHOCK_DELAY: float = 0.12  ## 追加のダメージが起きるまでの秒（絵が出てから）
+const CHAIN_AFTERSHOCK_MIN_RADIUS: float = 36.0  ## 追加のダメージの、最小の半径（地面上のドット）
 const EXPLOSION_RADIUS: float = 24.0  ## 撃破時爆発の半径（地面上のドット）
 const EXPLOSION_FX_LIFE: float = 0.25
 

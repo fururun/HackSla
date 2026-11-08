@@ -105,6 +105,8 @@ func cast(slot: int, target: Vector2, origin: Vector2, fallback_dir: Vector2 = V
 			_cast_projectile(out, ctx, origin, aim, dmg_mult, area_mult, mods)
 	_flush_explosions(ctx)
 	_fx_boost = 1.0
+	if chained:
+		_schedule_aftershock(out, target, dmg_mult, area_mult, ctx)
 
 	last_skill = out
 	last_chained = chained
@@ -157,6 +159,36 @@ func _cast_projectile(skill: SkillDef, ctx: CastContext, origin: Vector2, aim: V
 func projectile_hit(proj: SkillProjectile, enemy: Node2D) -> void:
 	_hit(enemy, proj.damage, proj.skill, proj.ctx)
 	_flush_explosions(proj.ctx)
+
+
+# ---- チェイン技の、追加のダメージ（絵が出た場所） ----
+
+## チェイン技の絵が出る場所（狙った先）に、少し遅れて、追加のダメージを与える（輪が出て、中の敵に当たる）。
+## 足元の技の円とは別に、絵の場所に起きる。ダメージは、その技のダメージの CHAIN_AFTERSHOCK_RATIO 倍
+func _schedule_aftershock(skill: SkillDef, pos: Vector2, dmg_mult: float, area_mult: float, ctx: CastContext) -> void:
+	if fx_parent == null or not fx_parent.is_inside_tree():
+		return
+	var timer: SceneTreeTimer = fx_parent.get_tree().create_timer(CombatConsts.CHAIN_AFTERSHOCK_DELAY, true, true)
+	timer.timeout.connect(func() -> void:
+		if is_instance_valid(self) and is_instance_valid(fx_parent):
+			aftershock(skill, pos, dmg_mult, area_mult, ctx))
+
+
+## 追加のダメージ本体（テストからも呼べる）。当てた敵の数を返す
+func aftershock(skill: SkillDef, pos: Vector2, dmg_mult: float = 1.0, area_mult: float = 1.0, ctx: CastContext = null) -> int:
+	if ctx == null:
+		ctx = CastContext.new()
+		ctx.skill = skill
+	var radius: float = maxf(skill.radius * area_mult, CombatConsts.CHAIN_AFTERSHOCK_MIN_RADIUS)
+	_play_ring(pos, radius, CombatConsts.ELEMENT_COLORS.get(skill.element, Color.WHITE))
+	var hits := 0
+	for n: Node in enemies():
+		var e := n as Node2D
+		if e != null and Iso.in_ground_circle(pos, e.global_position, radius):
+			_hit(e, _damage(skill, dmg_mult) * CombatConsts.CHAIN_AFTERSHOCK_RATIO, skill, ctx)
+			hits += 1
+	_flush_explosions(ctx)
+	return hits
 
 
 # ---- ダメージと撃破時爆発 ----

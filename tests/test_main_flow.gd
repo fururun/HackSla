@@ -1141,3 +1141,41 @@ func test_skill_needs_mana_and_autopilot_is_mana_aware() -> void:
 	player.vitals.mana = 100.0
 	t.check_eq(pilot.skills_to_cast(player).size(), 3, "マナが十分なら、出せるものを全部")
 	player.free()
+
+
+func test_chain_aftershock_hits_enemies_where_the_effect_appears() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy:
+			n.hide()
+			n.active = false
+	var manager: EnemyManager = main.get_node("World/EnemyManager")
+	var far: Vector2 = player.global_position + Vector2(300, 0)  # 足元の円（半径〜60）も、近接の範囲も、届かない場所
+	var victim: Enemy = manager.spawn(DataDB.enemy("brute"), far)
+	var bystander: Enemy = manager.spawn(DataDB.enemy("brute"), far + Vector2(200, 0))  # 絵の場所から、離れた敵
+	var before: float = victim.life
+	player.caster.fx_parent = main.get_node("World")
+	var shatter: SkillDef = DataDB.skill("shatter")
+	var hits: int = player.caster.aftershock(shatter, far)
+	t.check_eq(hits, 1, "絵の出た場所の敵に、追加のダメージが当たる")
+	t.check(victim.life < before, "敵の体力が減る")
+	var dealt: float = before - victim.life
+	t.check(dealt <= shatter.damage_max * CombatConsts.CHAIN_AFTERSHOCK_RATIO * 3.0, "追加のダメージは、その技の半分ていど（桁が違わない）")
+	t.check_eq(bystander.life, bystander.definition.life, "離れた敵には、当たらない")
+	# チェインで出たときだけ、予約される（ふつうの技では、起きない）
+	var calls: Array[int] = [0]
+	player.caster.cast_done.connect(func(_s: int, _k: SkillDef, _h: int, chained: bool) -> void:
+		if chained:
+			calls[0] += 1)
+	player.caster.loadout.set_skill(1, "frost_bloom")
+	player.caster.loadout.set_skill(2, "slash")
+	player.caster.cast(1, far, player.global_position)
+	player.caster.cast(2, far, player.global_position)
+	t.check_eq(calls[0], 1, "霜囲い→払いで、砕氷が出る")
+	var before2: float = victim.life
+	for i: int in 20:
+		await tree.physics_frame
+	t.check(victim.life < before2, "チェインのあと、少し遅れて、絵の場所の敵に追加のダメージが入る")
+	main.queue_free()
