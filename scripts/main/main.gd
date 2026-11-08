@@ -51,6 +51,10 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	hud.name = "Hud"
 	add_child(hud)
 	hud.setup(player.vitals)
+	var skill_bar := SkillBar.new()  # 画面下の、使えるスキルと再使用までの秒数
+	skill_bar.name = "SkillBar"
+	add_child(skill_bar)
+	skill_bar.setup(player.caster)
 
 	# 敵に殴られる／倒した経験値
 	manager.player_hit.connect(player.on_player_hit)
