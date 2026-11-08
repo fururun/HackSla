@@ -7,6 +7,7 @@ signal attacked(skill: SkillDef, hits: int)
 
 const MOVE_SPEED: float = 80.0
 const AIM_DISTANCE: float = 100.0  ## 向いている方向の、狙う位置までの距離（向きだけが使われる）
+const AUTO_AIM_RANGE: float = 80.0  ## この距離（地面の距離）以内に敵がいれば、その敵のほうを向いて攻撃する
 
 var facing: int = 2  ## Facing の番号（最初は下向き）
 var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
@@ -49,9 +50,28 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-## スキルを出す向き：キャラクターが向いている方向（8方向）。マウスの位置は使わない
+## スキルを出す向き：近くに敵がいれば、いちばん近い敵のほう。いなければ、キャラクターが向いている方向（8方向）。
+## マウスの位置は使わない
 func aim_target() -> Vector2:
+	var enemy := nearest_enemy()
+	if enemy != null:
+		return enemy.global_position
 	return global_position + Facing.to_vector(facing).normalized() * AIM_DISTANCE
+
+
+## 自動で狙う範囲（AUTO_AIM_RANGE、地面の距離）にいる、いちばん近い敵。いなければ null
+func nearest_enemy() -> Node2D:
+	var best: Node2D = null
+	var best_d := AUTO_AIM_RANGE
+	for node: Node in get_tree().get_nodes_in_group("enemies"):
+		var e := node as Node2D
+		if e == null or not e.visible:
+			continue
+		var d := Iso.ground_distance(global_position, e.global_position)
+		if d <= best_d:
+			best = e
+			best_d = d
+	return best
 
 
 ## 敵に殴られた（EnemyManager.player_hit につなぐ）

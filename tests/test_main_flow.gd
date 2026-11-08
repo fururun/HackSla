@@ -16,14 +16,35 @@ func _start_main() -> Node:
 func test_skills_aim_where_the_character_faces() -> void:
 	var main: Node = await _start_main()
 	var player := (t as SceneTree).get_first_node_in_group("player") as Player
+	player.global_position = Vector2(100000, 100000)  # 敵がいない遠くへ
 	for index: int in 8:
 		player.facing = index
 		var dir := player.aim_target() - player.global_position
-		t.check_eq(Facing.dir8(dir), index, "向き %d の方向に狙いが出る" % index)
+		t.check_eq(Facing.dir8(dir), index, "敵がいなければ、向き %d の方向に狙いが出る" % index)
 	player.facing = 6  # 上向き
 	t.check(player.aim_target().y < player.global_position.y, "上向きなら上に狙う")
 	player.facing = 0  # 右向き
 	t.check(player.aim_target().x > player.global_position.x and is_equal_approx(player.aim_target().y, player.global_position.y), "右向きなら真横に狙う")
+	main.queue_free()
+
+
+func test_skills_turn_toward_a_nearby_enemy() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var enemy: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy:
+			enemy = n
+			break
+	player.global_position = enemy.global_position + Vector2(-30, 0)
+	player.facing = 6  # 上を向いていても、近くの敵のほうへ
+	var nearest := player.nearest_enemy()
+	t.check(nearest != null, "近くに敵がいる")
+	t.check_eq(player.aim_target(), nearest.global_position, "いちばん近い敵の位置を狙う")
+	# 敵が範囲の外なら、向いている方向
+	player.global_position = enemy.global_position + Vector2(-100000, 0)
+	t.check(player.nearest_enemy() == null, "遠いときは自動で狙わない")
 	main.queue_free()
 
 
