@@ -203,6 +203,10 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	for node: Node in get_tree().get_nodes_in_group("enemies"):
 		if node is TrainingDummy:
 			node.damaged.connect(dps_meter.record)
+	# チェイン技が出たら、派手な演出（輪・閃光・火花・文字・画面の揺れ）
+	player.caster.cast_done.connect(func(_slot: int, skill: SkillDef, _hits: int, chained: bool) -> void:
+		if chained:
+			ChainFx.play(world, skill, player.global_position, player.aim_target(), manager))
 	# 回復：緑の数字と、緑の輪
 	player.vitals.healed.connect(func(amount: float) -> void:
 		DamageNumber.spawn(world, player.global_position + Vector2(0, -30), amount, Color("#7dffb0"))

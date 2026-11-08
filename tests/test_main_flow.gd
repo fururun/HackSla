@@ -1032,3 +1032,37 @@ func test_balance_log_records_heals() -> void:
 	t.check_eq((heals["events"] as Array).size(), 2, "使うたびの記録")
 	t.check(float(heals["events"][0]["t"]) >= 12.0 and float(heals["events"][0]["life_before_ratio"]) < 0.3, "使った時刻と、使う前の体力")
 	main.queue_free()
+
+
+func test_chain_skill_has_flashy_effects() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var world: Node = main.get_node("World")
+	var before: int = world.get_child_count()
+	# チェインでない発動では、派手な演出は出ない
+	player.caster.cast_done.emit(1, DataDB.skill("slash"), 1, false)
+	t.check_eq(world.get_child_count(), before, "ふつうの技では、演出を足さない")
+	# チェインで出た技では、輪・閃光・火花・文字が出る
+	player.caster.cast_done.emit(1, DataDB.skill("shatter"), 1, true)
+	var added: int = world.get_child_count() - before
+	t.check(added >= 6, "チェイン技で、輪2・閃光・火花2・文字が出る（%d個）" % added)
+	var texts: int = 0
+	for child: Node in world.get_children():
+		if child is FloatText and (child as FloatText).text.contains("チェイン"):
+			texts += 1
+	t.check_eq(texts, 1, "「チェイン！」の文字が出る")
+	# 技の絵は、チェインのときだけ大きい
+	t.check(ChainFx.BOOST_SIZE > 1.0 and player.caster._fx_boost == 1.0, "ふだんは拡大しない")
+	# 文字は、時間がたてば消える
+	for child: Node in world.get_children():
+		if child is FloatText:
+			(child as FloatText)._process(5.0)
+	await tree.process_frame
+	await tree.process_frame
+	var left: int = 0
+	for child: Node in world.get_children():
+		if child is FloatText:
+			left += 1
+	t.check_eq(left, 0, "文字は消える")
+	main.queue_free()

@@ -20,6 +20,7 @@ var fx_parent: Node  ## 弾・円・斬撃を置く先（プレイヤーの親�
 
 var last_skill: SkillDef = null  ## 直近に実際に出した技（チェイン後の技を含む）
 var last_chained: bool = false
+var _fx_boost: float = 1.0  ## 技の絵の拡大（チェイン技は大きく出す）
 var projectiles_created: int = 0  ## 弾を new した回数（プール再利用の確認用）
 var fx_created: int = 0  ## エフェクトの部品を new した回数（プール再利用の確認用）
 
@@ -57,6 +58,7 @@ func cast(slot: int, target: Vector2, origin: Vector2, fallback_dir: Vector2 = V
 
 	var out := chain.on_cast(base, DataDB.chains, DataDB.skills)
 	var chained := out != base
+	_fx_boost = ChainFx.BOOST_SIZE if chained else 1.0
 	var mods: Dictionary = {}
 	var sup := loadout.support(slot)
 	if sup != null:
@@ -87,6 +89,7 @@ func cast(slot: int, target: Vector2, origin: Vector2, fallback_dir: Vector2 = V
 		"projectile":
 			_cast_projectile(out, ctx, origin, aim, dmg_mult, area_mult, mods)
 	_flush_explosions(ctx)
+	_fx_boost = 1.0
 
 	last_skill = out
 	last_chained = chained
@@ -254,4 +257,4 @@ func _play_fx(key: String, pos: Vector2, size_px: float = 0.0, rot: float = 0.0,
 		else:
 			fx = _fx_pool.pop_front()  # 一番古いものを再利用（末尾へ回す）
 			_fx_pool.append(fx)
-	fx.play(key, pos, size_px, rot, mirror)
+	fx.play(key, pos, size_px * _fx_boost, rot, mirror)

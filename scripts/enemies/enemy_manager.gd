@@ -68,6 +68,12 @@ func play_death(enemy: Enemy) -> void:
 	_death_layer.play(enemy.definition, enemy.global_position)
 
 
+## 画面を揺らす（チェイン技の演出など）。ふだんは、撃破の演出と同じ仕組み
+func shake(strength: float) -> void:
+	if _feedback != null:
+		_feedback._start_shake(strength)
+
+
 func death_anim_count() -> int:
 	return _death_layer.active_count() if _death_layer != null and is_instance_valid(_death_layer) else 0
 var _feedback: HitFeedback
