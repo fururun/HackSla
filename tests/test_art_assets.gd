@@ -34,4 +34,10 @@ func test_drop_icon_choice() -> void:
 	for slot: String in seen:
 		var expected := "sword" if slot == "weapon" else ("ring" if slot in ["ring", "amulet"] else "armor")
 		t.check_eq(seen[slot], expected, "部位 %s のアイコン" % slot)
-	t.check(seen.size() > 1, "複数の部位が出る")
+	t.check(seen.size() >= 1, "装備が出る")
+	# 部位ごとの選び方は、部位名から直接確かめる（出る部位は抽選とレベルに左右されるため）
+	for pair: Array in [["weapon", "sword"], ["ring", "ring"], ["amulet", "ring"], ["armor", "armor"], ["helmet", "armor"], ["boots", "armor"]]:
+		var item := ItemInstance.new()
+		item.base = ItemBaseDef.new()
+		item.base.slot = pair[0]
+		t.check_eq(GroundDrop.icon_name(item), pair[1], "部位 %s のアイコン" % pair[0])
