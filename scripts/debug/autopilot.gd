@@ -9,7 +9,8 @@ extends RefCounted
 
 enum Route { NEAREST_ENEMY, BOSS_RUSH }
 const ROUTE_NAMES: Array[String] = ["敵を全滅（ボスは最後）", "ボスへ直行"]
-const HEAL_BELOW_RATIO: float = 0.8  ## ライフがこの割合以下（2割減った）になったら、回復を使う
+const HEAL_BELOW_RATIO: float = 0.2  ## ライフがこの割合以下（残り2割）になったら、回復を使う
+const BOSS_AVOID_DISTANCE: float = 270.0  ## 全滅ルートでは、まだ眠っているボスのこの距離（地面）以内には、ほかの敵が残っているあいだ近づかない（起こしてしまうので）
 
 const ENGAGE_DISTANCE: float = 26.0  ## この距離（地面）まで敵に近づいたら、止まって戦う
 const FIGHT_FIRST_DISTANCE: float = 90.0  ## この距離以内に敵がいたら、拾う・宝箱より戦いを先にする（ボスへ直行のときは、先へ進む）
@@ -158,7 +159,7 @@ func _nearest_by_path(player: Node2D) -> Node2D:
 			var entry: Array = [Iso.ground_distance(player.global_position, e.global_position), e]
 			if e.definition != null and e.definition.is_boss:
 				boss_candidates.append(entry)  # ボスは、ほかの敵を倒しきってから
-			else:
+			elif not _in_boss_zone(player, e.global_position):
 				candidates.append(entry)
 	if candidates.is_empty():
 		candidates = boss_candidates
@@ -183,7 +184,7 @@ func _nearest_chest(player: Node2D) -> Node2D:
 	var best_len: int = 1 << 30
 	for node: Node in player.get_tree().get_nodes_in_group("chests"):
 		var chest := node as TreasureChest
-		if chest == null or chest.is_open:
+		if chest == null or chest.is_open or _in_boss_zone(player, chest.global_position):
 			continue
 		var length: int = path_length(player.global_position, chest.global_position)
 		if length >= 0 and length <= CHEST_DETOUR_PATH and length < best_len:
@@ -208,6 +209,8 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 		# 落ちているもの → 宝箱 → ルートの目的地
 		if director != null:
 			goal_pos = director.nearest_drop_position(player.global_position)
+			if goal_pos != null and _in_boss_zone(player, goal_pos):
+				goal_pos = null
 			if goal_pos != null:
 				goal_kind = "拾う"
 				stop_distance = 3.0
@@ -270,6 +273,18 @@ func _avoid_stuck(player: Node2D, dir: Vector2, delta: float) -> Vector2:
 		_detour_left -= delta
 		return dir.rotated(deg_to_rad(80.0) * _detour_sign).normalized()
 	return dir
+
+
+## ボスを起こさないために避ける場所か（全滅ルートで、ボス以外の敵が残っていて、ボスがまだ眠っているとき）
+func _in_boss_zone(player: Node2D, pos: Vector2) -> bool:
+	if route != Route.NEAREST_ENEMY:
+		return false
+	var boss: Node2D = find_boss(player)
+	if boss == null or (boss as Enemy).state != Enemy.State.IDLE:
+		return false
+	if _count_enemies(player) <= 1:
+		return false  # ボスだけが残っているなら、行ってよい
+	return Iso.ground_distance(pos, boss.global_position) <= BOSS_AVOID_DISTANCE
 
 
 ## 倒せる敵（案山子を除く）の数

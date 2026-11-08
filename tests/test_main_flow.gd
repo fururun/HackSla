@@ -448,18 +448,20 @@ func test_autopilot_heals_at_20_percent_loss_and_clears_all() -> void:
 	var player := tree.get_first_node_in_group("player") as Player
 	var pilot: Autopilot = main.autopilot
 	var max_life: float = player.vitals.max_life()
-	player.vitals.life = max_life * 0.85
-	t.check(not pilot.wants_heal(player), "2割減る前は使わない")
-	player.vitals.life = max_life * 0.8
-	t.check(pilot.wants_heal(player), "2割減ったら使う")
+	player.vitals.life = max_life * 0.5
+	t.check(not pilot.wants_heal(player), "半分あっても使わない（勝手に使わない）")
+	player.vitals.life = max_life * 0.25
+	t.check(not pilot.wants_heal(player), "残り2割より多いうちは使わない")
+	player.vitals.life = max_life * 0.2
+	t.check(pilot.wants_heal(player), "残り2割になったら使う")
 	player.vitals.heal_charges = 0
 	t.check(not pilot.wants_heal(player), "回数がなければ使わない")
 	player.vitals.heal_charges = 3
 	pilot.toggle()
-	player.vitals.life = max_life * 0.7
+	player.vitals.life = max_life * 0.15
 	for i: int in 3:
 		await tree.physics_frame
-	t.check(player.vitals.heal_charges < 3 and player.vitals.life > max_life * 0.7, "自動戦闘が、回復を使った")
+	t.check(player.vitals.heal_charges < 3 and player.vitals.life > max_life * 0.15, "自動戦闘が、回復を使った")
 	player.global_position = main.map.marker("P")
 	pilot.open_chests = false
 	pilot.director = null  # 落ちているものは見ない（宝箱から出たものに寄らないように）
