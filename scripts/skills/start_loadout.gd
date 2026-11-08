@@ -6,6 +6,19 @@ extends RefCounted
 const COUNT: int = 3
 const MAX_TRIES: int = 500
 
+static var last_ids: Array[String] = []  ## 前回（やり直す前）の構成。やり直したときに、同じ構成にならないようにする
+
+
+## 同じスキルの組み合わせか（順番は問わない）
+static func same_set(a: Array[String], b: Array[String]) -> bool:
+	if a.size() != b.size():
+		return false
+	var x: Array[String] = a.duplicate()
+	var y: Array[String] = b.duplicate()
+	x.sort()
+	y.sort()
+	return x == y
+
 
 ## 3つのスキルid。DataDB のチェインの決まりで、どれか2つが、この順に使うとチェインになる
 static func roll(rng: RandomNumberGenerator) -> Array[String]:
@@ -26,6 +39,9 @@ static func roll(rng: RandomNumberGenerator) -> Array[String]:
 			var ids: Array[String] = []
 			for skill: SkillDef in picked:
 				ids.append(skill.id)
+			if same_set(ids, last_ids):
+				continue  # やり直すたびに、前回とは別の構成にする
+			last_ids = ids.duplicate()
 			return ids
 	return fallback
 

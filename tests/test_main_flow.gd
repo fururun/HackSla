@@ -889,3 +889,22 @@ func test_autopilot_state_survives_restart() -> void:
 	t.check(b.settings_text().contains("3周目"), "何周目かが、画面に出る")
 	Autopilot.resume = {}
 	Autopilot.runs = 0
+
+
+func test_start_loadout_changes_every_restart() -> void:
+	StartLoadout.last_ids = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345
+	var previous: Array[String] = StartLoadout.roll(rng)
+	var changed_count: int = 0
+	for i: int in 200:
+		var next: Array[String] = StartLoadout.roll(rng)
+		t.check(not StartLoadout.same_set(previous, next), "やり直すと、前回と別の構成になる（%d回目）" % i)
+		var skills: Array[SkillDef] = []
+		for id: String in next:
+			skills.append(DataDB.skill(id))
+		t.check(not StartLoadout.chain_pairs(skills).is_empty(), "それでも、チェインは組める")
+		previous = next
+		changed_count += 1
+	t.check_eq(changed_count, 200, "200回やり直した")
+	StartLoadout.last_ids = []
