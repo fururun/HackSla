@@ -12,5 +12,33 @@
     "kinds": [],
     "modifiers": { "explode_on_kill": 0.6, "explode_damage_ratio": 1.5 },
     "description": "このスキルで倒した敵が、一定の確率で爆発して周りを巻き込む。"
+  },
+  {
+    "id": "heavy_blow",
+    "name": "重み乗せ",
+    "kinds": [],
+    "modifiers": { "damage_mult": 1.45, "cooldown_mult": 1.25 },
+    "description": "次の発動まで間が空く代わりに、一撃の重みが増す。"
+  },
+  {
+    "id": "wide_area",
+    "name": "大ぶり",
+    "kinds": ["area", "melee"],
+    "modifiers": { "area_mult": 1.35, "damage_mult": 0.9 },
+    "description": "威力が少し控えめになる代わりに、届く範囲が大きく広がる。"
+  },
+  {
+    "id": "chain_hop",
+    "name": "飛び移り",
+    "kinds": ["projectile"],
+    "modifiers": { "hop_count": 2 },
+    "description": "敵に当たった飛び道具が消えず、すぐ近くの敵へ飛び移る。"
+  },
+  {
+    "id": "rapid_cast",
+    "name": "早繰り",
+    "kinds": [],
+    "modifiers": { "cooldown_mult": 0.7, "damage_mult": 0.8 },
+    "description": "一発の威力が軽くなる代わりに、短い間隔で繰り出せる。"
   }
 ]

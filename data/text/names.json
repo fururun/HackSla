@@ -660,6 +660,136 @@
      "display_name": "捉えにくい"
     }
    ]
+  },
+  {
+   "category": "skill",
+   "id": "fire_ring",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "ほむら輪",
+     "reading": "ほむらわ",
+     "description": "足元に炎の輪を広げ、寄ってきた群れをまとめて焼く。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "ice_shard",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "氷つぶて",
+     "reading": "こおりつぶて",
+     "description": "鋭い氷の礫を飛ばし、冷えた敵を突き刺す。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "spark_shot",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "稲妻針",
+     "reading": "いなずまばり",
+     "description": "素早い雷の針を遠くまで飛ばし、離れた敵をチクリと射抜く。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "ground_slam",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "地鳴らし",
+     "reading": "じならし",
+     "description": "地面を強く踏み鳴らし、周りの敵を大きく揺さぶる。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "thrust",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "通し突き",
+     "reading": "とおしづき",
+     "description": "穂先をまっすぐ深く突き出し、離れた敵を強く貫く。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "frost_lance",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "凍て槍",
+     "reading": "いてやり",
+     "description": "冷気で凍えた敵へ大ぶりな氷の槍を撃ち込み、深く射抜く。"
+    }
+   ]
+  },
+  {
+   "category": "support",
+   "id": "heavy_blow",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "重み乗せ",
+     "reading": "おもみのせ",
+     "description": "次の発動まで間が空く代わりに、一撃の重みが増す。"
+    }
+   ]
+  },
+  {
+   "category": "support",
+   "id": "wide_area",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "大ぶり",
+     "reading": "おおぶり",
+     "description": "威力が少し控えめになる代わりに、届く範囲が大きく広がる。"
+    }
+   ]
+  },
+  {
+   "category": "support",
+   "id": "chain_hop",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "飛び移り",
+     "reading": "とびうつり",
+     "description": "敵に当たった飛び道具が消えず、すぐ近くの敵へ飛び移る。"
+    }
+   ]
+  },
+  {
+   "category": "support",
+   "id": "rapid_cast",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "早繰り",
+     "reading": "はやくり",
+     "description": "一発の威力が軽くなる代わりに、短い間隔で繰り出せる。"
+    }
+   ]
   }
  ]
 }
