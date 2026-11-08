@@ -4,6 +4,7 @@ extends Node2D
 const MAP_PATH: String = "res://data/maps/field_01.txt"  ## 広いマップ。作り方は tools/maps/make_field_01.py、設計は docs/map_field_01.md
 const RARE_CHANCE_AT_BRUTE: float = 0.3  ## 岩殻の印で、レアモンスター（黄金の岩殻）に入れ替わる確率
 const RARE_CHANCE_AT_PACK: float = 0.06  ## スライムの群れの印で、近くにレアモンスターも現れる確率
+const START_NOTICE_SECONDS: float = 10.0  ## スタート構成のお知らせを出す秒数
 const SMALL_PACK_SIZE: int = 6  ## マップの印 f の群れの数
 ## カメラの引き（拡大率）。1.0 で、画面が 480x270 ドットの範囲。0.5 なら、2倍の範囲（960x540）が見える。
 ## 画面を3倍に拡大して描く（1440x810）とき、2/3 なら、ドット1つがちょうど画面の2ピクセルになって、にじまない。
@@ -15,6 +16,9 @@ var player: Player
 var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
 var game_log: GameLog  ## 遊んだ記録とデバッグの記録
 var camera: Camera2D
+var loot_hud: LootHud
+var start_skill_ids: Array[String] = []  ## 今回のスタートのスキル構成（毎回ランダム。必ずチェインが1つは組める）
+var start_loadout_text: String = ""
 var autopilot: Autopilot = Autopilot.new()  ## デバッグ用の自動戦闘（F2）
 var _autopilot_label: Label
 var camera_mode: int = 0
@@ -70,6 +74,7 @@ func _ready() -> void:
 	add_child(enemy_fx)
 	enemy_fx.setup(manager, player, world)
 	stash = Stash.new()
+	_roll_start_loadout()
 	_add_skill_screen(stash)
 	_add_progression(manager, stash)
 	game_log = GameLog.new()  # 遊んだ記録とデバッグの記録（user://logs/）
@@ -77,6 +82,7 @@ func _ready() -> void:
 	add_child(game_log)
 	game_log.open()
 	game_log.setup(player, manager, stash)
+	game_log.play("start_loadout", {"skills": start_skill_ids})
 	add_child(RestartListener.new())
 	_add_help()
 
@@ -153,6 +159,17 @@ func apply_camera_mode(index: int) -> void:
 		game_log.play("camera_mode", {"mode": str(m[0])})
 
 
+## スタート時のスキル構成を、ランダムに決める（必ず、チェインが1つは組める）。持ち物にも、そのスキルを入れる
+func _roll_start_loadout() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	start_skill_ids = StartLoadout.roll(rng)
+	for slot: int in start_skill_ids.size():
+		player.caster.loadout.set_skill(slot + 1, start_skill_ids[slot])
+		stash.add_gem(GemInstance.new(GemInstance.Kind.SKILL, start_skill_ids[slot]))
+	start_loadout_text = StartLoadout.describe(start_skill_ids)
+
+
 ## 体力・経験値・ドロップ・装備をつなぐ
 func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	var hud := Hud.new()
@@ -209,10 +226,11 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	equip_screen.name = "EquipScreen"
 	add_child(equip_screen)
 	equip_screen.setup(stash, player.vitals)
-	var loot_hud := LootHud.new()
+	loot_hud = LootHud.new()
 	loot_hud.name = "LootHud"
 	add_child(loot_hud)
 	loot_hud.setup(stash)
+	loot_hud.notify(start_loadout_text, UiStyle.ACCENT, START_NOTICE_SECONDS)  # 今回の、スタート構成と、組めるチェイン
 
 	# 装備のステータスを、体力・スキルのダメージ計算が見ている入れ物に反映する
 	var apply_equipment := func() -> void:

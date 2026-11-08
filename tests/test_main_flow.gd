@@ -89,7 +89,10 @@ func test_ui_does_not_cover_the_screen() -> void:
 	for child: Node in main.get_children():
 		if child is LootHud:
 			loot_hud = child
-	t.check(loot_hud != null and not loot_hud._panel.visible, "拾ったものの通知がないあいだは、枠が出ない")
+	t.check(loot_hud != null and loot_hud._panel.visible, "スタート直後は、スタート構成のお知らせが出ている")
+	loot_hud._recent.clear()  # お知らせが消えたあと
+	loot_hud._refresh()
+	t.check(not loot_hud._panel.visible, "通知がないあいだは、枠が出ない")
 	# 体力・経験値の棒と、スキルバーは、小さい
 	t.check(Hud.BAR_W <= 100.0 and Hud.BAR_H <= 12.0, "体力・経験値の棒は小さめ")
 	t.check(SkillBar.BAR_SCALE <= 0.8, "スキルバーは小さめ")
@@ -758,3 +761,41 @@ func test_autopilot_auto_equips_best_owned_supports() -> void:
 	stash.add_gem(GemInstance.new(GemInstance.Kind.SUPPORT, "chain_hop"))
 	t.check_eq(pilot.equip_supports(player.caster), 0, "拡散より弱い補助ジェムを拾っても、付け替えない")
 	player.free()
+
+
+func test_start_loadout_is_random_and_always_has_a_chain() -> void:
+	var seen: Dictionary = {}
+	for seed_value: int in 300:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var ids: Array[String] = StartLoadout.roll(rng)
+		t.check_eq(ids.size(), 3, "スキルは3つ（seed %d）" % seed_value)
+		var skills: Array[SkillDef] = []
+		for id: String in ids:
+			var skill: SkillDef = DataDB.skill(id)
+			t.check(skill != null and not skill.chain_only, "ふつうのスキル: %s" % id)
+			skills.append(skill)
+		t.check(not StartLoadout.chain_pairs(skills).is_empty(), "チェインが1つは組める（seed %d: %s）" % [seed_value, str(ids)])
+		var sorted_ids: Array[String] = ids.duplicate()
+		sorted_ids.sort()
+		t.check_eq(sorted_ids.size(), 3, "同じスキルがない")
+		t.check(sorted_ids[0] != sorted_ids[1] and sorted_ids[1] != sorted_ids[2], "3つとも違う（seed %d）" % seed_value)
+		seen[",".join(sorted_ids)] = true
+	t.check(seen.size() >= 8, "いろいろな構成が出る（%d 通り）" % seen.size())
+	var sample: Array[String] = ["frost_bloom", "slash", "fire_bolt"]
+	t.check(StartLoadout.describe(sample).contains("チェイン"), "お知らせに、組めるチェインが出る")
+
+
+func test_main_uses_random_start_loadout() -> void:
+	var main: Node = await _start_main()
+	var player := (t as SceneTree).get_first_node_in_group("player") as Player
+	t.check_eq(main.start_skill_ids.size(), 3, "メイン画面が、スタート構成を決めている")
+	for slot: int in 3:
+		t.check_eq(player.caster.loadout.skill_id(slot + 1), main.start_skill_ids[slot], "枠 %d に、決めたスキルが入っている" % (slot + 1))
+		t.check(main.stash.has_gem(GemInstance.Kind.SKILL, main.start_skill_ids[slot]), "持ち物に、そのスキルがある")
+	var skills: Array[SkillDef] = []
+	for id: String in main.start_skill_ids:
+		skills.append(DataDB.skill(id))
+	t.check(not StartLoadout.chain_pairs(skills).is_empty(), "実際の構成でも、チェインが組める")
+	t.check(main.start_loadout_text.begins_with("スタート構成"), "お知らせの文がある")
+	main.queue_free()

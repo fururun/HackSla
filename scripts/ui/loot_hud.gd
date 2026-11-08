@@ -113,8 +113,13 @@ func _on_picked_up(value: Variant) -> void:
 		color = UiStyle.ACCENT
 	_add_message(text, color)
 
-func _add_message(text: String, color: Color, lines: Array[Dictionary] = []) -> void:
-	_recent.append({"text": text, "color": color, "lines": lines, "time": MESSAGE_LIFETIME})
+## 外から、一言を出す（スタート構成のお知らせなど）。seconds 秒、右上に出る
+func notify(text: String, color: Color = UiStyle.TEXT, seconds: float = MESSAGE_LIFETIME) -> void:
+	_add_message(text, color, [], seconds)
+
+
+func _add_message(text: String, color: Color, lines: Array[Dictionary] = [], seconds: float = MESSAGE_LIFETIME) -> void:
+	_recent.append({"text": text, "color": color, "lines": lines, "time": seconds})
 	if _recent.size() > MAX_MESSAGES:
 		_recent.pop_front()
 	_refresh()
