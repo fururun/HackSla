@@ -14,8 +14,8 @@ func test_stash() -> void:
 	var stash: Stash = Stash.new()
 	for id: String in ["slash", "frost_bloom", "fire_bolt"]:
 		t.check(stash.has_gem(GemInstance.Kind.SKILL, id), "初期スキル")
-	for support: SupportDef in DataDB.supports.values():
-		t.check(stash.has_gem(GemInstance.Kind.SUPPORT, support.id), "補助はデータから全て所持")
+	for id: String in Stash.STARTING_SUPPORT_IDS:
+		t.check(stash.has_gem(GemInstance.Kind.SUPPORT, id), "初期補助は固定の2個")
 	var changes: Array[int] = [0]
 	stash.changed.connect(func() -> void: changes[0] += 1)
 	var gem: GemInstance = GemInstance.new(GemInstance.Kind.SKILL, "test_gem")
@@ -118,7 +118,8 @@ func test_loot_hud() -> void:
 	for index: int in 4:
 		stash.collect(GemInstance.new(GemInstance.Kind.SKILL, "slash"))
 	t.check_eq(hud._recent.size(), 3, "直近3行")
-	t.check_eq(hud._recent[0]["text"], DataDB.skill("slash").name, "ジェムの表示名")
+	t.check(hud._recent[0]["text"].contains("所持済み：" + DataDB.skill("slash").name), "重複ジェムの表示名と所持済み")
+	t.check_eq(stash.currency, 5 + 4 * Stash.GEM_DUPLICATE_CURRENCY, "重複ごとに通貨を加算")
 	hud._process(LootHud.MESSAGE_LIFETIME + 0.1)
 	t.check(hud._recent.is_empty(), "数秒後に消える")
 	hud.free()

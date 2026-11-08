@@ -35,7 +35,7 @@ func _on_enemy_hit(enemy: Enemy, _amount: float, killed: bool) -> void:
 	if not killed:
 		return
 	var level: int = int(_level_provider.call())
-	for value: Variant in _roller.roll_drops(enemy.definition, level):
+	for value: Variant in _roller.roll_drops(enemy.definition, level, _stash.gems):
 		var angle: float = rng.randf_range(0.0, TAU)
 		var radius: float = sqrt(rng.randf()) * SCATTER_RADIUS
 		spawn_drop(value, enemy.global_position + Vector2(cos(angle), sin(angle) * 0.5) * radius)
@@ -70,6 +70,7 @@ func tick(delta: float) -> void:
 	for index: int in range(_active.size() - 1, -1, -1):
 		var drop: GroundDrop = _active[index]
 		drop.age += delta
+		drop.update_name_visibility(_player.global_position)
 		if drop.value is int:
 			var remaining: float = maxf(CURRENCY_FLIGHT_TIME - drop.age + delta, delta)
 			drop.global_position = drop.global_position.lerp(_player.global_position, minf(delta / remaining, 1.0))
@@ -90,16 +91,21 @@ func _disconnect_manager() -> void:
 	if is_instance_valid(_manager) and _manager.enemy_hit.is_connected(_on_enemy_hit):
 		_manager.enemy_hit.disconnect(_on_enemy_hit)
 
-func _clear_drops() -> void:
+func _clear_drops(deferred: bool = false) -> void:
 	for drop: GroundDrop in _active + _pool:
 		if is_instance_valid(drop):
-			drop.free()
+			if deferred:
+				drop.hide()
+				drop.queue_free()
+			else:
+				drop.free()
 	_active.clear()
 	_pool.clear()
 
 func _exit_tree() -> void:
 	_disconnect_manager()
-	_clear_drops()
+	# 親も終了中の可能性があるため、ツリーの走査中には子を外さない。
+	_clear_drops(true)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
