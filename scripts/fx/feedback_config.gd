@@ -4,11 +4,11 @@ extends RefCounted
 
 const NUMBER_LIMIT: int = 64
 const NUMBER_LIFE: float = 0.6
-const NUMBER_RISE: float = 14.0
+const NUMBER_RISE: float = 20.0
 const NUMBER_JITTER: float = 6.0
-const NUMBER_SIZE: Vector2 = Vector2(24, 10)
+const NUMBER_SIZE: Vector2 = Vector2(48, 20)
 const NUMBER_OFFSET: Vector2 = Vector2(0, -26)
-const FONT_SIZE: int = 8
+const FONT_SIZE: int = 14  ## 画面を半分に引いて見るので、世界の中の文字は大きめにする
 const OUTLINE_SIZE: int = 2
 const NUMBER_Z: int = 20
 const FADE_FACTOR: float = 1.5

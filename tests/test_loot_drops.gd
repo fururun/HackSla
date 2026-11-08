@@ -151,3 +151,19 @@ func test_higher_rarity_means_stronger_base() -> void:
 	epic.rarity.stat_mult = 2.0
 	t.check_eq(epic.total_stats()["damage_pct"], 40, "レアリティが高いと、土台の性能が上がる")
 	t.check(epic.power() > common.power(), "強さの目安も上がる")
+
+
+func test_item_drop_pillar_color_and_height_follow_rarity() -> void:
+	var drop := GroundDrop.new()
+	var heights: Array[float] = []
+	for tier: int in [0, 1, 2, 3, 4, 5]:
+		var item: ItemInstance = _item("weapon", tier, {"damage_pct": 5})
+		item.rarity.color = Color.from_hsv(float(tier) / 6.0, 0.8, 1.0)
+		drop.activate(item, Vector2.ZERO)
+		heights.append(drop.pillar_height())
+		t.check_eq(drop.tint, item.rarity.color, "柱の色はレアリティの色（段階 %d）" % tier)
+	for i: int in range(1, heights.size()):
+		t.check(heights[i] > heights[i - 1], "高いレアリティほど、柱が高い")
+	drop.activate(7, Vector2.ZERO)
+	t.check_eq(drop.pillar_height(), GroundDrop.PILLAR_BASE_HEIGHT, "装備でないものは、柱の高さの基本値")
+	drop.free()

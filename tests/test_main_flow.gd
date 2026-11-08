@@ -248,3 +248,46 @@ func test_dodge_moves_and_avoids_damage() -> void:
 	player._dodge_cooldown_left = 0.0
 	t.check(player.start_dodge(Vector2.UP), "時間がたてば、もう一度回避できる")
 	main.queue_free()
+
+
+func test_dps_meter() -> void:
+	var meter := DpsMeter.new()
+	(t as SceneTree).root.add_child(meter)
+	t.check_eq(meter.current_dps(), 0.0, "最初は0")
+	meter.record(100.0)
+	meter.tick(0.1)
+	t.check_eq(meter.current_dps(), 100.0, "最初の1秒は、1秒で割る（1発で跳ね上がらない）")
+	meter.record(100.0)
+	meter.tick(1.9)
+	t.check(absf(meter.current_dps() - 100.0) < 0.01, "2秒で200なら、100")
+	t.check(meter.peak_dps() >= 100.0, "最大値を覚える")
+	meter.tick(DpsMeter.WINDOW + 1.0)
+	t.check_eq(meter.current_dps(), 0.0, "攻撃をやめると、0に戻る")
+	t.check(meter.peak_dps() >= 100.0, "最大値は残る")
+	t.check(meter._label.text.contains("DPS"), "画面に出る")
+	meter.free()
+
+
+func test_main_wires_dps_and_damage_taken() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var meter: DpsMeter = null
+	for child: Node in main.get_children():
+		if child is DpsMeter:
+			meter = child
+	t.check(meter != null, "メイン画面に DPS 表示がある")
+	var enemy: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.life > 100.0:
+			enemy = n
+			break
+	enemy.take_hit(50.0, DataDB.skill("slash"))
+	t.check_eq(meter._hits.size(), 1, "与えたダメージが DPS に入る")
+	var dummy: TrainingDummy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is TrainingDummy:
+			dummy = n
+			break
+	dummy.take_hit(30.0, DataDB.skill("slash"))
+	t.check_eq(meter._hits.size(), 2, "案山子への攻撃も DPS に入る")
+	main.queue_free()

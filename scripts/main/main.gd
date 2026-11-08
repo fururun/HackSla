@@ -114,6 +114,15 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	hud.name = "Hud"
 	add_child(hud)
 	hud.setup(player.vitals)
+	var dps_meter := DpsMeter.new()  # DPS（右上）
+	dps_meter.name = "DpsMeter"
+	add_child(dps_meter)
+	manager.enemy_hit.connect(func(_enemy: Enemy, amount: float, _killed: bool) -> void: dps_meter.record(amount))
+	for node: Node in get_tree().get_nodes_in_group("enemies"):
+		if node is TrainingDummy:
+			node.damaged.connect(dps_meter.record)
+	# 受けたダメージは、プレイヤーの頭の上に赤い数字で出す
+	player.damaged.connect(func(amount: float, _source: Node) -> void: DamageNumber.spawn(world, player.global_position + Vector2(0, -30), amount, Color("#ff6b5e")))
 	var boss_bar := BossBar.new()  # ボスの体力の棒（画面の上の中央）
 	boss_bar.name = "BossBar"
 	add_child(boss_bar)

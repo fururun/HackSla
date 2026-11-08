@@ -62,7 +62,7 @@ func _ready() -> void:
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_panel.offset_left = -150
 	_panel.offset_right = -6
-	_panel.offset_top = 46
+	_panel.offset_top = 56
 	_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # 枠なし（文字のふちどりだけ）
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_messages = VBoxContainer.new()

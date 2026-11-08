@@ -3,7 +3,7 @@ extends Label
 ## プールは表示先の所有物。親の破棄と一緒に解放し、静的なノード参照を残さない。
 
 const LARGE_DAMAGE: float = 100.0
-const DAMAGE_SIZE_BONUS: int = 4
+const DAMAGE_SIZE_BONUS: int = 6
 const DAMAGE_OUTLINE: int = 3
 
 const POOL_META: StringName = &"damage_number_pool"
@@ -13,7 +13,7 @@ var _start: Vector2
 var active: bool = false
 
 
-static func spawn(parent: Node, pos: Vector2, amount: float) -> DamageNumber:
+static func spawn(parent: Node, pos: Vector2, amount: float, tint: Color = Color(0, 0, 0, 0)) -> DamageNumber:
 	var pool: Array = parent.get_meta(POOL_META, [])
 	var n: DamageNumber
 	for candidate: DamageNumber in pool:
@@ -30,7 +30,7 @@ static func spawn(parent: Node, pos: Vector2, amount: float) -> DamageNumber:
 	pool.erase(n)
 	pool.append(n)
 	parent.set_meta(POOL_META, pool)
-	n._activate(pos, amount)
+	n._activate(pos, amount, tint)
 	return n
 
 
@@ -45,11 +45,11 @@ func _init() -> void:
 	z_index = FeedbackConfig.NUMBER_Z
 
 
-func _activate(pos: Vector2, amount: float) -> void:
+func _activate(pos: Vector2, amount: float, tint: Color = Color(0, 0, 0, 0)) -> void:
 	text = str(roundi(amount))
 	var emphasis: float = clampf(amount / LARGE_DAMAGE, 0.0, 1.0)
 	add_theme_font_size_override("font_size", FeedbackConfig.FONT_SIZE + roundi(DAMAGE_SIZE_BONUS * emphasis))
-	add_theme_color_override("font_color", Color.WHITE.lerp(UiStyle.ACCENT, emphasis))
+	add_theme_color_override("font_color", tint if tint.a > 0.0 else Color.WHITE.lerp(UiStyle.ACCENT, emphasis))  # tint があれば、その色（受けたダメージは赤）
 	_t = 0.0
 	active = true
 	modulate = Color.WHITE

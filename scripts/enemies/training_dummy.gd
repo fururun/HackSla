@@ -12,6 +12,8 @@ const STRAW_SHADE := Color("#8e744e")
 const STRAW_LIGHT := Color("#e2cb8e")
 const SHADOW := Color(0, 0, 0, 0.35)
 
+signal damaged(amount: float)  ## 殴られた（画面のDPSの集計用）
+
 var hit_radius: float = 6.0
 var _hits: Array = []  ## [時刻, ダメージ]
 var _flash: float = 0.0
@@ -36,6 +38,7 @@ func take_hit(amount: float, _skill: SkillDef) -> void:
 	_hits.append([now, amount])
 	_flash = FLASH_DURATION
 	queue_redraw()
+	damaged.emit(amount)
 	DamageNumber.spawn(get_parent(), global_position + Vector2(0, -26), amount)
 
 
