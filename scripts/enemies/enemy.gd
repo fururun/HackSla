@@ -83,7 +83,7 @@ var _lean: float = 0.0
 var _last_position: Vector2 = Vector2.ZERO
 
 
-func take_hit(amount: float, _skill: SkillDef) -> void:
+func take_hit(amount: float, skill: SkillDef) -> void:
 	if not active or definition.is_immortal:
 		return
 	if not is_finite(amount) or amount <= 0.0 or life <= 0.0:
@@ -93,6 +93,7 @@ func take_hit(amount: float, _skill: SkillDef) -> void:
 	_flash_remaining = FLASH_DURATION
 	set_process(true)
 	queue_redraw()
+	manager.skill_damage.emit(skill, damage)  # バランス記録用：どのスキルが、どれだけ与えたか
 	manager.enemy_hit.emit(self, damage, life <= 0.0)
 	if life <= 0.0:
 		DeathDebris.spawn(manager, global_position)

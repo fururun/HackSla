@@ -17,6 +17,9 @@ var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
 var game_log: GameLog  ## 遊んだ記録とデバッグの記録
 var camera: Camera2D
 var loot_hud: LootHud
+var balance_log: BalanceLog  ## バランス調整用の記録（1プレイにつき1行。balance_logs/runs.jsonl）
+var dps_meter: DpsMeter
+var loot_director: LootDirector
 var start_skill_ids: Array[String] = []  ## 今回のスタートのスキル構成（毎回ランダム。必ずチェインが1つは組める）
 var start_loadout_text: String = ""
 var autopilot: Autopilot = Autopilot.new()  ## デバッグ用の自動戦闘（F2）
@@ -86,6 +89,11 @@ func _ready() -> void:
 	var restart_listener := RestartListener.new()
 	add_child(restart_listener)
 	_add_help()
+	# バランス調整用の記録（使ったスキル・最終装備・ドロップ・最大DPS・ボスの討伐の速さ）
+	balance_log = BalanceLog.new()
+	balance_log.name = "BalanceLog"
+	add_child(balance_log)
+	balance_log.setup(manager, player, stash, loot_director, autopilot, dps_meter, start_skill_ids)
 	# 自動戦闘の周回：ボスを倒す・やられたら、自動でやり直す
 	var auto_loop := AutoLoop.new()
 	auto_loop.name = "AutoLoop"
@@ -188,7 +196,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	hud.name = "Hud"
 	add_child(hud)
 	hud.setup(player.vitals)
-	var dps_meter := DpsMeter.new()  # DPS（右上）
+	dps_meter = DpsMeter.new()  # DPS（右上）
 	dps_meter.name = "DpsMeter"
 	add_child(dps_meter)
 	manager.enemy_hit.connect(func(_enemy: Enemy, amount: float, _killed: bool) -> void: dps_meter.record(amount))
@@ -219,6 +227,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 
 	# ドロップ：倒した敵の位置に出て、歩いて拾う
 	var director := LootDirector.new()
+	loot_director = director
 	director.name = "LootDirector"
 	add_child(director)
 	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)

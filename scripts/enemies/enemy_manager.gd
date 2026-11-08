@@ -4,6 +4,7 @@ extends Node2D
 ## 押し合いの各反復では位置を固定して比較し、補正を最後にまとめて適用する。
 
 signal enemy_hit(enemy: Enemy, amount: float, killed: bool)
+signal skill_damage(skill: SkillDef, amount: float)  ## どのスキルが、どれだけ与えたか（バランス記録用。skill は空のこともある）
 
 signal player_hit(damage: float, source: Enemy)
 signal aoe_telegraph(enemy: Enemy, radius: float, windup: float)  ## 範囲攻撃の予告が始まった

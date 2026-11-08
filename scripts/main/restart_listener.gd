@@ -14,6 +14,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func restart() -> void:
 	var tree := get_tree()
+	var recorder: Variant = get_parent().get("balance_log") if get_parent() != null else null
+	if recorder is BalanceLog:
+		(recorder as BalanceLog).finish_for_restart()  # やり直す前に、このプレイの記録を書く
 	var pilot: Variant = get_parent().get("autopilot") if get_parent() != null else null
 	if pilot is Autopilot:
 		(pilot as Autopilot).save_state()  # 自動戦闘が入っていれば、やり直したあとも続ける

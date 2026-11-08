@@ -1,6 +1,8 @@
 class_name LootDirector
 extends Node
 
+signal dropped(value: Variant)  ## 地面に落とした（敵・宝箱）。バランス記録用
+
 const MAX_GROUND_DROPS: int = 256
 const PICKUP_RADIUS: float = 14.0
 const SCATTER_RADIUS: float = 18.0
@@ -103,6 +105,7 @@ func spawn_drop(value: Variant, at: Vector2) -> GroundDrop:
 		drop = _pool.pop_back()
 	drop.activate(value, at)
 	_active.append(drop)
+	dropped.emit(value)
 	return drop
 
 func active_count() -> int:

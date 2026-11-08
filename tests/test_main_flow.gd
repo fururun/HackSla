@@ -908,3 +908,75 @@ func test_start_loadout_changes_every_restart() -> void:
 		changed_count += 1
 	t.check_eq(changed_count, 200, "200回やり直した")
 	StartLoadout.last_ids = []
+
+
+func test_balance_log_records_run() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var log: BalanceLog = main.balance_log
+	t.check(log != null, "メイン画面に、バランス記録がある")
+	var player := tree.get_first_node_in_group("player") as Player
+	var manager: EnemyManager = main.get_node("World/EnemyManager")
+	# スキルのダメージ・使用回数
+	var slime: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.behavior == "melee_swarm":
+			slime = n
+			break
+	slime.take_hit(10.0, DataDB.skill("slash"))
+	slime.take_hit(slime.life + 1.0, DataDB.skill("fire_bolt"))
+	player.caster.cast_done.emit(1, DataDB.skill("slash"), 1, false)
+	player.caster.cast_done.emit(2, DataDB.skill("shatter"), 1, true)
+	# ドロップ
+	var item: ItemInstance = LootRoller.new(RandomNumberGenerator.new()).roll_item(10, 2)
+	main.loot_director.spawn_drop(item, player.global_position)
+	main.loot_director.spawn_drop(GemInstance.new(GemInstance.Kind.SKILL, "slash"), player.global_position)
+	main.loot_director.spawn_drop(25, player.global_position)
+	# ボスを倒す
+	var boss: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.is_boss:
+			boss = n
+	boss.state = Enemy.State.CHASING
+	log.tick(1.0)
+	log._poll_boss()
+	log.tick(20.0)
+	boss.take_hit(boss.life + 1.0, DataDB.skill("slash"))
+	var record: Dictionary = log.build_record("test")
+	t.check_eq(int(record["schema"]), BalanceLog.SCHEMA, "記録の版")
+	t.check(record["skills"].has("slash") and int(record["skills"]["slash"]["damage"]) >= 10, "スキルごとのダメージが入る")
+	t.check(record["skills"].has("fire_bolt"), "撃破した火の矢のダメージも入る")
+	t.check_eq(int(record["skills"]["slash"]["casts"]), 1, "使用回数")
+	t.check_eq(int(record["skills"]["shatter"]["chained_casts"]), 1, "チェインで出た回数")
+	t.check_eq(int(record["chain_casts"]), 1, "チェイン数")
+	t.check(int(record["drops"]["counts"]["item"]) >= 1, "装備のドロップ数（敵を倒したぶんも入る）")
+	t.check(int(record["drops"]["counts"]["skill_gem"]) >= 1, "スキルジェムのドロップ数")
+	t.check(int(record["drops"]["currency"]) >= 25, "通貨のドロップ量")
+	t.check(not (record["drops"]["items_by_rarity"] as Dictionary).is_empty(), "装備のレアリティの数")
+	t.check(bool(record["boss"]["killed"]) and float(record["boss"]["kill_seconds"]) >= 20.0, "ボスの討伐の速さ")
+	t.check(record["boss"].has("fight_seconds") and record["boss"].has("wake_seconds"), "ボスが動き出してから倒すまで")
+	t.check(float(record["max_dps"]) >= 0.0 and record.has("avg_dps"), "最大DPS・平均DPS")
+	t.check(record["start_loadout"].size() == 3 and record["final_loadout"].size() == 3, "スタートと最後のスキル構成")
+	t.check(record.has("final_equipment"), "最終装備")
+	# 装備を着替えると、最終装備に出る
+	main.stash.collect(item)
+	record = log.build_record("test")
+	t.check((record["final_equipment"] as Array).size() >= 1, "最終装備に、着た装備が入る")
+	t.check(record["final_equipment"][0].has("stats") and record["final_equipment"][0].has("rarity"), "装備の性能とレアリティ")
+	# 書き込み：1回だけ。ファイルに、1行のJSON
+	var written: Dictionary = log.finish("test_end")
+	t.check(not written.is_empty() and log.is_written(), "書き込む")
+	t.check(log.finish("again").is_empty(), "同じプレイは、2回書かない")
+	var path: String = "user://logs_tools/" + BalanceLog.FILE_NAME
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	t.check(file != null, "テストの記録は、ツール用の場所に書かれる")
+	if file != null:
+		var last_line: String = ""
+		while not file.eof_reached():
+			var line: String = file.get_line()
+			if not line.is_empty():
+				last_line = line
+		file.close()
+		var parsed: Variant = JSON.parse_string(last_line)
+		t.check(parsed is Dictionary and (parsed as Dictionary)["end_reason"] == "test_end", "最後の1行が、JSONとして読める")
+	main.queue_free()
