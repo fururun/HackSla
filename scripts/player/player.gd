@@ -159,6 +159,22 @@ const LEG_ROWS: int = 6  ## 絵の下から、足として動かす行数
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 
 
+const WALK_VIEWS: PackedStringArray = ["front", "side", "back"]  ## 歩きの絵（4コマ）がある向き。斜めは、立ち絵の脚を動かして歩かせる
+const WALK_FRAMES: int = 4  ## 歩きの絵のコマ数（0:足を前に出す 1:そろう 2:反対の足を前に出す 3:そろう）
+static var _walk_textures: Dictionary = {}  ## "向き_コマ" -> Texture2D
+
+
+## 歩いているときの、その時刻の絵（4コマの歩き）。斜めなど、歩きの絵がない向きは null
+static func walk_texture(view: String, time_ms: int) -> Texture2D:
+	if not WALK_VIEWS.has(view):
+		return null
+	var index: int = (time_ms / WALK_FRAME_MS) % WALK_FRAMES
+	var key: String = "%s_%d" % [view, index]
+	if not _walk_textures.has(key):
+		_walk_textures[key] = load(SPRITE_DIR + "player_walk_%s_%d.png" % [view, index]) as Texture2D
+	return _walk_textures[key]
+
+
 static func _texture(view: String) -> Texture2D:
 	if not _textures.has(view):
 		_textures[view] = load(SPRITE_DIR + "player_%s.png" % view) as Texture2D
@@ -194,7 +210,13 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(-s if v["flip"] else s, s))
 	# 絵ごとに幅が違う（斜めは刀の分だけ広い）ので、絵の大きさから足元の中心を決める
 	var size := tex.get_size()
-	var pose := walk_pose(velocity != Vector2.ZERO and not vitals.is_dead(), Time.get_ticks_msec())
+	var moving: bool = velocity != Vector2.ZERO and not vitals.is_dead()
+	var walk_tex: Texture2D = walk_texture(v["view"], Time.get_ticks_msec()) if moving else null
+	if walk_tex != null:
+		# 歩きの絵（4コマ）があるときは、その絵をそのまま出す（立ち絵の脚を動かす代わりに）
+		draw_texture(walk_tex, Vector2(-walk_tex.get_size().x * 0.5, -walk_tex.get_size().y), tint)
+		return
+	var pose := walk_pose(moving, Time.get_ticks_msec())
 	# 歩きのモーション：上半身は上下に弾み、足（下の LEG_ROWS 行を、左右に分けたもの）は交互に持ち上がる。
 	# 上半身の絵は、足の1行ぶん下まで重ねて描き、弾んでもすき間が空かないようにする
 	var upper_h := size.y - LEG_ROWS

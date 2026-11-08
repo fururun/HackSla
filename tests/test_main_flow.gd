@@ -550,3 +550,22 @@ func test_autopilot_clears_rooms_before_chests_and_boss() -> void:
 	for c4: Node in chests:
 		t.check(Iso.ground_distance(c4.global_position, boss.global_position) > Autopilot.BOSS_AVOID_DISTANCE, "ボスの部屋のまわりに、宝箱はない")
 	main.queue_free()
+
+func test_walk_animation_frames() -> void:
+	for view: String in ["front", "side", "back"]:
+		for i: int in 4:
+			var tex: Texture2D = load("res://art/sprites/player/player_walk_%s_%d.png" % [view, i])
+			t.check(tex != null and tex.get_size() == Vector2(30, 30), "歩きの絵 %s の%dコマ目（30x30）" % [view, i])
+			var img: Image = tex.get_image()
+			var opaque: int = 0
+			for y: int in 30:
+				for x: int in 30:
+					if img.get_pixel(x, y).a > 0.5:
+						opaque += 1
+			t.check(opaque > 150, "歩きの絵 %s の%dコマ目に、キャラが描かれている" % [view, i])
+	# 時刻で、4コマが順に出る。斜めは歩きの絵がない（立ち絵の脚を動かす）
+	var seen: Dictionary = {}
+	for step: int in 4:
+		seen[Player.walk_texture("front", step * Player.WALK_FRAME_MS)] = true
+	t.check_eq(seen.size(), 4, "4コマが順に出る")
+	t.check(Player.walk_texture("diag_down", 0) == null, "斜めは、歩きの絵がない")
