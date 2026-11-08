@@ -2,6 +2,9 @@ extends Node2D
 ## テスト用のメイン画面：マップを作り、プレイヤーと案山子を置く。
 
 const MAP_PATH: String = "res://data/maps/test_01.txt"
+## カメラの引き（拡大率）。1.0 で、画面が 480x270 ドットの範囲。0.5 なら、2倍の範囲（960x540）が見える。
+## 画面を3倍に拡大して描く（1440x810）とき、2/3 なら、ドット1つがちょうど画面の2ピクセルになって、にじまない。
+const CAMERA_ZOOM: float = 0.5
 
 var world: Node2D
 var map: IsoMap
@@ -27,6 +30,7 @@ func _ready() -> void:
 	world.add_child(player)
 
 	var cam := Camera2D.new()
+	cam.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える
 	cam.position_smoothing_enabled = true
 	cam.position_smoothing_speed = 8.0
 	cam.offset = Vector2(0, -10)
