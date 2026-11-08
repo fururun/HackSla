@@ -45,6 +45,7 @@ var aoe_timer: float = 0.0  ## 範囲攻撃までの待ち（秒）
 var aoe_windup_left: float = 0.0  ## 範囲攻撃の予告のあいだ、残りの秒（0 なら予告していない）
 var raged: bool = false  ## 激昂している（ボスの体力が半分以下）
 var rain_timer: float = 0.0  ## 岩落としまでの待ち（秒）
+var aoe_radius_now: float = 0.0  ## いまの範囲攻撃の半径（激昂中は広い）
 var charge_phase: int = 0  ## 0:なし 1:予告中 2:突進中
 var charge_timer: float = 0.0  ## 次の突進までの秒
 var charge_left: float = 0.0  ## 予告または突進の、残りの秒

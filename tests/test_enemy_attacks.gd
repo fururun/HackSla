@@ -300,3 +300,33 @@ func test_attacks_do_not_interrupt_each_other() -> void:
 		t.check_eq(enemy.aoe_timer, aoe_before, "突進の予告中は、ほかの攻撃のタイマーが進まない")
 		t.check_eq(enemy.aoe_windup_left, 0.0, "突進の予告中に、叩きつけが始まらない")
 	await _cleanup(manager, player)
+
+
+func test_boss_aoe_is_wider_when_raged() -> void:
+	var nodes: Array[Node2D] = _setup()
+	var manager: EnemyManager = nodes[0]
+	var player: Node2D = nodes[1]
+	var def: EnemyDef = _def("rock_lord")
+	t.check_eq(def.rage_aoe_mult, 1.5, "激昂中の範囲は1.5倍")
+	var enemy: Enemy = manager.spawn(def, Vector2.ZERO)
+	enemy.state = Enemy.State.CHASING
+	var radii: Array[float] = []
+	manager.aoe_telegraph.connect(func(_e: Enemy, radius: float, _w: float) -> void: radii.append(radius))
+	enemy.charge_timer = 1000.0
+	enemy.shot_timer = 1000.0
+	player.position = Vector2(0, 500)
+	enemy.aoe_timer = 0.0
+	manager._physics_process(0.01)
+	t.check_eq(radii[0] if radii.size() > 0 else 0.0, def.aoe_radius, "ふだんの範囲")
+	enemy.aoe_windup_left = 0.0
+	enemy.raged = true
+	enemy.aoe_timer = 0.0
+	manager._physics_process(0.01)
+	t.check_eq(radii[1] if radii.size() > 1 else 0.0, def.aoe_radius * 1.5, "激昂中は1.5倍")
+	# 当たりも広い：ふだんの半径の外・1.5倍の内にいたら、激昂中は当たる
+	var hits: Array[float] = []
+	manager.player_hit.connect(func(damage: float, _source: Enemy) -> void: hits.append(damage))
+	player.position = Vector2(def.aoe_radius * 1.3, 0)
+	manager._physics_process(def.aoe_windup + 0.05)
+	t.check_eq(hits.size(), 1, "広がった範囲の中なら、当たる")
+	await _cleanup(manager, player)

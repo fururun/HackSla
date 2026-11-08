@@ -25,6 +25,7 @@ var aoe_windup: float = 0.0  ## 範囲攻撃の予告の時間（秒）。この
 var rage_below: float = 0.0  ## 体力がこの割合以下になると激昂する（0 なら激昂しない。例 0.5＝半分）
 var rage_speed_mult: float = 1.0  ## 激昂中の、動く速さの倍率
 var rage_interval_mult: float = 1.0  ## 激昂中の、範囲攻撃の間隔の倍率（小さいほど、頻繁に撃つ）
+var rage_aoe_mult: float = 1.0  ## 激昂中の、範囲攻撃の半径の倍率
 var rain_radius: float = 0.0  ## 岩落とし（激昂中に、プレイヤーの足元を狙う）の円の半径。0 なら岩落としなし
 var rain_damage: float = 0.0
 var rain_interval: float = 0.0
@@ -79,6 +80,7 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 	e.rage_below = float(d.get("rage_below", 0))
 	e.rage_speed_mult = float(d.get("rage_speed_mult", 1.0))
 	e.rage_interval_mult = float(d.get("rage_interval_mult", 1.0))
+	e.rage_aoe_mult = float(d.get("rage_aoe_mult", 1.0))
 	e.rain_radius = float(d.get("rain_radius", 0))
 	e.rain_damage = float(d.get("rain_damage", 0))
 	e.rain_interval = float(d.get("rain_interval", 0))

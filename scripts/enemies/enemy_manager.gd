@@ -21,7 +21,7 @@ const SEPARATION_PASSES: int = 4
 const RAIN_STAGGER_SECONDS: float = 0.15  ## 岩落としの円を、1つずつ遅らせて落とす間隔
 const AOE_FIRST_DELAY_RATIO: float = 0.35  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
 
-const BULLET_HIT_RADIUS: float = 6.0  ## 弾がプレイヤーに当たる距離（地面）
+const BULLET_HIT_RADIUS: float = 8.0  ## 弾がプレイヤーに当たる距離（地面）
 const CHARGE_MIN_DISTANCE: float = 24.0  ## これより近いと、突進せずに殴る
 const RANGED_RETREAT_RATIO: float = 0.55  ## 遠距離の敵は、射程のこの割合より近づかれると、下がる
 const RANGED_RETREAT_SPEED: float = 0.8
@@ -145,14 +145,15 @@ func _update_aoe(enemy: Enemy, target: Vector2, delta: float) -> void:
 		if enemy.aoe_windup_left <= 0.0:
 			enemy.aoe_windup_left = 0.0
 			enemy.aoe_timer = def.aoe_interval * (def.rage_interval_mult if enemy.raged else 1.0)
-			if Iso.ground_distance(enemy.global_position, target) <= def.aoe_radius:
+			if Iso.ground_distance(enemy.global_position, target) <= enemy.aoe_radius_now:
 				player_hit.emit(def.aoe_damage, enemy)
-			aoe_burst.emit(enemy, def.aoe_radius)
+			aoe_burst.emit(enemy, enemy.aoe_radius_now)
 		return
 	enemy.aoe_timer -= delta
 	if enemy.aoe_timer <= 0.0:
 		enemy.aoe_windup_left = def.aoe_windup
-		aoe_telegraph.emit(enemy, def.aoe_radius, def.aoe_windup)
+		enemy.aoe_radius_now = def.aoe_radius * (def.rage_aoe_mult if enemy.raged else 1.0)  # 激昂中は、範囲が広がる（予告と当たりは同じ大きさ）
+		aoe_telegraph.emit(enemy, enemy.aoe_radius_now, def.aoe_windup)
 
 
 ## 激昂（体力が rage_below 以下になったボス）：動きが速くなり、範囲攻撃の間隔が短くなり、
