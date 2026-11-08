@@ -50,5 +50,83 @@
     "speed": 0,
     "chain_only": true,
     "description": "凍えた敵を砕き、氷の破片を周りへ飛び散らせる。"
+  },
+  {
+    "id": "fire_ring",
+    "name": "ほむら輪",
+    "element": "fire",
+    "kind": "area",
+    "damage": [12, 18],
+    "cooldown": 0.8,
+    "range": 0,
+    "radius": 42,
+    "speed": 0,
+    "chain_only": false,
+    "description": "足元に炎の輪を広げ、寄ってきた群れをまとめて焼く。"
+  },
+  {
+    "id": "ice_shard",
+    "name": "氷つぶて",
+    "element": "cold",
+    "kind": "projectile",
+    "damage": [16, 22],
+    "cooldown": 0.5,
+    "range": 200,
+    "radius": 6,
+    "speed": 220,
+    "chain_only": false,
+    "description": "鋭い氷の礫を飛ばし、冷えた敵を突き刺す。"
+  },
+  {
+    "id": "spark_shot",
+    "name": "稲妻針",
+    "element": "lightning",
+    "kind": "projectile",
+    "damage": [9, 15],
+    "cooldown": 0.3,
+    "range": 280,
+    "radius": 4,
+    "speed": 320,
+    "chain_only": false,
+    "description": "素早い雷の針を遠くまで飛ばし、離れた敵をチクリと射抜く。"
+  },
+  {
+    "id": "ground_slam",
+    "name": "地鳴らし",
+    "element": "physical",
+    "kind": "area",
+    "damage": [19, 27],
+    "cooldown": 1.2,
+    "range": 0,
+    "radius": 60,
+    "speed": 0,
+    "chain_only": false,
+    "description": "地面を強く踏み鳴らし、周りの敵を大きく揺さぶる。"
+  },
+  {
+    "id": "thrust",
+    "name": "通し突き",
+    "element": "physical",
+    "kind": "melee",
+    "damage": [24, 32],
+    "cooldown": 0.7,
+    "range": 52,
+    "radius": 10,
+    "speed": 0,
+    "chain_only": false,
+    "description": "穂先をまっすぐ深く突き出し、離れた敵を強く貫く。"
+  },
+  {
+    "id": "frost_lance",
+    "name": "凍て槍",
+    "element": "cold",
+    "kind": "projectile",
+    "damage": [64, 88],
+    "cooldown": 0.4,
+    "range": 260,
+    "radius": 10,
+    "speed": 300,
+    "chain_only": true,
+    "description": "冷気で凍えた敵へ大ぶりな氷の槍を撃ち込み、深く射抜く。"
   }
 ]

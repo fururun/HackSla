@@ -101,10 +101,83 @@ func test_text_plan_switch_and_ranks() -> void:
 
 func test_text_has_no_numbers_and_all_have_three_plans() -> void:
 	var db := _db()
+	var single_plan_keys: Array[String] = [
+		"skill:fire_ring", "skill:ice_shard", "skill:spark_shot",
+		"skill:ground_slam", "skill:thrust", "skill:frost_lance",
+		"support:heavy_blow", "support:wide_area", "support:chain_hop", "support:rapid_cast",
+	]
 	for key: String in db.texts:
 		var te: TextEntry = db.texts[key]
-		t.check_eq(te.candidates.size(), 3, "%s は3案" % key)
+		var expected_plans: int = 1 if single_plan_keys.has(key) else 3
+		t.check_eq(te.candidates.size(), expected_plans, "%s の案数" % key)
 	var errs: Array[String] = []
 	TextEntry.from_dict({"category": "skill", "id": "x", "candidates": [{"plan": 1, "display_name": "a", "description": "ダメージ10増える"}]}, errs)
 	t.check(errs.size() == 1, "説明文の数字を指摘する")
+	db.free()
+
+
+func test_t22_new_skills_supports_and_chains() -> void:
+	var db := _db()
+	t.check_eq(db.skills.size(), 10, "スキルは既存4＋追加6で計10個")
+	t.check_eq(db.droppable_skills().size(), 8, "ドロップするスキルは計8個")
+	t.check_eq(db.supports.size(), 6, "補助ジェムは既存2＋追加4で計6個")
+	t.check_eq(db.chains.size(), 2, "チェインは既存1＋追加1で計2個")
+
+	# 新しい5つの通常スキルが DataDB と droppable_skills() に入っていること
+	var expected_skills: Dictionary = {
+		"fire_ring": ["fire", "area", "ほむら輪"],
+		"ice_shard": ["cold", "projectile", "氷つぶて"],
+		"spark_shot": ["lightning", "projectile", "稲妻針"],
+		"ground_slam": ["physical", "area", "地鳴らし"],
+		"thrust": ["physical", "melee", "通し突き"],
+	}
+	var droppable_ids: Array[String] = []
+	for s: SkillDef in db.droppable_skills():
+		droppable_ids.append(s.id)
+	for sid: String in expected_skills:
+		var info: Array = expected_skills[sid]
+		var s: SkillDef = db.skill(sid)
+		t.check(s != null, "スキル %s が読み込まれている" % sid)
+		if s != null:
+			t.check_eq(s.element, info[0], "%s の element" % sid)
+			t.check_eq(s.kind, info[1], "%s の kind" % sid)
+			t.check(not s.chain_only, "%s は chain_only: false" % sid)
+			t.check_eq(s.name, info[2], "%s の表示名" % sid)
+			t.check(not s.description.is_empty(), "%s の説明文がある" % sid)
+		t.check(droppable_ids.has(sid), "droppable_skills() に %s が入る" % sid)
+
+	# 新しいチェイン専用技とチェインの動作
+	var lance: SkillDef = db.skill("frost_lance")
+	t.check(lance != null and lance.chain_only, "frost_lance はチェイン専用")
+	t.check(not droppable_ids.has("frost_lance"), "frost_lance はドロップしない")
+	t.check_eq(lance.name, "凍て槍", "frost_lance の表示名")
+	var tr := ChainTracker.new()
+	t.check_eq(tr.on_cast(db.skill("frost_bloom"), db.chains, db.skills).id, "frost_bloom", "起点の霜囲い")
+	t.check_eq(tr.on_cast(db.skill("ice_shard"), db.chains, db.skills).id, "frost_lance", "霜囲い→氷つぶてで凍て槍に変化")
+
+	# 新しい4つの補助ジェムと kinds の整合・表示名
+	var heavy: SupportDef = db.support("heavy_blow")
+	var wide: SupportDef = db.support("wide_area")
+	var hop: SupportDef = db.support("chain_hop")
+	var rapid: SupportDef = db.support("rapid_cast")
+	t.check(heavy != null and wide != null and hop != null and rapid != null, "新しい補助ジェム4つが読み込まれている")
+	t.check_eq(heavy.name, "重み乗せ", "heavy_blow の表示名")
+	t.check_eq(wide.name, "大ぶり", "wide_area の表示名")
+	t.check_eq(hop.name, "飛び移り", "chain_hop の表示名")
+	t.check_eq(rapid.name, "早繰り", "rapid_cast の表示名")
+
+	t.check(heavy.can_support(db.skill("slash")) and heavy.can_support(db.skill("fire_ring")) and heavy.can_support(db.skill("ice_shard")), "heavy_blow は全種類に付けられる")
+	t.check(rapid.can_support(db.skill("thrust")) and rapid.can_support(db.skill("ground_slam")) and rapid.can_support(db.skill("spark_shot")), "rapid_cast は全種類に付けられる")
+	t.check(wide.can_support(db.skill("fire_ring")) and wide.can_support(db.skill("thrust")), "wide_area は area と melee に付けられる")
+	t.check(not wide.can_support(db.skill("ice_shard")), "wide_area は projectile には付けられない")
+	t.check(hop.can_support(db.skill("ice_shard")) and hop.can_support(db.skill("spark_shot")), "chain_hop は projectile に付けられる")
+	t.check(not hop.can_support(db.skill("slash")) and not hop.can_support(db.skill("ground_slam")), "chain_hop は melee や area には付けられない")
+
+	# すべてのスキル・補助ジェムに names.json のエントリと名前・読み・説明文が入っていること
+	for s: SkillDef in db.skills.values():
+		var te: TextEntry = db.text_of("skill", s.id)
+		t.check(te != null and not te.display_name().is_empty() and not te.reading().is_empty() and not te.description().is_empty(), "skill %s の名前・読み・説明文が揃っている" % s.id)
+	for sup: SupportDef in db.supports.values():
+		var te: TextEntry = db.text_of("support", sup.id)
+		t.check(te != null and not te.display_name().is_empty() and not te.reading().is_empty() and not te.description().is_empty(), "support %s の名前・読み・説明文が揃っている" % sup.id)
 	db.free()

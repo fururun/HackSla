@@ -8,5 +8,15 @@
     "next_tags": ["melee"],
     "result": "shatter",
     "description": "冷気の範囲スキルの次に近接スキルを使うと、凍えた敵を砕く技に変わる。"
+  },
+  {
+    "id": "frost_lance",
+    "name": "凍て槍",
+    "prev_skill": "",
+    "next_skill": "",
+    "prev_tags": ["cold", "area"],
+    "next_tags": ["cold", "projectile"],
+    "result": "frost_lance",
+    "description": "冷気の範囲スキルの次に冷気の飛び道具を使うと、凍えた敵へ大ぶりな氷の槍を撃ち込む技に変わる。"
   }
 ]
