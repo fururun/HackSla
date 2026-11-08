@@ -8,7 +8,8 @@ extends RefCounted
 ## ボスなどの大きな攻撃の予告が出たら、回避（Space と同じ）で逃げる。
 
 enum Route { NEAREST_ENEMY, BOSS_RUSH }
-const ROUTE_NAMES: Array[String] = ["近い敵から", "ボスへ直行"]
+const ROUTE_NAMES: Array[String] = ["敵を全滅（ボスは最後）", "ボスへ直行"]
+const HEAL_BELOW_RATIO: float = 0.8  ## ライフがこの割合以下（2割減った）になったら、回復を使う
 
 const ENGAGE_DISTANCE: float = 26.0  ## この距離（地面）まで敵に近づいたら、止まって戦う
 const FIGHT_FIRST_DISTANCE: float = 90.0  ## この距離以内に敵がいたら、拾う・宝箱より戦いを先にする（ボスへ直行のときは、先へ進む）
@@ -28,6 +29,7 @@ var open_chests: bool = true
 var director: LootDirector  ## 落ちているものを探すため（空なら拾いに行かない）
 var map: IsoMap  ## 歩ける床を調べるため（空なら、まっすぐ歩く）
 var dodge_direction: Vector2 = Vector2.ZERO  ## wants_dodge が true のときの、逃げる向き
+var cleared: bool = false  ## 倒せる敵が、もういない
 var goal_kind: String = ""  ## いま向かっているもの（表示用）：敵 / ボス / 宝箱 / 拾う
 
 var _astar: AStarGrid2D
@@ -61,7 +63,8 @@ func toggle_chests() -> bool:
 
 
 func settings_text() -> String:
-	return "自動戦闘 ON　ルート: %s（F3）　宝箱: %s（F6）　F2で止める" % [ROUTE_NAMES[route], "開ける" if open_chests else "開けない"]
+	var head: String = "自動戦闘：敵を全滅させた" if cleared else "自動戦闘 ON"
+	return "%s　ルート: %s（F3）　宝箱: %s（F6）　F2で止める" % [head, ROUTE_NAMES[route], "開ける" if open_chests else "開けない"]
 
 
 # ---- 床の地図（A*） ----
@@ -148,10 +151,17 @@ func find_boss(player: Node2D) -> Node2D:
 ## 道のりが短い敵を選ぶ（地面の距離が近い数体だけ、道のりを比べる）
 func _nearest_by_path(player: Node2D) -> Node2D:
 	var candidates: Array = []
+	var boss_candidates: Array = []
 	for node: Node in player.get_tree().get_nodes_in_group("enemies"):
 		var e := node as Enemy
 		if e != null and e.active and e.visible:
-			candidates.append([Iso.ground_distance(player.global_position, e.global_position), e])
+			var entry: Array = [Iso.ground_distance(player.global_position, e.global_position), e]
+			if e.definition != null and e.definition.is_boss:
+				boss_candidates.append(entry)  # ボスは、ほかの敵を倒しきってから
+			else:
+				candidates.append(entry)
+	if candidates.is_empty():
+		candidates = boss_candidates
 	if candidates.is_empty():
 		return find_target(player)
 	candidates.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
@@ -217,6 +227,7 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 				goal_kind = "敵"
 			if target != null:
 				goal_pos = target.global_position
+	cleared = _count_enemies(player) == 0
 	if goal_pos == null:
 		goal_kind = ""
 		return Vector2.ZERO
@@ -259,6 +270,22 @@ func _avoid_stuck(player: Node2D, dir: Vector2, delta: float) -> Vector2:
 		_detour_left -= delta
 		return dir.rotated(deg_to_rad(80.0) * _detour_sign).normalized()
 	return dir
+
+
+## 倒せる敵（案山子を除く）の数
+func _count_enemies(player: Node2D) -> int:
+	var count: int = 0
+	for node: Node in player.get_tree().get_nodes_in_group("enemies"):
+		var e := node as Enemy
+		if e != null and e.active:
+			count += 1
+	return count
+
+
+## ライフが2割減ったら、回復を使う（残り回数があるときだけ）
+func wants_heal(player: Player) -> bool:
+	var vitals: PlayerVitals = player.vitals
+	return vitals.heal_charges > 0 and not vitals.is_dead() and vitals.life <= vitals.max_life() * HEAL_BELOW_RATIO
 
 
 ## 近くに敵がいるあいだ、スキルを全部使う（出せるかどうかは、再使用時間などで決まる）

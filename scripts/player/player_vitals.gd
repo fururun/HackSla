@@ -5,11 +5,16 @@ extends RefCounted
 signal changed
 signal leveled_up(level: int)
 signal died
+signal healed(amount: float)  ## 回復を使った（見た目用）
+
+const MAX_HEAL_CHARGES: int = 3  ## 回復の回数（はじめの数）
+const HEAL_RATIO: float = 0.5  ## 1回で回復する量（最大ライフに対する割合）
 
 var stats: StatBlock = StatBlock.new()
 var life: float = PlayerConsts.BASE_MAX_LIFE
 var level: int = 1
 var xp: int = 0
+var heal_charges: int = MAX_HEAL_CHARGES  ## 回復の残り回数
 var points: int = 0  ## スキルツリーのポイント（今は数えるだけ）
 var _invuln: float = 0.0
 var _dead: bool = false
@@ -56,6 +61,18 @@ func take_damage(amount: float) -> float:
 	return dealt
 
 
+## 回復を使う。回復した量を返す（死んでいる・残りがない・ライフが満タンのときは 0 で、回数は減らない）
+func use_heal() -> float:
+	if _dead or heal_charges <= 0 or life >= max_life():
+		return 0.0
+	var amount: float = minf(max_life() * HEAL_RATIO, max_life() - life)
+	life += amount
+	heal_charges -= 1
+	changed.emit()
+	healed.emit(amount)
+	return amount
+
+
 func grant_xp(amount: int) -> void:
 	if _dead:
 		return
@@ -77,5 +94,6 @@ func reset() -> void:
 	points = 0
 	_invuln = 0.0
 	_dead = false
+	heal_charges = MAX_HEAL_CHARGES
 	life = max_life()
 	changed.emit()

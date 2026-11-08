@@ -61,6 +61,8 @@ func test_freeing_an_open_screen_releases_the_pause() -> void:
 func test_hitstop_is_restored_by_deadline_even_without_the_timer() -> void:
 	var tree: SceneTree = t
 	Engine.time_scale = 1.0
+	HitFeedback._next_stop_usec = 0  # 直前の試験の撃破で、停止の休み時間に入っていても、影響を受けない
+	HitFeedback._stop_owner = null
 	var fb := HitFeedback.new()
 	tree.root.add_child(fb)
 	fb.request_hitstop()

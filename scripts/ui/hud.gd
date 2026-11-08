@@ -20,6 +20,7 @@ var _life_label: Label
 var _xp_bar: Panel
 var _xp_label: Label
 var _levelup_label: Label
+var _heal_label: Label  ## 回復の残り回数
 var _dead_label: Label
 var _levelup_t: float = 0.0
 var _pulse_time: float = 0.0
@@ -46,6 +47,10 @@ func _build() -> void:
 	add_child(_root)
 	_life_bar = _make_bar(Vector2(MARGIN, SCREEN_H - MARGIN - BAR_H * 2 - 3), LIFE_COLOR)
 	_life_label = _make_label(_life_bar)
+	_heal_label = Label.new()
+	UiStyle.label(_heal_label, UiStyle.FONT_SMALL, Color("#7dffb0"))
+	_heal_label.position = Vector2(MARGIN + BAR_W + 4, SCREEN_H - MARGIN - BAR_H * 2 - 3)
+	_root.add_child(_heal_label)
 	_xp_bar = _make_bar(Vector2(MARGIN, SCREEN_H - MARGIN - BAR_H), XP_COLOR)
 	_xp_label = _make_label(_xp_bar)
 	_levelup_label = _make_message("レベルアップ！", UiStyle.ACCENT, Vector2(200, 70))
@@ -110,6 +115,7 @@ func _refresh() -> void:
 		var need: int = LevelCurve.xp_to_next(_vitals.level)
 		_set_fill(_xp_bar, float(_vitals.xp) / float(need))
 		_xp_label.text = "Lv %d  %d / %d" % [_vitals.level, _vitals.xp, need]
+	_heal_label.text = "回復 %d（G）" % _vitals.heal_charges
 	_dead_label.visible = _vitals.is_dead()
 
 

@@ -153,6 +153,11 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	for node: Node in get_tree().get_nodes_in_group("enemies"):
 		if node is TrainingDummy:
 			node.damaged.connect(dps_meter.record)
+	# 回復：緑の数字と、緑の輪
+	player.vitals.healed.connect(func(amount: float) -> void:
+		DamageNumber.spawn(world, player.global_position + Vector2(0, -30), amount, Color("#7dffb0"))
+		EnemyFx.spawn(world, EnemyFx.Kind.RING, player.global_position, Color("#7dffb0"), 24.0, 0.5)
+		EnemyFx.spawn(world, EnemyFx.Kind.BURST, player.global_position, Color("#b5ffd0"), 16.0, 0.45))
 	# 受けたダメージは、プレイヤーの頭の上に赤い数字で出す
 	player.damaged.connect(func(amount: float, _source: Node) -> void: DamageNumber.spawn(world, player.global_position + Vector2(0, -30), amount, Color("#ff6b5e")))
 	var boss_bar := BossBar.new()  # ボスの体力の棒（画面の上の中央）
@@ -251,7 +256,7 @@ static func load_map(path: String) -> PackedStringArray:
 	return rows
 
 
-const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nF2: 自動戦闘　F4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
+const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nG: 回復　F2: 自動戦闘　F4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
 const HELP_COMPACT: String = "H: 操作ヘルプ"
 const HELP_SHOW_SECONDS: float = 8.0  ## 起動してすぐは操作を出し、この時間がたったら、小さな「H: 操作ヘルプ」だけにする
 

@@ -53,6 +53,8 @@ func _physics_process(delta: float) -> void:
 		input = autopilot.move_input(self, delta)
 		if autopilot.wants_dodge(self):
 			start_dodge(autopilot.dodge_direction)
+	if Input.is_action_just_pressed("heal") or (auto and autopilot.wants_heal(self)):
+		vitals.use_heal()
 	if Input.is_action_just_pressed("dodge"):
 		start_dodge(input)
 	if _dodge_left > 0.0:

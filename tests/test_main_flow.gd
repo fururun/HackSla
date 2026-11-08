@@ -416,3 +416,62 @@ func test_autopilot_reaches_far_goal_through_corridors() -> void:
 			break
 	t.check(chest.is_open, "壁にぶつからず、道に沿って宝箱まで歩いて、開けた")
 	main.queue_free()
+
+
+func test_heal_charges_and_autopilot_heal() -> void:
+	var vitals := PlayerVitals.new()
+	t.check_eq(vitals.heal_charges, 3, "回復は、はじめ3回")
+	t.check_eq(vitals.use_heal(), 0.0, "ライフが満タンなら、使えない")
+	t.check_eq(vitals.heal_charges, 3, "満タンでは、回数は減らない")
+	var healed: Array[float] = []
+	vitals.healed.connect(func(amount: float) -> void: healed.append(amount))
+	vitals.life = 20.0
+	var amount: float = vitals.use_heal()
+	t.check_eq(amount, vitals.max_life() * PlayerVitals.HEAL_RATIO, "最大ライフの半分を回復する")
+	t.check_eq(vitals.life, 20.0 + amount, "ライフが増える")
+	t.check_eq(vitals.heal_charges, 2, "回数が1減る")
+	t.check_eq(healed.size(), 1, "回復の信号が出る")
+	vitals.life = vitals.max_life() - 5.0
+	t.check_eq(vitals.use_heal(), 5.0, "満タンを超えては回復しない")
+	vitals.life = 1.0
+	vitals.use_heal()
+	t.check_eq(vitals.heal_charges, 0, "使い切った")
+	vitals.life = 1.0
+	t.check_eq(vitals.use_heal(), 0.0, "0回なら使えない")
+	vitals.reset()
+	t.check_eq(vitals.heal_charges, 3, "やり直しで3回に戻る")
+
+
+func test_autopilot_heals_at_20_percent_loss_and_clears_all() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var pilot: Autopilot = main.autopilot
+	var max_life: float = player.vitals.max_life()
+	player.vitals.life = max_life * 0.85
+	t.check(not pilot.wants_heal(player), "2割減る前は使わない")
+	player.vitals.life = max_life * 0.8
+	t.check(pilot.wants_heal(player), "2割減ったら使う")
+	player.vitals.heal_charges = 0
+	t.check(not pilot.wants_heal(player), "回数がなければ使わない")
+	player.vitals.heal_charges = 3
+	pilot.toggle()
+	player.vitals.life = max_life * 0.7
+	for i: int in 3:
+		await tree.physics_frame
+	t.check(player.vitals.heal_charges < 3 and player.vitals.life > max_life * 0.7, "自動戦闘が、回復を使った")
+	player.global_position = main.map.marker("P")
+	pilot.open_chests = false
+	pilot.director = null  # 落ちているものは見ない（宝箱から出たものに寄らないように）
+	pilot.route = Autopilot.Route.NEAREST_ENEMY
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "敵", "全滅ルートは、敵を目指す")
+	var target: Node2D = pilot._nearest_by_path(player)
+	t.check(target != null and not (target as Enemy).definition.is_boss, "ボスは、ほかの敵を倒しきってから")
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy:
+			n.take_hit(1000000.0, DataDB.skill("slash"))
+	pilot.move_input(player, 0.016)
+	t.check(pilot.cleared, "敵を全滅させたと分かる")
+	t.check(pilot.settings_text().contains("全滅"), "全滅が画面に出る")
+	main.queue_free()
