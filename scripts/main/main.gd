@@ -64,6 +64,13 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	add_child(director)
 	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)
 	director.is_valid_position = func(pos: Vector2) -> bool: return map.is_floor_at(pos, true)  # 壁の中・壁ぎわに置かない
+	# 宝箱：近づくと開いて、まとまった数のドロップが出る（最初の広場に置く）
+	for pos: Vector2 in map.markers.get("C", []):
+		var chest := TreasureChest.new()
+		chest.position = pos
+		world.add_child(chest)
+		chest.opened.connect(func(c: TreasureChest) -> void: director.drop_chest(c.global_position))
+
 	var equip_screen := EquipScreen.new()
 	equip_screen.name = "EquipScreen"
 	add_child(equip_screen)

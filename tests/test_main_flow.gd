@@ -70,6 +70,33 @@ func test_floor_check_and_drops_avoid_walls() -> void:
 	main.queue_free()
 
 
+func test_start_room_chest_opens_once_and_drops() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var chests: Array[Node] = tree.get_nodes_in_group("chests")
+	t.check_eq(chests.size(), 1, "最初の広場に宝箱が1つある")
+	if chests.is_empty():
+		main.queue_free()
+		return
+	var chest := chests[0] as TreasureChest
+	var player := tree.get_first_node_in_group("player") as Player
+	t.check(not chest.is_open, "最初は閉じている")
+	var director: LootDirector = null
+	for child: Node in main.get_children():
+		if child is LootDirector:
+			director = child
+	var before: int = director.active_count()
+	player.global_position = chest.global_position + Vector2(4, 0)
+	for i in 5:
+		await tree.physics_frame
+	t.check(chest.is_open, "近づくと開く")
+	var after_open: int = director.active_count()
+	t.check(after_open > before, "開けるとドロップが地面に出る")
+	chest.open()
+	t.check_eq(director.active_count(), after_open, "2回目は開かない（中身は1回だけ）")
+	main.queue_free()
+
+
 func test_equipment_stats_reach_player() -> void:
 	var main: Node = await _start_main()
 	var player := (t as SceneTree).get_first_node_in_group("player") as Player

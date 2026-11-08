@@ -6,6 +6,7 @@ const PICKUP_RADIUS: float = 14.0
 const SCATTER_RADIUS: float = 18.0
 const CURRENCY_FLIGHT_TIME: float = 0.35
 const SCATTER_ATTEMPTS: int = 8
+const CHEST_XP: int = 40  ## 宝箱の中身の量（敵の xp と同じ計算で、ドロップの枠数が決まる）
 
 var is_valid_position: Callable  ## 散らす位置が置いてよい場所か（Vector2 -> bool）。空なら制限しない
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -51,6 +52,15 @@ func _scatter_position(origin: Vector2) -> Vector2:
 		if not is_valid_position.is_valid() or bool(is_valid_position.call(pos)):
 			return pos
 	return origin
+
+
+## 宝箱を開けたとき。敵1体ぶんではなく、まとまった数が出る（CHEST_XP で数が決まる）
+func drop_chest(at: Vector2) -> void:
+	var level: int = int(_level_provider.call())
+	var def := EnemyDef.new()
+	def.xp = CHEST_XP
+	for value: Variant in _roller.roll_drops(def, level, _stash.gems):
+		spawn_drop(value, _scatter_position(at))
 
 
 func spawn_drop(value: Variant, at: Vector2) -> GroundDrop:
