@@ -4,6 +4,13 @@ extends Node2D
 ## スキル・補助ジェム・チェインを試す場所として、拠点にも置く予定。
 
 const DPS_WINDOW: float = 5.0
+const FLASH_DURATION: float = 0.08
+const OUTLINE := Color("#302a29")
+const WOOD := Color("#94704b")
+const STRAW := Color("#c5ac71")
+const STRAW_SHADE := Color("#8e744e")
+const STRAW_LIGHT := Color("#e2cb8e")
+const SHADOW := Color(0, 0, 0, 0.35)
 
 var hit_radius: float = 6.0
 var _hits: Array = []  ## [時刻, ダメージ]
@@ -27,7 +34,8 @@ func _ready() -> void:
 func take_hit(amount: float, _skill: SkillDef) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	_hits.append([now, amount])
-	_flash = 0.08
+	_flash = FLASH_DURATION
+	queue_redraw()
 	DamageNumber.spawn(get_parent(), global_position + Vector2(0, -26), amount)
 
 
@@ -42,18 +50,31 @@ func current_dps() -> float:
 
 func _process(delta: float) -> void:
 	if _flash > 0.0:
-		_flash -= delta
+		_flash = maxf(0.0, _flash - delta)
+		if _flash <= 0.0:
+			queue_redraw()
 	var dps := current_dps()
 	_label.text = "DPS %d" % roundi(dps) if dps > 0.0 else ""
-	queue_redraw()
 
 
 func _draw() -> void:
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-	draw_circle(Vector2.ZERO, 7.0, Color(0, 0, 0, 0.35))
-	draw_set_transform(Vector2.ZERO)
-	var wood := Color("#a0784f") if _flash <= 0.0 else Color.WHITE
-	draw_rect(Rect2(-1, -22, 2, 22), wood.darkened(0.2))   # 支柱
-	draw_rect(Rect2(-8, -18, 16, 3), wood)                 # 腕
-	draw_rect(Rect2(-4, -17, 8, 10), Color("#c9b27a") if _flash <= 0.0 else Color.WHITE)  # わら
-	draw_circle(Vector2(0, -24), 4.0, Color("#d8c08a") if _flash <= 0.0 else Color.WHITE)  # 頭
+	draw_rect(Rect2(-7, -2, 14, 4), SHADOW)
+	var flash: bool = _flash > 0.0
+	var edge: Color = Color.WHITE if flash else OUTLINE
+	var wood: Color = Color.WHITE if flash else WOOD
+	var straw: Color = Color.WHITE if flash else STRAW
+	draw_rect(Rect2(-2, -24, 4, 25), edge)
+	draw_rect(Rect2(-1, -23, 2, 23), wood)
+	draw_rect(Rect2(-10, -19, 20, 5), edge)
+	draw_rect(Rect2(-9, -18, 18, 3), wood)
+	draw_rect(Rect2(-5, -19, 10, 13), edge)
+	draw_rect(Rect2(-4, -18, 8, 11), straw)
+	for x: int in range(-3, 4, 2):
+		draw_rect(Rect2(x, -17, 1, 11), Color.WHITE if flash else STRAW_SHADE)
+	draw_circle(Vector2(0, -25), 5, edge, true, -1.0, false)
+	draw_circle(Vector2(0, -25), 4, Color.WHITE if flash else STRAW_LIGHT, true, -1.0, false)
+	draw_rect(Rect2(-2, -28, 1, 5), straw)
+	draw_rect(Rect2(1, -28, 1, 5), straw)
+	draw_rect(Rect2(-2, -26, 1, 1), edge)
+	draw_rect(Rect2(2, -26, 1, 1), edge)
+	draw_rect(Rect2(-4, -11, 8, 2), wood)
