@@ -89,7 +89,7 @@ func test_floor_check_and_drops_avoid_walls() -> void:
 	t.check(not map.is_floor_at(wall_pos), "壁のマスは床ではない")
 	t.check(not map.is_floor_at(wall_pos, true), "壁のマスは壁ぎわ判定でも床ではない")
 	# 壁ぎわの床（左端の列のすぐ内側）は、margin 付きでは置けない
-	var edge_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(1, 1))
+	var edge_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(2, 2))  # 開始の広場の角（北と西が壁）
 	t.check(map.is_floor_at(edge_pos) and not map.is_floor_at(edge_pos, true), "壁ぎわは余白付きの判定で除外される")
 	# 壁ぎわの敵を倒しても、ドロップは壁の中・壁ぎわに置かれない
 	var director: LootDirector = null
@@ -111,12 +111,16 @@ func test_start_room_chest_opens_once_and_drops() -> void:
 	var main: Node = await _start_main()
 	var tree: SceneTree = t
 	var chests: Array[Node] = tree.get_nodes_in_group("chests")
-	t.check_eq(chests.size(), 1, "最初の広場に宝箱が1つある")
+	t.check_eq(chests.size(), (main.map.markers.get("C", []) as Array).size(), "マップの印の数だけ宝箱がある")
 	if chests.is_empty():
 		main.queue_free()
 		return
-	var chest := chests[0] as TreasureChest
 	var player := tree.get_first_node_in_group("player") as Player
+	var chest := chests[0] as TreasureChest  # 開始位置にいちばん近い宝箱（最初の広場のもの）
+	for c: Node in chests:
+		if c.global_position.distance_to(player.global_position) < chest.global_position.distance_to(player.global_position):
+			chest = c as TreasureChest
+	t.check(Iso.ground_distance(chest.global_position, player.global_position) < 200.0, "最初の広場に宝箱がある")
 	t.check(not chest.is_open, "最初は閉じている")
 	var director: LootDirector = null
 	for child: Node in main.get_children():

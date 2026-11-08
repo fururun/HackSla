@@ -33,6 +33,10 @@ func is_dead() -> bool:
 func tick(delta: float) -> void:
 	if _invuln > 0.0:
 		_invuln = maxf(_invuln - delta, 0.0)
+	# 時間でゆっくり回復する（群れの合間に、少しだけ息をつけるように）。死んでいるときは回復しない
+	if not _dead and life < max_life():
+		life = minf(life + PlayerConsts.LIFE_REGEN_PER_SEC * delta, max_life())
+		changed.emit()
 
 
 ## 物理ダメージを受ける。実際に引かれた値を返す（死亡後・無敵中は 0）

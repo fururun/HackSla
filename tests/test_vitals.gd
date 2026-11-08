@@ -11,6 +11,21 @@ func test_damage_reduces_life() -> void:
 	t.check_eq(v.life, PlayerConsts.BASE_MAX_LIFE - 10.0, "体力が減る")
 
 
+func test_life_regenerates_slowly_but_not_when_dead() -> void:
+	var v := PlayerVitals.new()
+	v.take_damage(30.0)
+	var hurt: float = v.life
+	v.tick(2.0)
+	t.check(is_equal_approx(v.life, hurt + PlayerConsts.LIFE_REGEN_PER_SEC * 2.0), "時間でゆっくり回復する")
+	v.tick(1000.0)
+	t.check_eq(v.life, v.max_life(), "最大ライフを超えて回復しない")
+	var d := PlayerVitals.new()
+	d.take_damage(1000.0)
+	t.check(d.is_dead(), "死んでいる")
+	d.tick(10.0)
+	t.check_eq(d.life, 0.0, "死んでいるときは回復しない")
+
+
 func test_armor_reduces() -> void:
 	var st := StatBlock.new()
 	st.add("armor", 100)

@@ -1,7 +1,8 @@
 extends Node2D
 ## テスト用のメイン画面：マップを作り、プレイヤーと案山子を置く。
 
-const MAP_PATH: String = "res://data/maps/test_01.txt"
+const MAP_PATH: String = "res://data/maps/field_01.txt"  ## 広いマップ。作り方は tools/maps/make_field_01.py、設計は docs/map_field_01.md
+const SMALL_PACK_SIZE: int = 5  ## マップの印 f の群れの数
 ## カメラの引き（拡大率）。1.0 で、画面が 480x270 ドットの範囲。0.5 なら、2倍の範囲（960x540）が見える。
 ## 画面を3倍に拡大して描く（1440x810）とき、2/3 なら、ドット1つがちょうど画面の2ピクセルになって、にじまない。
 const CAMERA_ZOOM: float = 0.5
@@ -106,6 +107,8 @@ func _add_enemies() -> EnemyManager:
 	rng.randomize()
 	var swarm: EnemyDef = DataDB.enemy("swarmling")
 	var brute: EnemyDef = DataDB.enemy("brute")
+	for pos: Vector2 in map.markers.get("f", []):
+		manager.spawn_pack(swarm, pos, rng, SMALL_PACK_SIZE)  # 小さな群れ（序盤用）
 	for pos: Vector2 in map.markers.get("s", []):
 		manager.spawn_pack(swarm, pos, rng)
 	for pos: Vector2 in map.markers.get("b", []):

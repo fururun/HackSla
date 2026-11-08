@@ -52,9 +52,10 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	return enemy
 
 
-func spawn_pack(def: EnemyDef, center: Vector2, rng: RandomNumberGenerator) -> Array[Enemy]:
+## 群れを置く。count が 0 以上なら、その数にする（小さな群れ用）。負なら、定義の pack の範囲から選ぶ
+func spawn_pack(def: EnemyDef, center: Vector2, rng: RandomNumberGenerator, forced_count: int = -1) -> Array[Enemy]:
 	var members: Array[Enemy] = []
-	var count: int = rng.randi_range(def.pack_min, def.pack_max)
+	var count: int = forced_count if forced_count >= 0 else rng.randi_range(def.pack_min, def.pack_max)
 	var id: int = _next_pack_id
 	_next_pack_id += 1
 	# 等間隔の円周配置。地面で隣同士の直径を確保し、角度だけを乱数化する。
