@@ -88,6 +88,12 @@ static func hit_key(element: String) -> String:
 	return str((config().get("hit_by_element", {}) as Dictionary).get(element, ""))
 
 
+## 範囲の絵の再生キー（属性ごと。なければ、物理のもの）
+static func area_key(element: String) -> String:
+	var area: Dictionary = (config().get("by_kind", {}) as Dictionary).get("area", {})
+	return str(area.get(element, area.get("physical", "")))
+
+
 static func explosion_key() -> String:
 	return str(config().get("explosion", ""))
 

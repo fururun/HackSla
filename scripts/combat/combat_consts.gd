@@ -9,7 +9,7 @@ const SWING_TIME: float = 0.12  ## 発動後に向きを固定する時間（見
 const EXPLOSION_RADIUS: float = 24.0  ## 撃破時爆発の半径（地面上のドット）
 const EXPLOSION_FX_LIFE: float = 0.25
 
-const MAX_SHEET_FX: int = 160  ## スプライトシートのエフェクトの同時数の上限（超えたら古いものを再利用）
+const MAX_SHEET_FX: int = 176  ## スプライトシートのエフェクトの同時数の上限（超えたら古いものを再利用）
 const MAX_RINGS: int = 48  ## 範囲の輪（地面の円）の同時数の上限
 const HIT_FX_OFFSET: Vector2 = Vector2(0, -8)  ## 命中の火花を出す位置（敵の足元から胴の高さへ）
 const PROJECTILE_FX_OFFSET: Vector2 = Vector2(0, -8)  ## 飛び道具の絵を出す高さ

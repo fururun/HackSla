@@ -1040,13 +1040,15 @@ func test_chain_skill_has_flashy_effects() -> void:
 	var player := tree.get_first_node_in_group("player") as Player
 	var world: Node = main.get_node("World")
 	var before: int = world.get_child_count()
+	player.caster.fx_parent = world
 	# チェインでない発動では、派手な演出は出ない
 	player.caster.cast_done.emit(1, DataDB.skill("slash"), 1, false)
 	t.check_eq(world.get_child_count(), before, "ふつうの技では、演出を足さない")
 	# チェインで出た技では、輪・閃光・火花・文字が出る
 	player.caster.cast_done.emit(1, DataDB.skill("shatter"), 1, true)
 	var added: int = world.get_child_count() - before
-	t.check(added >= 10, "チェイン技で、輪・閃光・火花・文字が出る（%d個）" % added)
+	t.check(added >= 4, "チェイン技で、pixelfxの絵・画面の閃光・文字が出る（%d個）" % added)
+	t.check(player.caster.fx_created >= 2, "爆発と範囲の絵が、pixelfxの絵で出る")
 	var flashes: int = 0
 	for child: Node in world.get_children():
 		if child is ScreenFlash:

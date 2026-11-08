@@ -238,6 +238,26 @@ func _play_ring(pos: Vector2, radius: float, color: Color) -> void:
 	ring.play(pos, radius, color)
 
 
+## チェイン技の演出（pixelfx の絵を重ねる）：当たる場所に爆発と、命中の火花を、少しずつ遅らせて3回。
+## 足元に、属性の範囲の絵を大きく。技そのものの絵は、ふだんより大きく出ている（_fx_boost）
+func play_chain_fx(skill: SkillDef, origin: Vector2, target: Vector2) -> void:
+	if fx_parent == null or not fx_parent.is_inside_tree():
+		return
+	var saved: float = _fx_boost
+	_fx_boost = 1.0
+	var reach: float = maxf(skill.radius, 36.0)
+	_play_fx(SheetFx.area_key(skill.element), origin, reach * 2.2)
+	_play_fx(SheetFx.explosion_key(), target, reach * 1.8)
+	var hit_key: String = SheetFx.hit_key(skill.element)
+	for i: int in 3:
+		var offset := Vector2(randf_range(-16.0, 16.0), randf_range(-10.0, 10.0))
+		var timer: SceneTreeTimer = fx_parent.get_tree().create_timer(0.06 * float(i + 1), true, true)
+		timer.timeout.connect(func() -> void:
+			if is_instance_valid(fx_parent):
+				_play_fx(hit_key, target + CombatConsts.HIT_FX_OFFSET + offset))
+	_fx_boost = saved
+
+
 ## スプライトシートのエフェクトを1つ再生する。使い回し（プール）で、同時数の上限を超えたら一番古いものを再利用する。
 ## size_px が正なら、絵の「届く距離」がそのドット数になるよう拡大縮小する（範囲・斬撃の実際の範囲に合わせる）
 func _play_fx(key: String, pos: Vector2, size_px: float = 0.0, rot: float = 0.0, mirror: bool = false) -> void:
