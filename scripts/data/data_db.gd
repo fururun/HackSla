@@ -10,6 +10,7 @@ const FILES: Dictionary = {
 	"rarities": "res://data/items/rarities.json",
 	"bases": "res://data/items/bases.json",
 	"affixes": "res://data/items/affixes.json",
+	"skill_tree": "res://data/skill_tree/skill_tree.json",
 }
 ## 表示名・説明文（一番外側がオブジェクト）。案の切り替えは names.json の adopted / rarity_plan だけで行う
 const TEXT_FILE: String = "res://data/text/names.json"
@@ -21,6 +22,7 @@ var enemies: Dictionary = {}    ## id -> EnemyDef
 var rarities: Array[RarityDef] = []  ## tier の低い順
 var bases: Dictionary = {}      ## id -> ItemBaseDef
 var affixes: Dictionary = {}    ## id -> AffixDef
+var tree_nodes: Dictionary = {} ## id -> TreeNodeDef（スキルツリー。JSON に書いた順）
 var texts: Dictionary = {}      ## "category:id" -> TextEntry
 var rarity_plan: int = 1        ## レアリティ名の案（6段階セットで切り替える）
 var errors: Array[String] = []
@@ -38,7 +40,7 @@ func _ready() -> void:
 
 func reload() -> void:
 	skills.clear(); supports.clear(); chains.clear(); enemies.clear()
-	rarities.clear(); bases.clear(); affixes.clear(); texts.clear(); errors.clear()
+	rarities.clear(); bases.clear(); affixes.clear(); tree_nodes.clear(); texts.clear(); errors.clear()
 
 	for d: Dictionary in _load("skills"):
 		_put(skills, SkillDef.from_dict(d, errors), "skill")
@@ -46,6 +48,8 @@ func reload() -> void:
 		_put(supports, SupportDef.from_dict(d, errors), "support")
 	for d: Dictionary in _load("enemies"):
 		_put(enemies, EnemyDef.from_dict(d, errors), "enemy")
+	for d: Dictionary in _load("skill_tree"):
+		_put(tree_nodes, TreeNodeDef.from_dict(d, errors), "tree node")
 	for d: Dictionary in _load("bases"):
 		_put(bases, ItemBaseDef.from_dict(d, errors), "item base")
 	for d: Dictionary in _load("affixes"):
@@ -73,6 +77,18 @@ func _check_references() -> void:
 		for t: String in c.prev_tags + c.next_tags:
 			if not SkillDef.ELEMENTS.has(t) and not SkillDef.KINDS.has(t):
 				errors.append("chain %s: タグ「%s」は属性か種類の名前にしてください" % [c.id, t])
+	var starts: int = 0
+	var used_cells: Dictionary = {}
+	for node: TreeNodeDef in tree_nodes.values():
+		starts += 1 if node.start else 0
+		for other: String in node.links:
+			if not tree_nodes.has(other):
+				errors.append("tree node %s: links の「%s」が skill_tree.json にありません" % [node.id, other])
+		if used_cells.has(node.pos):
+			errors.append("tree node %s: 位置 %s が %s と重なっています" % [node.id, node.pos, used_cells[node.pos]])
+		used_cells[node.pos] = node.id
+	if not tree_nodes.is_empty() and starts < 1:
+		errors.append("tree: start: true のノードが1つもありません")
 	var beams := rarities.filter(func(r: RarityDef) -> bool: return r.beam).size()
 	if beams > 2:
 		errors.append("rarity: 光の柱（beam）は最上位2段階だけの方針です（今は%d段階）" % beams)
@@ -198,6 +214,10 @@ func skill(id: String) -> SkillDef:
 
 func support(id: String) -> SupportDef:
 	return supports.get(id)
+
+
+func tree_node(id: String) -> TreeNodeDef:
+	return tree_nodes.get(id)
 
 
 func enemy(id: String) -> EnemyDef:

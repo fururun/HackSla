@@ -1,0 +1,794 @@
+[
+  {
+    "id": "root",
+    "name": "根源",
+    "kind": "small",
+    "cost": 0,
+    "pos": [
+      0,
+      0
+    ],
+    "links": [],
+    "effects": {},
+    "description": "ここから枝が伸びる。最初から取ってある。",
+    "start": true
+  },
+  {
+    "id": "pow_1",
+    "name": "力 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      1,
+      0
+    ],
+    "links": [
+      "root"
+    ],
+    "effects": {
+      "damage_pct": 5
+    },
+    "description": "ダメージ +5%"
+  },
+  {
+    "id": "pow_2",
+    "name": "力 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      2,
+      0
+    ],
+    "links": [
+      "pow_1"
+    ],
+    "effects": {
+      "damage_pct": 5
+    },
+    "description": "ダメージ +5%"
+  },
+  {
+    "id": "pow_3",
+    "name": "剛力",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      3,
+      0
+    ],
+    "links": [
+      "pow_2"
+    ],
+    "effects": {
+      "damage_pct": 15
+    },
+    "description": "ダメージ +15%"
+  },
+  {
+    "id": "vit_1",
+    "name": "頑健 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -1,
+      0
+    ],
+    "links": [
+      "root"
+    ],
+    "effects": {
+      "life": 12
+    },
+    "description": "最大ライフ +12"
+  },
+  {
+    "id": "vit_2",
+    "name": "鉄皮 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -2,
+      0
+    ],
+    "links": [
+      "vit_1"
+    ],
+    "effects": {
+      "armor": 8
+    },
+    "description": "防御 +8"
+  },
+  {
+    "id": "vit_3",
+    "name": "鉄壁",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      -3,
+      0
+    ],
+    "links": [
+      "vit_2"
+    ],
+    "effects": {
+      "life": 30,
+      "armor": 16
+    },
+    "description": "最大ライフ +30、防御 +16"
+  },
+  {
+    "id": "mana_1",
+    "name": "魔力 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      1
+    ],
+    "links": [
+      "root"
+    ],
+    "effects": {
+      "mana": 12
+    },
+    "description": "最大マナ +12"
+  },
+  {
+    "id": "mana_2",
+    "name": "魔力回復 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      2
+    ],
+    "links": [
+      "mana_1"
+    ],
+    "effects": {
+      "mana_regen": 2.5
+    },
+    "description": "マナ回復 +2.5/秒"
+  },
+  {
+    "id": "mana_3",
+    "name": "魔力の泉",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      0,
+      3
+    ],
+    "links": [
+      "mana_2"
+    ],
+    "effects": {
+      "mana": 30,
+      "mana_regen": 5
+    },
+    "description": "最大マナ +30、マナ回復 +5/秒"
+  },
+  {
+    "id": "elem_1",
+    "name": "元素 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      -1
+    ],
+    "links": [
+      "root"
+    ],
+    "effects": {
+      "damage_pct": 4
+    },
+    "description": "ダメージ +4%"
+  },
+  {
+    "id": "elem_2",
+    "name": "元素 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      -2
+    ],
+    "links": [
+      "elem_1"
+    ],
+    "effects": {
+      "damage_pct": 4
+    },
+    "description": "ダメージ +4%"
+  },
+  {
+    "id": "proj_1",
+    "name": "飛び道具 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      2,
+      -1
+    ],
+    "links": [
+      "pow_2"
+    ],
+    "effects": {
+      "projectile_damage_pct": 8
+    },
+    "description": "飛び道具のダメージ +8%"
+  },
+  {
+    "id": "proj_2",
+    "name": "飛び道具 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      3,
+      -1
+    ],
+    "links": [
+      "proj_1"
+    ],
+    "effects": {
+      "projectile_damage_pct": 8
+    },
+    "description": "飛び道具のダメージ +8%"
+  },
+  {
+    "id": "proj_3",
+    "name": "速射の心得",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      4,
+      -1
+    ],
+    "links": [
+      "proj_2"
+    ],
+    "effects": {
+      "projectile_damage_pct": 22,
+      "move_speed_pct": 4
+    },
+    "description": "飛び道具のダメージ +22%、移動速度 +4%"
+  },
+  {
+    "id": "area_1",
+    "name": "範囲 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      2,
+      1
+    ],
+    "links": [
+      "pow_2"
+    ],
+    "effects": {
+      "area_damage_pct": 8
+    },
+    "description": "範囲技のダメージ +8%"
+  },
+  {
+    "id": "area_2",
+    "name": "範囲 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      3,
+      1
+    ],
+    "links": [
+      "area_1"
+    ],
+    "effects": {
+      "area_damage_pct": 8
+    },
+    "description": "範囲技のダメージ +8%"
+  },
+  {
+    "id": "area_3",
+    "name": "大地の怒り",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      4,
+      1
+    ],
+    "links": [
+      "area_2"
+    ],
+    "effects": {
+      "area_damage_pct": 22,
+      "area_pct": 6
+    },
+    "description": "範囲技のダメージ +22%、範囲 +6%"
+  },
+  {
+    "id": "melee_1",
+    "name": "近接 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      4,
+      0
+    ],
+    "links": [
+      "pow_3"
+    ],
+    "effects": {
+      "melee_damage_pct": 8
+    },
+    "description": "近接技のダメージ +8%"
+  },
+  {
+    "id": "melee_2",
+    "name": "近接 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      5,
+      0
+    ],
+    "links": [
+      "melee_1"
+    ],
+    "effects": {
+      "melee_damage_pct": 8
+    },
+    "description": "近接技のダメージ +8%"
+  },
+  {
+    "id": "key_glass",
+    "name": "硝子の大砲",
+    "kind": "keystone",
+    "cost": 3,
+    "pos": [
+      6,
+      0
+    ],
+    "links": [
+      "melee_2"
+    ],
+    "effects": {
+      "damage_pct": 40,
+      "life": -40
+    },
+    "description": "ダメージ +40%。代わりに最大ライフ -40"
+  },
+  {
+    "id": "res_fire",
+    "name": "炎の耐え",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -2,
+      -1
+    ],
+    "links": [
+      "vit_2"
+    ],
+    "effects": {
+      "fire_res": 10
+    },
+    "description": "火耐性 +10%"
+  },
+  {
+    "id": "res_cold",
+    "name": "霜の耐え",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -3,
+      -1
+    ],
+    "links": [
+      "res_fire"
+    ],
+    "effects": {
+      "cold_res": 10
+    },
+    "description": "冷気耐性 +10%"
+  },
+  {
+    "id": "res_light",
+    "name": "雷の耐え",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -4,
+      -1
+    ],
+    "links": [
+      "res_cold"
+    ],
+    "effects": {
+      "lightning_res": 10
+    },
+    "description": "雷耐性 +10%"
+  },
+  {
+    "id": "vit_4",
+    "name": "頑健 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -4,
+      0
+    ],
+    "links": [
+      "vit_3"
+    ],
+    "effects": {
+      "life": 12
+    },
+    "description": "最大ライフ +12"
+  },
+  {
+    "id": "vit_5",
+    "name": "鉄皮 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -5,
+      0
+    ],
+    "links": [
+      "vit_4"
+    ],
+    "effects": {
+      "armor": 8
+    },
+    "description": "防御 +8"
+  },
+  {
+    "id": "key_stalwart",
+    "name": "不屈",
+    "kind": "keystone",
+    "cost": 3,
+    "pos": [
+      -6,
+      0
+    ],
+    "links": [
+      "vit_5"
+    ],
+    "effects": {
+      "life": 80,
+      "armor": 40,
+      "damage_pct": -15
+    },
+    "description": "最大ライフ +80、防御 +40。代わりにダメージ -15%"
+  },
+  {
+    "id": "fire_1",
+    "name": "炎 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -1,
+      -2
+    ],
+    "links": [
+      "elem_2"
+    ],
+    "effects": {
+      "fire_damage_pct": 10
+    },
+    "description": "火ダメージ +10%"
+  },
+  {
+    "id": "fire_2",
+    "name": "炎 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -1,
+      -3
+    ],
+    "links": [
+      "fire_1"
+    ],
+    "effects": {
+      "fire_damage_pct": 10
+    },
+    "description": "火ダメージ +10%"
+  },
+  {
+    "id": "fire_3",
+    "name": "炎の理",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      -1,
+      -4
+    ],
+    "links": [
+      "fire_2"
+    ],
+    "effects": {
+      "fire_damage_pct": 28
+    },
+    "description": "火ダメージ +28%"
+  },
+  {
+    "id": "cold_1",
+    "name": "霜 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      -3
+    ],
+    "links": [
+      "elem_2"
+    ],
+    "effects": {
+      "cold_damage_pct": 10
+    },
+    "description": "冷気ダメージ +10%"
+  },
+  {
+    "id": "cold_2",
+    "name": "霜 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      -4
+    ],
+    "links": [
+      "cold_1"
+    ],
+    "effects": {
+      "cold_damage_pct": 10
+    },
+    "description": "冷気ダメージ +10%"
+  },
+  {
+    "id": "cold_3",
+    "name": "氷の理",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      0,
+      -5
+    ],
+    "links": [
+      "cold_2"
+    ],
+    "effects": {
+      "cold_damage_pct": 28
+    },
+    "description": "冷気ダメージ +28%"
+  },
+  {
+    "id": "light_1",
+    "name": "雷 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      1,
+      -2
+    ],
+    "links": [
+      "elem_2"
+    ],
+    "effects": {
+      "lightning_damage_pct": 10
+    },
+    "description": "雷ダメージ +10%"
+  },
+  {
+    "id": "light_2",
+    "name": "雷 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      1,
+      -3
+    ],
+    "links": [
+      "light_1"
+    ],
+    "effects": {
+      "lightning_damage_pct": 10
+    },
+    "description": "雷ダメージ +10%"
+  },
+  {
+    "id": "light_3",
+    "name": "雷の理",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      1,
+      -4
+    ],
+    "links": [
+      "light_2"
+    ],
+    "effects": {
+      "lightning_damage_pct": 28
+    },
+    "description": "雷ダメージ +28%"
+  },
+  {
+    "id": "key_elem",
+    "name": "元素の覚醒",
+    "kind": "keystone",
+    "cost": 3,
+    "pos": [
+      0,
+      -6
+    ],
+    "links": [
+      "cold_3"
+    ],
+    "effects": {
+      "fire_damage_pct": 20,
+      "cold_damage_pct": 20,
+      "lightning_damage_pct": 20,
+      "armor": -20
+    },
+    "description": "火・冷気・雷のダメージ +20%。代わりに防御 -20"
+  },
+  {
+    "id": "mana_4",
+    "name": "省マナ I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      4
+    ],
+    "links": [
+      "mana_3"
+    ],
+    "effects": {
+      "mana_cost_pct": -6
+    },
+    "description": "スキルのマナ消費 -6%"
+  },
+  {
+    "id": "mana_5",
+    "name": "省マナ II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      0,
+      5
+    ],
+    "links": [
+      "mana_4"
+    ],
+    "effects": {
+      "mana_cost_pct": -6
+    },
+    "description": "スキルのマナ消費 -6%"
+  },
+  {
+    "id": "key_mana",
+    "name": "連鎖の申し子",
+    "kind": "keystone",
+    "cost": 3,
+    "pos": [
+      0,
+      6
+    ],
+    "links": [
+      "mana_5"
+    ],
+    "effects": {
+      "chain_damage_pct": 60,
+      "mana_cost_pct": 25
+    },
+    "description": "チェイン追加ダメージ +60%。代わりにマナ消費 +25%"
+  },
+  {
+    "id": "sup_1",
+    "name": "補助 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -1,
+      3
+    ],
+    "links": [
+      "mana_3"
+    ],
+    "effects": {
+      "supported_damage_pct": 8
+    },
+    "description": "補助ジェムをつけたスキルのダメージ +8%"
+  },
+  {
+    "id": "sup_2",
+    "name": "補助 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      -1,
+      4
+    ],
+    "links": [
+      "sup_1"
+    ],
+    "effects": {
+      "supported_damage_pct": 8
+    },
+    "description": "補助ジェムをつけたスキルのダメージ +8%"
+  },
+  {
+    "id": "sup_3",
+    "name": "補助の極意",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      -1,
+      5
+    ],
+    "links": [
+      "sup_2"
+    ],
+    "effects": {
+      "supported_damage_pct": 25,
+      "mana": 15
+    },
+    "description": "補助ジェムをつけたスキルのダメージ +25%、最大マナ +15"
+  },
+  {
+    "id": "chain_1",
+    "name": "連鎖 I",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      1,
+      3
+    ],
+    "links": [
+      "mana_3"
+    ],
+    "effects": {
+      "chain_damage_pct": 15
+    },
+    "description": "チェイン技（追加ダメージ含む）のダメージ +15%"
+  },
+  {
+    "id": "chain_2",
+    "name": "連鎖 II",
+    "kind": "small",
+    "cost": 1,
+    "pos": [
+      1,
+      4
+    ],
+    "links": [
+      "chain_1"
+    ],
+    "effects": {
+      "chain_damage_pct": 15
+    },
+    "description": "チェイン技（追加ダメージ含む）のダメージ +15%"
+  },
+  {
+    "id": "chain_3",
+    "name": "連鎖の達人",
+    "kind": "notable",
+    "cost": 2,
+    "pos": [
+      1,
+      5
+    ],
+    "links": [
+      "chain_2"
+    ],
+    "effects": {
+      "chain_damage_pct": 40,
+      "mana_regen": 3
+    },
+    "description": "チェイン技のダメージ +40%、マナ回復 +3/秒"
+  }
+]

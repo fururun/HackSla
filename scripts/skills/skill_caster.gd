@@ -18,6 +18,8 @@ var stats := StatBlock.new()
 var rng := RandomNumberGenerator.new()
 var fx_parent: Node  ## 弾・円・斬撃を置く先（プレイヤーの親）
 
+const MANA_COST_MIN_RATIO: float = 0.4  ## ツリーで安くしても、マナ消費はこの割合までしか下がらない
+
 var last_skill: SkillDef = null  ## 直近に実際に出した技（チェイン後の技を含む）
 var last_chained: bool = false
 var _fx_boost: float = 1.0  ## 技の絵の拡大（チェイン技は大きく出す）
@@ -52,6 +54,7 @@ func mana_cost(slot: int) -> float:
 		return 0.0
 	var sup := loadout.support(slot)
 	var mult: float = _mod(sup.modifiers, "mana_mult") if sup != null else 1.0
+	mult *= maxf(MANA_COST_MIN_RATIO, 1.0 + stats.get_value("mana_cost_pct") / 100.0)  # スキルツリー：マナ消費%
 	return skill.mana_cost * mult
 
 
@@ -80,7 +83,10 @@ func cast(slot: int, target: Vector2, origin: Vector2, fallback_dir: Vector2 = V
 		mods = sup.modifiers
 	var dmg_mult := _mod(mods, "damage_mult")
 	var area_mult := _mod(mods, "area_mult")
+	if sup != null:
+		dmg_mult *= 1.0 + stats.get_value("supported_damage_pct") / 100.0  # スキルツリー：補助ジェムをつけたスキル
 	if chained:
+		dmg_mult *= 1.0 + stats.get_value("chain_damage_pct") / 100.0  # スキルツリー：チェイン技（追加ダメージも）
 		dmg_mult *= _mod(mods, "chain_damage_mult")
 		area_mult *= _mod(mods, "chain_area_mult")
 	_cooldowns[slot - 1] = out.cooldown * _mod(mods, "cooldown_mult")

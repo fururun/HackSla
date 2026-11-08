@@ -140,3 +140,31 @@
 | life_on_kill | 撃破時のライフ回復 |
 | mana | 最大マナ（基本 100） |
 | mana_regen | マナの自然回復（毎秒。基本 22） |
+
+## data/skill_tree/skill_tree.json — スキルツリー
+
+ノードの配列。並びの順が、自動戦闘が取る順番（先のノードから）。`DataDB.tree_nodes`（id → `TreeNodeDef`）に入る。
+
+| キー | 意味 |
+| --- | --- |
+| id / name | 例 `pow_1` / 力 I |
+| kind | `small`（小ノード・コスト1）/ `notable`（中ノード・コスト2）/ `keystone`（大ノード・コスト3。強い代わりに縛りがある） |
+| cost | 取るのに使うポイント（レベルが1上がるごとに1ポイント）。`start` のノードだけ 0 |
+| pos | [x, y] 画面に並べる格子の位置（根源が [0, 0]。画面では 19 ドット間隔） |
+| links | つながるノードのid。向きは問わない（どちらか片方に書けばよい） |
+| effects | ステータスのキー → 足す値（マイナスも可）。取ったノードの合計が、装備の効果と同じ入れ物（`caster.stats`）に足される |
+| description | 画面に出す説明 |
+| start | `true` のノードは、最初から取ってある（根源）。ここからつながるノードを取っていく |
+
+取れるのは、取ったノードとつながるノードだけ。ポイントが足りなければ取れない。振り直しは、まだない。
+
+effects に使えるキーは、装備の stat のキー（上の表。ただし、いま効くのは life / armor / damage_pct / 属性ダメージ / mana / mana_regen）に加えて、ツリー専用の次のもの：
+
+| キー | 意味 |
+| --- | --- |
+| melee_damage_pct / projectile_damage_pct / area_damage_pct | そのスキルの種類（kind）のダメージ+% |
+| supported_damage_pct | 補助ジェムをつけたスキルのダメージ+% |
+| chain_damage_pct | チェイン技（追加ダメージも）のダメージ+% |
+| mana_cost_pct | スキルのマナ消費+%（マイナスで安くなる。下限は元の 40%：`SkillCaster.MANA_COST_MIN_RATIO`） |
+
+DataDB は、links の先がない・位置の重なり・start がない・使えないキーを、起動時に errors へ集める。

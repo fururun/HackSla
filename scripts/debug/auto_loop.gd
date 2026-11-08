@@ -9,6 +9,7 @@ const BOSS_WAIT_SECONDS: float = 12.0  ## ボスを倒してから、やり直�
 const DEATH_WAIT_SECONDS: float = 3.0  ## やられてから、やり直すまで
 
 var autopilot: Autopilot
+var restart_mode: RunCarry.Mode = RunCarry.Mode.RESET  ## 自動でやり直すときの種類。標準は、これまでどおりリセット（毎周、同じ条件で比べられる）。CARRY にすると、引き継いで周回する
 var _left: float = -1.0
 var _reason: String = ""
 

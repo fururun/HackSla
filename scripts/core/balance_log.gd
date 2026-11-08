@@ -20,6 +20,7 @@ const RECENT_HITS: int = 8
 var autopilot: Autopilot
 var dps_meter: DpsMeter
 var start_skill_ids: Array[String] = []
+var skill_tree: SkillTree  ## ツリーの取得状況（記録用）
 
 var _manager: EnemyManager
 var _player: Player
@@ -28,6 +29,7 @@ var _time: float = 0.0  ## このプレイの、ゲームの中の経過秒（�
 var _written: bool = false
 var _poll_left: float = 0.0
 var _start_loadout: Array[Dictionary] = []
+var _start_level: int = 1  ## このプレイを始めたときのレベル（引き継いだ分）
 var _skills: Dictionary = {}  ## スキルid -> {casts, chained_casts, damage}
 var _kills_by_enemy: Dictionary = {}
 var _damage_dealt: float = 0.0
@@ -71,6 +73,7 @@ func setup(manager: EnemyManager, player: Player, stash: Stash, director: LootDi
 	dps_meter = meter
 	start_skill_ids = start_ids.duplicate()
 	_start_loadout = _loadout_snapshot()
+	_start_level = player.vitals.level
 	manager.skill_damage.connect(_on_skill_damage)
 	manager.enemy_hit.connect(_on_enemy_hit)
 	manager.boss_raged.connect(func(_e: Enemy) -> void: _boss_rage = _time)
@@ -273,6 +276,13 @@ func _equipment_snapshot() -> Array[Dictionary]:
 
 
 ## いまの内容から、記録の1件を作る（書かない）。reason は終わり方
+## スキルツリーの記録：取ったノード・使ったポイント・余ったポイント
+func _tree_snapshot() -> Dictionary:
+	if skill_tree == null or _player == null:
+		return {}
+	return {"taken": skill_tree.taken_ids(), "spent": skill_tree.spent_points(), "points_left": _player.vitals.points}
+
+
 func build_record(reason: String) -> Dictionary:
 	var skills: Dictionary = {}
 	for id: String in _skills:
@@ -308,6 +318,8 @@ func build_record(reason: String) -> Dictionary:
 		"end_reason": reason,
 		"duration_seconds": snappedf(_time, 0.1),
 		"player": player_stats,
+		"restart": {"mode": RunCarry.mode_name(RunCarry.last_mode), "carry_depth": RunCarry.carry_depth, "start_level": _start_level},
+		"tree": _tree_snapshot(),
 		"start_loadout": _start_loadout,
 		"final_loadout": _loadout_snapshot(),
 		"skills": skills,

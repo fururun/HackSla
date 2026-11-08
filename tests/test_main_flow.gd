@@ -1217,3 +1217,232 @@ func test_legend_chest_is_rare_and_drops_legend() -> void:
 		if rng.randf() < main_script.LEGEND_CHEST_CHANCE:
 			placed += 1
 	t.check(placed < 120, "2000回のうち、置かれるのは、ごくわずか（%d回）" % placed)
+
+
+# ---- スキルツリー ----
+
+func _near(a: float, b: float, eps: float, msg: String) -> void:
+	t.check(absf(a - b) <= eps, "%s（実際: %s / 期待: %s）" % [msg, str(a), str(b)])
+
+
+func _take_all(skill_tree: SkillTree, vitals: PlayerVitals, ids: Array) -> void:
+	vitals.points = 99
+	for id: String in ids:
+		skill_tree.take(id, vitals)
+
+
+func test_skill_tree_data_is_valid_and_connected() -> void:
+	(t.root.get_node("DataDB") as Node).call("reload")
+	t.check(DataDB.errors.is_empty(), "データの読み込みに間違いがない: %s" % str(DataDB.errors))
+	t.check(DataDB.tree_nodes.size() >= 40, "ノードが40個以上ある（%d個）" % DataDB.tree_nodes.size())
+	var starts: Array[String] = []
+	var kinds: Dictionary = {}
+	for node: TreeNodeDef in DataDB.tree_nodes.values():
+		kinds[node.kind] = int(kinds.get(node.kind, 0)) + 1
+		if node.start:
+			starts.append(node.id)
+	t.check_eq(starts.size(), 1, "最初のノード（根源）は1つ")
+	t.check(kinds.has("small") and kinds.has("notable") and kinds.has("keystone"), "小・中・大ノードが、すべてある")
+	# 根源から、全部のノードにたどり着ける
+	var seen: Dictionary = {starts[0]: true}
+	var queue: Array[String] = [starts[0]]
+	while not queue.is_empty():
+		var id: String = queue.pop_back()
+		for other: TreeNodeDef in DataDB.tree_nodes.values():
+			if not seen.has(other.id) and (other.links.has(id) or (DataDB.tree_node(id) as TreeNodeDef).links.has(other.id)):
+				seen[other.id] = true
+				queue.append(other.id)
+	t.check_eq(seen.size(), DataDB.tree_nodes.size(), "すべてのノードが、根源からつながっている")
+	# 大ノードは、強い代わりに縛り（マイナスの効果）がある
+	for node: TreeNodeDef in DataDB.tree_nodes.values():
+		if node.kind == "keystone":
+			var has_penalty: bool = false
+			for key: String in node.effects:
+				if float(node.effects[key]) < 0.0 or (key == "mana_cost_pct" and float(node.effects[key]) > 0.0):
+					has_penalty = true
+			t.check(has_penalty, "大ノード %s には、縛りがある" % node.id)
+	# 壊れたデータは、間違いとして報告される
+	var errors: Array[String] = []
+	TreeNodeDef.from_dict({"id": "x", "kind": "huge", "effects": {"nope": 1}}, errors)
+	t.check(errors.size() >= 2, "存在しない種類・ステータスは、間違いになる")
+
+
+func test_skill_tree_take_rules() -> void:
+	(t.root.get_node("DataDB") as Node).call("reload")
+	var skill_tree := SkillTree.new()
+	var vitals := PlayerVitals.new()
+	t.check(skill_tree.is_taken("root"), "根源は、最初から取ってある")
+	t.check_eq(skill_tree.taken_count(), 0, "ポイントを使って取った数は 0")
+	vitals.points = 5
+	t.check(not skill_tree.take("pow_2", vitals), "つながっていないノードは、取れない")
+	t.check_eq(vitals.points, 5, "取れなければ、ポイントは減らない")
+	t.check(skill_tree.take("pow_1", vitals), "根源とつながるノードは、取れる")
+	t.check_eq(vitals.points, 4, "ポイントが、コストぶん減る")
+	t.check(not skill_tree.take("pow_1", vitals), "同じノードは、2回取れない")
+	t.check(skill_tree.take("pow_2", vitals), "つながったので取れる")
+	vitals.points = 1
+	t.check(not skill_tree.take("pow_3", vitals), "中ノード（コスト2）は、ポイントが足りないと取れない")
+	vitals.points = 2
+	t.check(skill_tree.take("pow_3", vitals), "足りれば取れる")
+	t.check_eq(vitals.points, 0, "ポイントを使い切った")
+	t.check_eq(skill_tree.spent_points(), 4, "使ったポイントは 1+1+2")
+	_near(skill_tree.stats().get_value("damage_pct"), 25.0, 0.001, "効果が足し合わさる（5+5+15）")
+	# 自動取得：大ノードは取らない
+	var auto_tree := SkillTree.new()
+	var auto_vitals := PlayerVitals.new()
+	auto_vitals.points = 1
+	t.check_eq(auto_tree.auto_take(auto_vitals), 1, "自動取得：1ポイントで小ノードを1つ")
+	auto_vitals.points = 200
+	auto_tree.auto_take(auto_vitals)
+	for id: String in auto_tree.taken_ids():
+		t.check((DataDB.tree_node(id) as TreeNodeDef).kind != "keystone", "自動取得は、大ノードを取らない")
+	t.check(auto_tree.taken_count() >= 30, "取れるだけ取った（%d個）" % auto_tree.taken_count())
+
+
+func test_tree_effects_reach_damage_mana_and_chain() -> void:
+	var main: Node = await _start_main()
+	var player: Player = main.player
+	var caster: SkillCaster = player.caster
+	var skill_tree: SkillTree = main.skill_tree
+	t.check(skill_tree != null and main.tree_screen != null, "メイン画面に、ツリーとツリー画面がある")
+	var cost_before: float = caster.mana_cost(1)
+	var fire: SkillDef = DataDB.skill("fire_bolt")
+	var base_damage: float = DamageCalc.skill_damage(fire, caster.stats, 100.0)
+	_take_all(skill_tree, player.vitals, ["pow_1", "pow_2", "proj_1", "mana_1", "mana_2", "mana_3", "mana_4", "chain_1", "sup_1"])
+	_near(caster.stats.get_value("damage_pct"), 10.0, 0.001, "ツリーの効果が、プレイヤーのステータスに入る")
+	_near(caster.stats.get_value("projectile_damage_pct"), 8.0, 0.001, "飛び道具のダメージ%も入る")
+	_near(DamageCalc.skill_damage(fire, caster.stats, 100.0), base_damage * 1.18, 0.5, "火球のダメージが +10% +8%（飛び道具）になる")
+	t.check(DamageCalc.skill_damage(DataDB.skill("slash"), caster.stats, 100.0) < DamageCalc.skill_damage(fire, caster.stats, 100.0), "近接技には、飛び道具のぶんは効かない")
+	t.check(caster.mana_cost(1) <= cost_before * 0.95, "マナ消費が下がる（省マナ）")
+	t.check(player.vitals.max_mana() > PlayerConsts.BASE_MAX_MANA + 40.0, "最大マナが増える")
+	_take_all(skill_tree, player.vitals, ["mana_5", "key_mana"])
+	t.check(caster.stats.get_value("mana_cost_pct") > -20.0, "（大ノードの縛りで、マナ消費は戻る）")
+	caster.stats.add("mana_cost_pct", -500.0)
+	var skill_id: String = caster.loadout.skill_id(1)
+	t.check(caster.mana_cost(1) >= DataDB.skill(skill_id).mana_cost * SkillCaster.MANA_COST_MIN_RATIO - 0.001, "マナ消費は下がりすぎない（下限）")
+	main.queue_free()
+
+
+func test_skill_tree_screen_opens_pauses_and_takes() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var screen: SkillTreeScreen = main.tree_screen
+	t.check(InputMap.has_action("toggle_skill_tree"), "ツリーを開く操作（T）が登録されている")
+	t.check(not screen.is_open() and not tree.paused, "最初は閉じている")
+	screen.open()
+	t.check(screen.is_open() and tree.paused, "開くと、ゲームが止まる")
+	main.player.vitals.points = 3
+	var node: TreeNodeDef = DataDB.tree_node("pow_1")
+	t.check_eq(screen.node_at(SkillTreeScreen.node_position(node)), "pow_1", "ノードの位置を指すと、そのノードが選ばれる")
+	t.check_eq(screen.node_state("pow_1"), SkillTreeScreen.State.AVAILABLE, "取れるノードの状態")
+	t.check_eq(screen.node_state("pow_3"), SkillTreeScreen.State.LOCKED, "つながっていないノードの状態")
+	t.check(screen.take("pow_1"), "画面から取れる")
+	t.check_eq(screen.node_state("pow_1"), SkillTreeScreen.State.TAKEN, "取ったノードの状態")
+	t.check(screen.detail_text("pow_1").contains("取得済み"), "説明に状態が出る")
+	screen.close()
+	t.check(not tree.paused, "閉じると、動き出す")
+	main.queue_free()
+
+
+func test_autopilot_spends_tree_points_by_itself() -> void:
+	var main: Node = await _start_main()
+	var vitals: PlayerVitals = main.player.vitals
+	main.set_autopilot(false)
+	vitals.grant_xp(2000)
+	t.check(vitals.points > 0 and main.skill_tree.taken_count() == 0, "手で遊ぶときは、ポイントは貯まるだけ（自分で選ぶ）")
+	main.set_autopilot(true)
+	t.check(main.skill_tree.taken_count() > 0, "自動戦闘を入れると、貯まったポイントを使う")
+	var before: int = main.skill_tree.taken_count()
+	vitals.grant_xp(5000)
+	t.check(main.skill_tree.taken_count() > before, "自動戦闘中は、レベルアップのたびに使う")
+	main.set_autopilot(false)
+	Autopilot.resume = {}
+	Autopilot.runs = 0
+	main.queue_free()
+
+
+# ---- リセットと、引き継いでリスタート ----
+
+func test_restart_modes_are_wired() -> void:
+	t.check(InputMap.has_action("restart_game") and InputMap.has_action("restart_carry"), "リセット(F5)と引き継ぎ(F9)の操作がある")
+	var listener := RestartListener.new()
+	t.check(listener.has_method("restart"), "RestartListener.restart(mode) がある")
+	listener.free()
+	t.check(RunCarry.Mode.RESET != RunCarry.Mode.CARRY, "2種類のモード")
+	var loop := AutoLoop.new()
+	t.check_eq(loop.restart_mode, RunCarry.Mode.RESET, "自動周回の標準は、これまでどおりリセット")
+	loop.free()
+
+
+func test_reset_discards_everything_and_carry_keeps_growth() -> void:
+	RunCarry.clear()
+	var main: Node = await _start_main()
+	var player: Player = main.player
+	var vitals: PlayerVitals = player.vitals
+	var item: ItemInstance = LootRoller.new(RandomNumberGenerator.new()).roll_item(10, 2)
+	main.stash.collect(item)
+	main.stash.collect(GemInstance.new(GemInstance.Kind.SKILL, "ground_slam"))
+	main.stash.currency = 77
+	vitals.grant_xp(900)
+	var level: int = vitals.level
+	var xp: int = vitals.xp
+	t.check(level > 1 and vitals.points > 0, "レベルが上がって、ポイントが貯まった")
+	_take_all(main.skill_tree, vitals, ["pow_1", "pow_2", "vit_1"])
+	vitals.points = 4
+	vitals.heal_charges = 0
+	var slot: String = item.base.slot
+
+	# 引き継ぎ
+	RunCarry.prepare(RunCarry.Mode.CARRY, vitals, main.stash, main.skill_tree)
+	t.check_eq(RunCarry.carry_depth, 1, "引き継ぎの回数が数えられる")
+	main.free()
+	var carried: Node = await _start_main()
+	t.check(carried.carried_over, "引き継いで始まった")
+	var v2: PlayerVitals = carried.player.vitals
+	t.check_eq(v2.level, level, "レベルを引き継ぐ")
+	t.check_eq(v2.xp, xp, "経験値を引き継ぐ")
+	t.check_eq(v2.points, 4, "使っていないポイントを引き継ぐ")
+	t.check(carried.skill_tree.is_taken("pow_2") and carried.skill_tree.is_taken("vit_1"), "ツリーで取ったノードを引き継ぐ")
+	t.check_eq(carried.skill_tree.taken_count(), 3, "取った数も同じ")
+	t.check(carried.stash.equipment.has(slot) and carried.stash.equipment[slot] == item, "装備を引き継ぐ")
+	t.check(carried.player.caster.stats.get_value("damage_pct") >= 10.0, "ツリーと装備の効果が、ステータスに戻っている")
+	_near(v2.life, v2.max_life(), 0.01, "ライフは満タンで始まる")
+	t.check(not carried.stash.has_gem(GemInstance.Kind.SKILL, "ground_slam") or carried.start_skill_ids.has("ground_slam"), "拾ったジェムは引き継がない（スタートの3つだけ）")
+	t.check_eq(carried.stash.currency, 0, "通貨は引き継がない")
+	t.check_eq(v2.heal_charges, PlayerVitals.MAX_HEAL_CHARGES, "回復の回数は元に戻る")
+	t.check_eq(carried.start_skill_ids.size(), StartLoadout.COUNT, "スタートのスキル構成は、また決まる")
+	t.check_eq(RunCarry.mode_name(RunCarry.last_mode), "carry", "記録用のモード名")
+	var record: Dictionary = carried.balance_log.build_record("quit")
+	t.check_eq(record["restart"]["mode"], "carry", "バランス記録に、引き継ぎと書かれる")
+	t.check_eq(record["restart"]["start_level"], level, "バランス記録に、始めたときのレベル")
+	t.check_eq(record["restart"]["carry_depth"], 1, "バランス記録に、引き継ぎの回数")
+	t.check_eq((record["tree"]["taken"] as Array).size(), 3, "バランス記録に、ツリーで取ったノード")
+	t.check_eq(record["tree"]["points_left"], 4, "バランス記録に、余ったポイント")
+
+	# リセット
+	RunCarry.prepare(RunCarry.Mode.RESET, v2, carried.stash, carried.skill_tree)
+	t.check_eq(RunCarry.carry_depth, 0, "リセットで、引き継ぎの回数は 0 に戻る")
+	carried.free()
+	var fresh: Node = await _start_main()
+	t.check(not fresh.carried_over, "リセットで始まった")
+	t.check_eq(fresh.player.vitals.level, 1, "レベルは 1 から")
+	t.check_eq(fresh.player.vitals.points, 0, "ポイントは 0 から")
+	t.check_eq(fresh.skill_tree.taken_count(), 0, "ツリーは何も取っていない")
+	t.check(fresh.stash.equipment.is_empty(), "装備はなし")
+	var record2: Dictionary = fresh.balance_log.build_record("quit")
+	t.check_eq(record2["restart"]["mode"], "reset", "バランス記録に、リセットと書かれる")
+	fresh.queue_free()
+	RunCarry.clear()
+
+
+func test_carry_with_nothing_to_carry_and_stale_ids() -> void:
+	RunCarry.clear()
+	var vitals := PlayerVitals.new()
+	var stash := Stash.new()
+	var skill_tree := SkillTree.new()
+	t.check(not RunCarry.apply(vitals, stash, skill_tree), "預かったものがなければ、何もしない")
+	RunCarry.pending = {"level": 5, "xp": 3, "points": 2, "tree": ["pow_1", "no_such_node"], "equipment": {}}
+	t.check(RunCarry.apply(vitals, stash, skill_tree), "預かったものを戻す")
+	t.check(skill_tree.is_taken("pow_1") and not skill_tree.is_taken("no_such_node"), "存在しないノードのidは無視する")
+	t.check(RunCarry.pending.is_empty(), "戻したら、預かりは空になる（次のリセットに残らない）")
+	RunCarry.clear()

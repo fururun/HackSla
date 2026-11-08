@@ -15,6 +15,9 @@ var world: Node2D
 var map: IsoMap
 var player: Player
 var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
+var skill_tree: SkillTree  ## スキルツリーの取得状況（ポイントは player.vitals.points）
+var tree_screen: SkillTreeScreen
+var carried_over: bool = false  ## 引き継いでリスタートした直後か（レベル・ツリー・装備を持ち越している）
 var game_log: GameLog  ## 遊んだ記録とデバッグの記録
 var camera: Camera2D
 var loot_hud: LootHud
@@ -79,15 +82,18 @@ func _ready() -> void:
 	add_child(enemy_fx)
 	enemy_fx.setup(manager, player, world)
 	stash = Stash.new()
+	skill_tree = SkillTree.new()
 	_roll_start_loadout()
 	_add_skill_screen(stash)
 	_add_progression(manager, stash)
+	carried_over = RunCarry.apply(player.vitals, stash, skill_tree)  # 引き継いでリスタートなら、レベル・ツリー・装備を戻す
 	game_log = GameLog.new()  # 遊んだ記録とデバッグの記録（user://logs/）
 	game_log.name = "GameLog"
 	add_child(game_log)
 	game_log.open()
 	game_log.setup(player, manager, stash)
 	game_log.play("start_loadout", {"skills": start_skill_ids})
+	game_log.play("run_start", {"restart": RunCarry.mode_name(RunCarry.last_mode), "carried": carried_over, "level": player.vitals.level, "tree": skill_tree.taken_count()})
 	var restart_listener := RestartListener.new()
 	add_child(restart_listener)
 	_add_help()
@@ -98,6 +104,7 @@ func _ready() -> void:
 	balance_log.setup(manager, player, stash, loot_director, autopilot, dps_meter, start_skill_ids)
 	balance_log.legend_chest_spawned = legend_chest != null
 	balance_log.legend_chest = legend_chest
+	balance_log.skill_tree = skill_tree
 	# 自動戦闘の周回：ボスを倒す・やられたら、自動でやり直す
 	var auto_loop := AutoLoop.new()
 	auto_loop.name = "AutoLoop"
@@ -106,7 +113,7 @@ func _ready() -> void:
 	auto_loop.restart_requested.connect(func(reason: String, run: int) -> void:
 		if game_log != null:
 			game_log.play("auto_restart", {"reason": reason, "run": run})
-		restart_listener.restart())
+		restart_listener.restart(auto_loop.restart_mode))
 	if autopilot.load_state():  # やり直す前に、自動戦闘が入っていたなら、そのまま続ける
 		set_autopilot(true)
 
@@ -139,10 +146,19 @@ func _apply_auto_support() -> void:
 			game_log.play("auto_support", {"changed": changed})
 
 
+## 自動戦闘が入っているあいだは、貯まったツリーのポイントを、自動で使う（手で遊ぶときは、自分で選ぶ）
+func _auto_spend_points() -> void:
+	if autopilot.enabled and skill_tree != null and player != null:
+		var taken: int = skill_tree.auto_take(player.vitals)
+		if taken > 0 and game_log != null:
+			game_log.play("auto_tree", {"taken": taken})
+
+
 ## 自動戦闘の表示（画面の上の中央）
 func set_autopilot(on: bool) -> void:
 	autopilot.enabled = on
 	_apply_auto_support()
+	_auto_spend_points()
 	if _autopilot_label == null:
 		var layer := CanvasLayer.new()
 		layer.layer = 100
@@ -289,8 +305,16 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	var apply_equipment := func() -> void:
 		player.caster.stats.clear()
 		player.caster.stats.merge(stash.equipment_stats())
+		player.caster.stats.merge(skill_tree.stats())  # スキルツリーで取ったノードの効果
 		player.vitals.changed.emit()
 	stash.changed.connect(apply_equipment)
+	skill_tree.changed.connect(apply_equipment)
+	apply_equipment.call()
+	tree_screen = SkillTreeScreen.new()
+	tree_screen.name = "SkillTreeScreen"
+	add_child(tree_screen)
+	tree_screen.setup(skill_tree, player.vitals)
+	player.vitals.leveled_up.connect(func(_level: int) -> void: _auto_spend_points())
 	# 装備を着替えたら、体のまわりに金色の輪と火花を出す（強くなった実感）
 	stash.equipped.connect(func(_slot: String, _item: ItemInstance, _previous: ItemInstance) -> void:
 		EnemyFx.spawn(world, EnemyFx.Kind.RING, player.global_position, Color(1.0, 0.85, 0.3), 30.0, 0.55)
@@ -342,7 +366,7 @@ static func load_map(path: String) -> PackedStringArray:
 	return rows
 
 
-const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nG: 回復　F2: 自動戦闘　F4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
+const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備　T: スキルツリー\nG: 回復　F2: 自動戦闘　F4: カメラ切替\nF5: リセット　F9: 引き継いでリスタート\nH: このヘルプを閉じる"
 const HELP_COMPACT: String = "H: 操作ヘルプ"
 const HELP_SHOW_SECONDS: float = 8.0  ## 起動してすぐは操作を出し、この時間がたったら、小さな「H: 操作ヘルプ」だけにする
 

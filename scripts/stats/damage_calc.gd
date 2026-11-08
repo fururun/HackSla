@@ -8,12 +8,13 @@ const PERCENT_DIV: float = 100.0
 const ARMOR_FACTOR: float = 0.5  ## 防御が効く強さ（仮）
 const PHYSICAL: String = "physical"
 const KEY_DAMAGE_PCT: String = "damage_pct"
-const KEY_ELEMENT_DAMAGE_SUFFIX: String = "_damage_pct"
+const KEY_ELEMENT_DAMAGE_SUFFIX: String = "_damage_pct"  ## 属性（fire_damage_pct）と、スキルの種類（melee_damage_pct など。ツリー用）の両方に使う
 
 
 ## 基本値（roll）×（1 + (damage_pct + 属性の *_damage_pct) / 100）
 static func skill_damage(skill: SkillDef, stats: StatBlock, roll: float) -> float:
-	var pct: float = stats.get_value(KEY_DAMAGE_PCT) + stats.get_value(skill.element + KEY_ELEMENT_DAMAGE_SUFFIX)
+	var pct: float = stats.get_value(KEY_DAMAGE_PCT) + stats.get_value(skill.element + KEY_ELEMENT_DAMAGE_SUFFIX) \
+		+ stats.get_value(skill.kind + KEY_ELEMENT_DAMAGE_SUFFIX)
 	return roll * (1.0 + pct / PERCENT_DIV)
 
 

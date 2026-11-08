@@ -1,7 +1,7 @@
 # バランス調整用の記録（balance_logs/runs.jsonl）
 
 1回のプレイにつき、1行のJSON。書くのは `scripts/core/balance_log.gd`。
-書くとき：やられた時、やり直しの直前（F5・自動）、ウィンドウを閉じた時。テスト・撮影（`--script`）のときは、プロジェクトには書かず、`user://logs_tools/` に書く。
+書くとき：やられた時、やり直しの直前（F5 のリセット・F9 の引き継ぎ・自動）、ウィンドウを閉じた時。テスト・撮影（`--script`）のときは、プロジェクトには書かず、`user://logs_tools/` に書く。
 
 | 項目 | 内容 |
 | --- | --- |
@@ -38,3 +38,10 @@
 - スキルの強さ：`skills` のダメージの割合。使われないスキルがないか
 - 装備の出方：`drops.items_by_rarity`、`final_equipment` のレアリティ
 - 集計：`python tools/balance/summarize_runs.py`
+
+## リスタートとツリー（追加）
+
+| 項目 | 意味 |
+| --- | --- |
+| restart | このプレイの始まり方：`mode`（`reset`＝リセット / `carry`＝引き継ぎ）、`carry_depth`（引き継ぎを連続で何回したか。リセットで 0）、`start_level`（始めたときのレベル。引き継ぎだと 1 より大きい） |
+| tree | スキルツリー：`taken`（取ったノードのid）、`spent`（使ったポイント。根源は 0）、`points_left`（使っていないポイント） |

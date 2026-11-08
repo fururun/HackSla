@@ -14,7 +14,9 @@ const KEYS: Dictionary = {
 	"toggle_debug": [KEY_F1],
 	"toggle_skill_screen": [KEY_K],
 	"toggle_equip_screen": [KEY_I],
-	"restart_game": [KEY_F5],
+	"restart_game": [KEY_F5],  # リセット（完全にやり直す）
+	"restart_carry": [KEY_F9],  # 引き継いでリスタート
+	"toggle_skill_tree": [KEY_T],
 	"cycle_camera": [KEY_F4],
 	"toggle_help": [KEY_H],
 	"toggle_autobattle": [KEY_F2],
