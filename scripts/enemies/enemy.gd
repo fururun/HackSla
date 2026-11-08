@@ -56,6 +56,7 @@ var aoe_windup_left: float = 0.0  ## 範囲攻撃の予告のあいだ、残り�
 var raged: bool = false  ## 激昂している（ボスの体力が半分以下）
 var rain_timer: float = 0.0  ## 岩落としまでの待ち（秒）
 var aoe_radius_now: float = 0.0  ## いまの範囲攻撃の半径（激昂中は広い）
+var last_attack_kind: String = ""  ## 最後にプレイヤーに当てた攻撃の種類（melee・aoe・rain・charge・shot）。バランス記録用
 var _strike_msec: int = -100000  ## 最後に叩きつけた（殴った・範囲攻撃・突進・弾）時刻
 var _last_anim_texture: Texture2D  ## 前回描いた動きの絵（変わったときだけ描き直す）
 var charge_phase: int = 0  ## 0:なし 1:予告中 2:突進中

@@ -165,7 +165,7 @@ func _update_aoe(enemy: Enemy, target: Vector2, delta: float) -> void:
 			enemy.aoe_timer = def.aoe_interval * (def.rage_interval_mult if enemy.raged else 1.0)
 			enemy.play_strike()
 			if Iso.ground_distance(enemy.global_position, target) <= enemy.aoe_radius_now:
-				player_hit.emit(def.aoe_damage, enemy)
+				_hit_player(def.aoe_damage, enemy, "aoe")
 			aoe_burst.emit(enemy, enemy.aoe_radius_now)
 		return
 	enemy.aoe_timer -= delta
@@ -201,7 +201,7 @@ func _update_rain(enemy: Enemy, target: Vector2, delta: float) -> void:
 			enemy.rain_spots.erase(spot)
 			rain_impact.emit(spot["pos"], def.rain_radius)
 			if Iso.ground_distance(spot["pos"], target) <= def.rain_radius:
-				player_hit.emit(def.rain_damage, enemy)
+				_hit_player(def.rain_damage, enemy, "rain")
 	enemy.rain_timer -= delta
 	if enemy.rain_timer <= 0.0:
 		enemy.rain_timer = def.rain_interval
@@ -282,7 +282,7 @@ func _update_charge(enemy: Enemy, target: Vector2, delta: float) -> bool:
 				var reach: float = def.charge_width * 0.5 + enemy.hit_radius * 0.5
 				if Iso.ground_distance(enemy.global_position, target) <= reach:
 					enemy.charge_hit = true
-					player_hit.emit(def.charge_damage, enemy)
+					_hit_player(def.charge_damage, enemy, "charge")
 			if stopped or enemy.charge_left <= 0.0:
 				enemy.charge_phase = 0
 				enemy.charge_timer = def.charge_interval * rage_mult
@@ -349,10 +349,17 @@ func _update_bullets(target: Vector2, delta: float) -> void:
 		var hit: bool = Iso.ground_distance(node.global_position, target) <= BULLET_HIT_RADIUS
 		if hit or bullet["left"] <= 0.0 or _is_blocked(node.global_position):
 			if hit and is_instance_valid(bullet["source"]):
-				player_hit.emit(bullet["damage"], bullet["source"])
+				_hit_player(bullet["damage"], bullet["source"], "shot")
 			bullet_landed.emit(node.global_position, bullet["color"])
 			_bullets.erase(bullet)
 			node.queue_free()
+
+
+## プレイヤーに当てる。どの種類の攻撃かを、敵に覚えさせてから知らせる（バランス記録の、死因に使う）
+func _hit_player(damage: float, enemy: Enemy, kind: String) -> void:
+	if is_instance_valid(enemy):
+		enemy.last_attack_kind = kind
+	player_hit.emit(damage, enemy)
 
 
 func bullet_count() -> int:
@@ -427,7 +434,7 @@ func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 		enemy.state = Enemy.State.ATTACKING
 		enemy.attack_timer = maxf(def.attack_interval, def.windup)
 		enemy.play_strike()
-		player_hit.emit(def.damage, enemy)
+		_hit_player(def.damage, enemy, "melee")
 	else:
 		enemy.state = Enemy.State.CHASING
 		enemy.attack_timer = 0.0

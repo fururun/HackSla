@@ -4,6 +4,7 @@ extends CharacterBody2D
 ## 絵はドット絵ができるまでコードで描く仮のもの。向きは Facing の8方向で持つ。
 
 signal attacked(skill: SkillDef, hits: int)
+signal dodged  ## 回避を出した（バランス記録用）
 signal damaged(amount: float, source: Node)  ## 敵に殴られて、体力が減った（回避中は出ない。見た目用）
 
 const MOVE_SPEED: float = 80.0
@@ -126,6 +127,7 @@ func start_dodge(input: Vector2 = Vector2.ZERO) -> bool:
 	_dodge_left = DODGE_SECONDS
 	_invuln_left = DODGE_INVULN_SECONDS
 	_dodge_cooldown_left = DODGE_COOLDOWN
+	dodged.emit()
 	return true
 
 

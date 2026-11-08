@@ -74,3 +74,30 @@ loadouts = Counter(','.join(sorted(s['skill'] for s in r['start_loadout'])) for 
 print('\n== スタート構成の回数:')
 for k, v in loadouts.most_common():
     print('  %3d  %s' % (v, k))
+
+# ---- 死因 ----
+deaths = [r for r in runs if r['end_reason'] == 'death' and r.get('death')]
+if deaths:
+    print('
+== 死因（やられた %d 回）' % len(deaths))
+    killers = Counter('%s:%s' % (d['death']['killer']['enemy'], d['death']['killer']['kind']) for d in deaths if d['death'].get('killer'))
+    print('とどめの攻撃:', dict(killers.most_common()))
+    in_boss = [d for d in deaths if d['death'].get('boss', {}).get('awake')]
+    raged = [d for d in deaths if d['death'].get('boss', {}).get('raged')]
+    print('ボスが動いているときにやられた: %d / 激昂後: %d / それ以外（道中）: %d' % (len(in_boss), len(raged), len(deaths) - len(in_boss)))
+    print('やられた時刻(秒):', stat([d['death']['seconds'] for d in deaths]))
+    ratios = [d['death']['boss']['life_ratio'] for d in in_boss]
+    if ratios:
+        print('そのときのボスの残り体力(割合):', stat(ratios, '%.2f'))
+by_source = Counter()
+for r in runs:
+    for key, value in r.get('damage_taken_by', {}).items():
+        by_source[key] += value
+if by_source:
+    print('
+== 受けたダメージの内訳（全プレイの合計）')
+    total_taken = sum(by_source.values()) or 1
+    for key, value in by_source.most_common():
+        print('  %-22s %8.0f  %5.1f%%' % (key, value, 100.0 * value / total_taken))
+print('
+回避の回数(1プレイ):', stat([r.get('dodges', 0) for r in runs], '%.0f'))

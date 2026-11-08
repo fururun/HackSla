@@ -980,3 +980,36 @@ func test_balance_log_records_run() -> void:
 		var parsed: Variant = JSON.parse_string(last_line)
 		t.check(parsed is Dictionary and (parsed as Dictionary)["end_reason"] == "test_end", "最後の1行が、JSONとして読める")
 	main.queue_free()
+
+
+func test_balance_log_records_death_cause() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var log: BalanceLog = main.balance_log
+	var player := tree.get_first_node_in_group("player") as Player
+	var manager: EnemyManager = main.get_node("World/EnemyManager")
+	var boss: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.is_boss:
+			boss = n
+	boss.state = Enemy.State.CHASING
+	boss.raged = true
+	player.global_position = boss.global_position + Vector2(30, 0)
+	player.on_player_hit(5.0, null)  # 発信元がなくても、落ちない
+	manager._hit_player(20.0, boss, "charge")
+	manager._hit_player(30.0, boss, "aoe")
+	player.dodged.emit()
+	t.check_eq(boss.last_attack_kind, "aoe", "最後の攻撃の種類を、敵が覚える")
+	player.vitals.life = 10.0
+	manager._hit_player(500.0, boss, "melee")  # とどめ
+	var record: Dictionary = log.finish("death")
+	t.check_eq(String(record["end_reason"]), "death", "やられた記録")
+	var death: Dictionary = record["death"]
+	t.check_eq(String(death["killer"]["enemy"]), "rock_lord", "とどめを刺した敵")
+	t.check_eq(String(death["killer"]["kind"]), "melee", "とどめの攻撃の種類")
+	t.check((death["last_hits"] as Array).size() >= 3, "直近の攻撃が残る")
+	t.check(bool(death["boss"]["awake"]) and bool(death["boss"]["raged"]), "ボスが動いていて、激昂していた")
+	t.check(death.has("position") and death.has("enemies_within_80"), "場所と、近くの敵の数")
+	t.check(float(record["damage_taken_by"].get("rock_lord:charge", 0.0)) > 0.0, "攻撃の種類ごとのダメージの内訳")
+	t.check_eq(int(record["dodges"]), 1, "回避の回数")
+	main.queue_free()

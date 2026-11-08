@@ -15,6 +15,7 @@ const PROJECT_FILE: String = "runs.jsonl"
 const BOSS_POLL_SECONDS: float = 0.25
 const MIN_RUN_SECONDS: float = 5.0  ## これより短いプレイ（すぐ閉じた・テスト）は、終了時の自動記録をしない
 const MAX_DROP_NAMES: int = 300
+const RECENT_HITS: int = 8
 
 var autopilot: Autopilot
 var dps_meter: DpsMeter
@@ -45,6 +46,9 @@ var _drop_currency: int = 0
 var _drop_items_by_rarity: Dictionary = {}
 var _drop_gems: Dictionary = {}
 var _drop_names: Array[String] = []
+var _dodges: int = 0
+var _damage_taken_by: Dictionary = {}  ## "敵のid:攻撃の種類" -> 受けたダメージの合計
+var _recent_hits: Array[Dictionary] = []  ## 直近に受けた攻撃（死因を調べるため。最大 RECENT_HITS 件）
 var last_record: Dictionary = {}
 
 
@@ -64,7 +68,8 @@ func setup(manager: EnemyManager, player: Player, stash: Stash, director: LootDi
 	manager.enemy_hit.connect(_on_enemy_hit)
 	manager.boss_raged.connect(func(_e: Enemy) -> void: _boss_rage = _time)
 	player.caster.cast_done.connect(_on_cast_done)
-	player.damaged.connect(func(amount: float, _source: Node) -> void: _damage_taken += amount)
+	player.damaged.connect(_on_player_damaged)
+	player.dodged.connect(func() -> void: _dodges += 1)
 	player.vitals.healed.connect(func(_amount: float) -> void: _heals_used += 1)
 	player.vitals.died.connect(func() -> void: finish("death"))
 	stash.equipped.connect(func(_slot: String, _new_item: ItemInstance, _old_item: ItemInstance) -> void: _equips += 1)
@@ -121,6 +126,24 @@ func _on_enemy_hit(enemy: Enemy, _amount: float, killed: bool) -> void:
 			_boss_wake = _time
 
 
+## 受けた攻撃を覚える（敵のid・攻撃の種類・ダメージ・その時の、残りの体力）
+func _on_player_damaged(amount: float, source: Node) -> void:
+	_damage_taken += amount
+	var enemy_id: String = "?"
+	var kind: String = ""
+	var boss_attack: bool = false
+	if source is Enemy and (source as Enemy).definition != null:
+		enemy_id = (source as Enemy).definition.id
+		kind = (source as Enemy).last_attack_kind
+		boss_attack = (source as Enemy).definition.is_boss
+	var key: String = "%s:%s" % [enemy_id, kind]
+	_damage_taken_by[key] = snappedf(float(_damage_taken_by.get(key, 0.0)) + amount, 0.1)
+	_recent_hits.append({"t": snappedf(_time, 0.1), "enemy": enemy_id, "kind": kind, "damage": roundi(amount),
+		"life_before": roundi(_player.vitals.life) if _player != null else 0, "boss": boss_attack})
+	if _recent_hits.size() > RECENT_HITS:
+		_recent_hits.pop_front()
+
+
 func _on_cast_done(_slot: int, skill: SkillDef, _hits: int, chained: bool) -> void:
 	var entry: Dictionary = _skill_entry(skill.id)
 	entry["casts"] = int(entry["casts"]) + 1
@@ -150,6 +173,33 @@ func _on_dropped(value: Variant) -> void:
 	elif value is int:
 		_drop_counts["currency_piles"] = int(_drop_counts["currency_piles"]) + 1
 		_drop_currency += int(value)
+
+
+## やられたときの状況：誰の・どんな攻撃で、どこで、ボスはどんな状態だったか
+func _death_snapshot() -> Dictionary:
+	var info: Dictionary = {"seconds": snappedf(_time, 0.1), "last_hits": _recent_hits.duplicate(true)}
+	if not _recent_hits.is_empty():
+		var last: Dictionary = _recent_hits.back()
+		info["killer"] = {"enemy": last["enemy"], "kind": last["kind"], "damage": last["damage"]}
+	if _player == null or not is_inside_tree():
+		return info
+	info["position"] = [roundi(_player.global_position.x), roundi(_player.global_position.y)]
+	var near: int = 0
+	var boss_info: Dictionary = {}
+	for node: Node in get_tree().get_nodes_in_group("enemies"):
+		var e := node as Enemy
+		if e == null or not e.active or e.definition == null:
+			continue
+		var distance: float = Iso.ground_distance(_player.global_position, e.global_position)
+		if distance <= 80.0:
+			near += 1
+		if e.definition.is_boss:
+			boss_info = {"distance": roundi(distance), "awake": e.state != Enemy.State.IDLE, "raged": e.raged,
+				"life_ratio": snappedf(e.life / maxf(e.definition.life, 1.0), 0.01)}
+	info["enemies_within_80"] = near
+	if not boss_info.is_empty():
+		info["boss"] = boss_info
+	return info
 
 
 func _loadout_snapshot() -> Array[Dictionary]:
@@ -219,6 +269,9 @@ func build_record(reason: String) -> Dictionary:
 		"chain_casts": _chain_casts,
 		"damage_dealt": roundi(_damage_dealt),
 		"damage_taken": roundi(_damage_taken),
+		"damage_taken_by": _damage_taken_by,
+		"dodges": _dodges,
+		"death": _death_snapshot() if reason == "death" else {},
 		"avg_dps": snappedf(_damage_dealt / maxf(_time, 1.0), 0.1),
 		"max_dps": snappedf(max_dps, 0.1),
 		"kills": total_kills,

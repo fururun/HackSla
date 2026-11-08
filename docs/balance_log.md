@@ -16,6 +16,9 @@
 | skills | スキルidごとに `{casts（使った回数。チェインで出た技も、その技のidで数える）, chained_casts（そのうち、チェインで出た回数）, damage（与えたダメージ）}` |
 | chain_casts | チェインが出た回数の合計 |
 | damage_dealt / damage_taken | 与えた／受けたダメージの合計（受けた分は、防御で減らす前） |
+| damage_taken_by | 受けたダメージの内訳。`敵のid:攻撃の種類` ごとの合計（攻撃の種類：melee 殴り / aoe 叩きつけ / rain 岩落とし / charge 突進 / shot 弾） |
+| dodges | 回避を出した回数 |
+| death | `end_reason` が `death` のときだけ。やられた状況：seconds、killer（敵・攻撃の種類・ダメージ）、last_hits（直近8回に受けた攻撃と、その直前の体力）、position、enemies_within_80（近くの敵の数）、boss（distance・awake・raged・life_ratio） |
 | avg_dps | damage_dealt ÷ プレイ時間 |
 | max_dps | 最大DPS（直近5秒の平均の、最大値。右上の「最大」と同じ） |
 | kills / kills_by_enemy | 倒した数。敵のidごとの数 |
