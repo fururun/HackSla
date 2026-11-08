@@ -159,7 +159,7 @@ const LEG_ROWS: int = 6  ## 絵の下から、足として動かす行数
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 
 
-const WALK_VIEWS: PackedStringArray = ["front", "side", "back"]  ## 歩きの絵（4コマ）がある向き。斜めは、立ち絵の脚を動かして歩かせる
+const WALK_VIEWS: PackedStringArray = ["front", "side", "back", "diag_down", "diag_up"]  ## 歩きの絵（4コマ）がある向き（8方向すべて。左右は反転）
 const WALK_FRAMES: int = 4  ## 歩きの絵のコマ数（0:足を前に出す 1:そろう 2:反対の足を前に出す 3:そろう）
 static var _walk_textures: Dictionary = {}  ## "向き_コマ" -> Texture2D
 

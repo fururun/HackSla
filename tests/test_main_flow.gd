@@ -552,10 +552,11 @@ func test_autopilot_clears_rooms_before_chests_and_boss() -> void:
 	main.queue_free()
 
 func test_walk_animation_frames() -> void:
-	for view: String in ["front", "side", "back"]:
+	for view: String in Player.WALK_VIEWS:
 		for i: int in 4:
 			var tex: Texture2D = load("res://art/sprites/player/player_walk_%s_%d.png" % [view, i])
-			t.check(tex != null and tex.get_size() == Vector2(30, 30), "歩きの絵 %s の%dコマ目（30x30）" % [view, i])
+			var expected: Vector2 = Vector2(36, 30) if view.begins_with("diag") else Vector2(30, 30)
+			t.check(tex != null and tex.get_size() == expected, "歩きの絵 %s の%dコマ目（%s）" % [view, i, str(expected)])
 			var img: Image = tex.get_image()
 			var opaque: int = 0
 			for y: int in 30:
@@ -568,4 +569,4 @@ func test_walk_animation_frames() -> void:
 	for step: int in 4:
 		seen[Player.walk_texture("front", step * Player.WALK_FRAME_MS)] = true
 	t.check_eq(seen.size(), 4, "4コマが順に出る")
-	t.check(Player.walk_texture("diag_down", 0) == null, "斜めは、歩きの絵がない")
+	t.check(Player.walk_texture("diag_down", 0) != null and Player.walk_texture("diag_up", 0) != null, "斜めにも、歩きの絵がある")
