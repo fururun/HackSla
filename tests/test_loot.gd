@@ -187,3 +187,45 @@ func _signature(drops: Array) -> Array:
 		else:
 			result.append(drop)
 	return result
+
+func test_unowned_gem_weight_in_roll_drops() -> void:
+	var db: Node = _db()
+	var owned: Dictionary = {GemInstance.Kind.SKILL: {}, GemInstance.Kind.SUPPORT: {}}
+	for skill: SkillDef in db.droppable_skills():
+		owned[GemInstance.Kind.SKILL][skill.id] = true
+	for support: SupportDef in db.supports.values():
+		owned[GemInstance.Kind.SUPPORT][support.id] = true
+	owned[GemInstance.Kind.SUPPORT].erase("scatter")
+	var biased: LootRoller = _roller(210021)
+	var neutral: LootRoller = _roller(210021)
+	var defaulted: LootRoller = _roller(210021)
+	var empty: LootRoller = _roller(210021)
+	var counts: Array[int] = [0, 0, 0, 0]
+	for index: int in range(15000):
+		var enemy: EnemyDef = db.enemy("swarmling")
+		for variant: int in 2:
+			var drops: Array = biased.roll_drops(enemy, 1, owned) if variant == 0 else neutral.roll_drops(enemy, 1)
+			for drop: Variant in drops:
+				if drop is GemInstance:
+					counts[variant * 2 + 1] += 1
+					if drop.kind == GemInstance.Kind.SUPPORT and drop.id == "scatter":
+						counts[variant * 2] += 1
+		if index < 100:
+			t.check_eq(_signature(defaulted.roll_drops(enemy, 1)), _signature(empty.roll_drops(enemy, 1, {})), "省略と空集合は同一")
+	var candidates: int = db.droppable_skills().size() + db.supports.size()
+	var expected: float = LootRoller.GEM_NEW_WEIGHT_MULT / (candidates - 1 + LootRoller.GEM_NEW_WEIGHT_MULT)
+	t.check(absf(float(counts[0]) / counts[1] - expected) < 0.05, "未所持の抽選率は4倍の重みに合う")
+	t.check(float(counts[0]) / counts[1] > float(counts[2]) / counts[3] * 1.6, "省略時より未所持が出やすい")
+
+func test_only_fixed_starting_supports() -> void:
+	var db: Node = _db()
+	var support: SupportDef = SupportDef.new()
+	support.id = "future_support"
+	db.supports[support.id] = support
+	var stash: Stash = Stash.new()
+	t.check(not stash.has_gem(GemInstance.Kind.SUPPORT, support.id), "追加補助は初期所持しない")
+	stash.collect(GemInstance.new(GemInstance.Kind.SUPPORT, support.id))
+	t.check_eq(stash.currency, 0, "初取得では通貨なし")
+	stash.collect(GemInstance.new(GemInstance.Kind.SUPPORT, support.id))
+	t.check_eq(stash.currency, Stash.GEM_DUPLICATE_CURRENCY, "重複補助を通貨へ")
+	db.reload()

@@ -13,6 +13,7 @@ const KEYS: Dictionary = {
 	"skill_6": [KEY_F],
 	"toggle_debug": [KEY_F1],
 	"toggle_skill_screen": [KEY_K],
+	"toggle_equip_screen": [KEY_I],
 	"restart_game": [KEY_F5],
 }
 

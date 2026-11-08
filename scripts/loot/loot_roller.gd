@@ -7,6 +7,7 @@ const XP_PER_DROP: int = 10
 const MIN_DROPS: int = 1
 const ITEM_WEIGHT: float = 3.0
 const GEM_WEIGHT: float = 1.0
+const GEM_NEW_WEIGHT_MULT: float = 4.0
 const CURRENCY_WEIGHT: float = 6.0
 const CURRENCY_PER_XP: int = 1
 
@@ -50,7 +51,7 @@ func roll_item(level: int) -> ItemInstance:
 
 ## xp が正なら最低1枠、XP_PER_DROP ごとに1枠増加。xp 0 の敵は何も落とさない。
 ## 通貨は末尾の int 1件へ集約する。候補のない装備/ジェム枠は通貨にする。
-func roll_drops(enemy: EnemyDef, level: int) -> Array:
+func roll_drops(enemy: EnemyDef, level: int, owned_gems: Dictionary = {}) -> Array:
 	var drops: Array = []
 	if enemy.xp <= 0:
 		return drops
@@ -64,7 +65,7 @@ func roll_drops(enemy: EnemyDef, level: int) -> Array:
 				drops.append(item)
 				continue
 		elif choice < ITEM_WEIGHT + GEM_WEIGHT:
-			var gem: GemInstance = _roll_gem()
+			var gem: GemInstance = _roll_gem(owned_gems)
 			if gem != null:
 				drops.append(gem)
 				continue
@@ -74,7 +75,7 @@ func roll_drops(enemy: EnemyDef, level: int) -> Array:
 	return drops
 
 
-func _roll_gem() -> GemInstance:
+func _roll_gem(owned_gems: Dictionary = {}) -> GemInstance:
 	var gems: Array[GemInstance] = []
 	for skill: SkillDef in DataDB.droppable_skills():
 		gems.append(GemInstance.new(GemInstance.Kind.SKILL, skill.id))
@@ -82,7 +83,19 @@ func _roll_gem() -> GemInstance:
 		gems.append(GemInstance.new(GemInstance.Kind.SUPPORT, support.id))
 	if gems.is_empty():
 		return null
-	return gems[_rng.randi_range(0, gems.size() - 1)]
+	# 引数省略時は乱数の消費も従来どおり。
+	if owned_gems.is_empty():
+		return gems[_rng.randi_range(0, gems.size() - 1)]
+	var total: float = 0.0
+	for gem: GemInstance in gems:
+		total += 1.0 if owned_gems.get(gem.kind, {}).has(gem.id) else GEM_NEW_WEIGHT_MULT
+	var choice: float = _rng.randf() * total
+	for gem: GemInstance in gems:
+		var weight: float = 1.0 if owned_gems.get(gem.kind, {}).has(gem.id) else GEM_NEW_WEIGHT_MULT
+		if choice < weight:
+			return gem
+		choice -= weight
+	return gems.back()
 
 
 ## weight <= 0 は候補外。全候補が無効なら null。
