@@ -7,6 +7,7 @@ var _panel: PanelContainer
 var _duplicate_pending: GemInstance
 var _stash: Stash
 var _currency: Label
+var _power: Label  ## 装備で強くなった分（ダメージ・ライフ・防御）
 var _messages: VBoxContainer
 var _recent: Array[Dictionary] = []
 
@@ -47,18 +48,45 @@ func _ready() -> void:
 	_currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_currency.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UiStyle.label(_currency, UiStyle.FONT_SMALL, UiStyle.ACCENT)
+	_power = Label.new()
+	root.add_child(_power)
+	_power.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_power.offset_left = -200
+	_power.offset_right = -6
+	_power.offset_top = 34
+	_power.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_power.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiStyle.label(_power, UiStyle.FONT_SMALL, StatLabels.INCREASE_COLOR)
 	_panel = PanelContainer.new()
 	root.add_child(_panel)
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_panel.offset_left = -150
 	_panel.offset_right = -6
-	_panel.offset_top = 36
+	_panel.offset_top = 46
 	_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # 枠なし（文字のふちどりだけ）
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_messages = VBoxContainer.new()
 	_panel.add_child(_messages)
 	_messages.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_refresh()
+
+## 装備で強くなった分の一行（装備がなければ空）。例：ダメージ +45%　ライフ +60　防御 +23
+func power_summary() -> String:
+	if _stash == null:
+		return ""
+	var stats: StatBlock = _stash.equipment_stats()
+	var parts: Array[String] = []
+	var damage: float = stats.get_value("damage_pct")
+	if damage > 0.0:
+		parts.append("ダメージ +%d%%" % roundi(damage))
+	var life: float = stats.get_value("life")
+	if life > 0.0:
+		parts.append("ライフ +%d" % roundi(life))
+	var armor: float = stats.get_value("armor")
+	if armor > 0.0:
+		parts.append("防御 +%d" % roundi(armor))
+	return "　".join(parts)
+
 
 func _process(delta: float) -> void:
 	var expired: bool = false
@@ -96,7 +124,7 @@ func _gem_name(gem: GemInstance) -> String:
 	return definition.name if definition != null else gem.id
 
 func _on_equipped(_slot: String, item: ItemInstance, previous: ItemInstance) -> void:
-	_add_message("装備した：" + item.display_name(), item.rarity.color, StatLabels.changes(item, previous))
+	_add_message("強くなった！ " + item.display_name(), item.rarity.color, StatLabels.changes(item, previous))
 
 func _on_skipped(item: ItemInstance) -> void:
 	_add_message("見送り：" + item.display_name(), UiStyle.MUTED)
@@ -109,6 +137,8 @@ func _refresh() -> void:
 	if _currency == null:
 		return
 	_currency.text = "通貨 %d" % (_stash.currency if _stash != null else 0)
+	if _power != null:
+		_power.text = power_summary()
 	if _panel != null:
 		_panel.visible = not _recent.is_empty()  # 通知がないときは、枠ごと消す
 	for child: Node in _messages.get_children():

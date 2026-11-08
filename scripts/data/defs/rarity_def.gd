@@ -10,6 +10,7 @@ var affix_max: int = 0
 var weight: float = 0.0
 var beam: bool = false  ## true なら光の柱と専用の音（最上位2段階だけ）
 var color: Color = Color.WHITE
+var stat_mult: float = 1.0  ## 土台の性能にかける倍率（高いレアリティほど、土台そのものも強い）
 
 
 static func from_dict(d: Dictionary, errors: Array[String]) -> RarityDef:
@@ -22,6 +23,7 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> RarityDef:
 		r.affix_min = int(a[0])
 		r.affix_max = int(a[1])
 	r.weight = float(d.get("weight", 0))
+	r.stat_mult = float(d.get("stat_mult", 1.0))
 	r.beam = bool(d.get("beam", false))
 	r.color = Color.from_string(str(d.get("color", "#ffffff")), Color.WHITE)
 	if r.id.is_empty():

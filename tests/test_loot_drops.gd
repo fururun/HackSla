@@ -28,14 +28,18 @@ func test_stash() -> void:
 	stash.collect(low)
 	t.check_eq(stash.equipment["weapon"], low, "空き部位を装備")
 	stash.collect(high)
-	stash.collect(_item("weapon", 2, {"damage_pct": 99}))
+	t.check_eq(stash.equipment["weapon"], high, "強さの目安が上なら着替える")
+	stash.collect(_item("weapon", 2, {"damage_pct": 4}))
 	stash.collect(low)
-	t.check_eq(stash.equipment["weapon"], high, "高tierだけ更新、同tierと下位は維持")
+	t.check_eq(stash.equipment["weapon"], high, "同じか弱いものは着替えない")
+	var stronger: ItemInstance = _item("weapon", 0, {"damage_pct": 99})
+	stash.collect(stronger)
+	t.check_eq(stash.equipment["weapon"], stronger, "レアリティが低くても、性能が上なら着替える")
 	stash.collect(_item("ring", 1, {"damage_pct": 7, "armor": 4}))
 	var stats: StatBlock = stash.equipment_stats()
-	t.check_eq(stats.get_value("damage_pct"), 12.0, "部位間で合算")
-	t.check_eq(stats.get_value("life"), 3.0, "個別の値")
-	t.check_eq(stash.equipment_stats().get_value("damage_pct"), 12.0, "繰返し計算で二重加算しない")
+	t.check_eq(stats.get_value("damage_pct"), 106.0, "部位間で合算")
+	t.check_eq(stats.get_value("armor"), 4.0, "個別の値")
+	t.check_eq(stash.equipment_stats().get_value("damage_pct"), 106.0, "繰返し計算で二重加算しない")
 	stash.collect(8)
 	stash.collect(4)
 	t.check_eq(stash.currency, 12, "通貨を合算")
@@ -124,3 +128,26 @@ func test_loot_hud() -> void:
 	hud._process(LootHud.MESSAGE_LIFETIME + 0.1)
 	t.check(hud._recent.is_empty(), "数秒後に消える")
 	hud.free()
+
+
+func test_loot_hud_power_summary_and_equip_fx() -> void:
+	var tree: SceneTree = t as SceneTree
+	var stash: Stash = Stash.new()
+	var hud: LootHud = LootHud.new()
+	hud.setup(stash)
+	tree.root.add_child(hud)
+	await tree.process_frame
+	t.check_eq(hud.power_summary(), "", "装備がなければ空")
+	stash.collect(_item("weapon", 0, {"damage_pct": 20}))
+	stash.collect(_item("armor", 0, {"life": 25, "armor": 15}))
+	t.check_eq(hud.power_summary(), "ダメージ +20%　ライフ +25　防御 +15", "装備で強くなった分が出る")
+	t.check_eq(hud._power.text, hud.power_summary(), "画面の表示に反映される")
+	hud.free()
+
+
+func test_higher_rarity_means_stronger_base() -> void:
+	var common: ItemInstance = _item("weapon", 0, {"damage_pct": 20})
+	var epic: ItemInstance = _item("weapon", 3, {"damage_pct": 20})
+	epic.rarity.stat_mult = 2.0
+	t.check_eq(epic.total_stats()["damage_pct"], 40, "レアリティが高いと、土台の性能が上がる")
+	t.check(epic.power() > common.power(), "強さの目安も上がる")

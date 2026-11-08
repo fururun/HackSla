@@ -42,7 +42,7 @@ func collect(value: Variant) -> void:
 	elif value is ItemInstance:
 		var item: ItemInstance = value
 		var current: ItemInstance = equipment.get(item.base.slot)
-		if current == null or current.rarity.tier < item.rarity.tier:
+		if current == null or current.power() < item.power():  # 強さの目安が上回るときだけ着替える
 			equipment[item.base.slot] = item
 			changed.emit()
 			equipped.emit(item.base.slot, item, current)

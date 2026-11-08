@@ -45,7 +45,7 @@ func test_signals_and_hud() -> void:
 	stash.collect(low)
 	stash.collect(high)
 	t.check_eq(equipped, [["weapon", low, null], ["weapon", high, low]], "新旧の装備を通知")
-	t.check_eq(hud._recent[1]["text"], "装備した：" + high.display_name(), "装備した通知")
+	t.check_eq(hud._recent[1]["text"], "強くなった！ " + high.display_name(), "装備した通知")
 	t.check_eq(hud._recent[1]["lines"].size(), 2, "増減を各行に表示")
 	stash.collect(low)
 	t.check_eq(skipped, [low], "見送りを通知")

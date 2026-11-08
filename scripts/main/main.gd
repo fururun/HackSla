@@ -157,6 +157,10 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 		player.caster.stats.merge(stash.equipment_stats())
 		player.vitals.changed.emit()
 	stash.changed.connect(apply_equipment)
+	# 装備を着替えたら、体のまわりに金色の輪と火花を出す（強くなった実感）
+	stash.equipped.connect(func(_slot: String, _item: ItemInstance, _previous: ItemInstance) -> void:
+		EnemyFx.spawn(world, EnemyFx.Kind.RING, player.global_position, Color(1.0, 0.85, 0.3), 30.0, 0.55)
+		EnemyFx.spawn(world, EnemyFx.Kind.BURST, player.global_position, Color(1.0, 0.9, 0.5), 22.0, 0.5))
 
 
 ## マップの印（s=スライムの群れ、b=岩殻）に敵を置く。時間で湧かせず、倒しに行く配置
