@@ -43,7 +43,7 @@ func test_150_enemies_move_and_recycle() -> void:
 	t.check_eq(reused.life, reused.definition.life, "再利用時に新しい定義のライフへ戻す")
 	t.check_eq(reused.global_position, Vector2(300, -30), "再利用時に位置を設定")
 	t.check(reused.visible and reused.is_in_group("enemies"), "再利用で描画と攻撃対象を戻す")
-	t.check_eq(manager.get_child_count(), 150, "ノードが増殖しない")
+	t.check_eq(manager.get_child_count(), 150 + 1, "ノードが増殖しない（敵150体と、死ぬ動きの描画用の1つだけ）")
 	manager.queue_free()
 	player.queue_free()
 	await tree.process_frame

@@ -19,6 +19,9 @@ SPECS = [
     ('slime_attack', 'slime_attack_sheet.png', 4, None, 0, 24, 18),
     ('spitter_move', 'spitter_move_sheet.png', 4, None, 0, 24, 18),
     ('spitter_attack', 'spitter_attack_sheet.png', 4, None, 0, 24, 18),
+    ('slime_death', 'slime_death_sheet.png', 5, None, 0, 32, 26),
+    ('spitter_death', 'spitter_death_sheet.png', 5, None, 0, 32, 26),
+    ('rockgolem_death', 'golem_death_sheet.png', 6, 'rockgolem_front.png', 0, 48, 40),
 ]
 # 参照の絵がない（スライム）ものは、立ち姿の高さを決めておく
 SLIME_HEIGHT = 9  # いまのスライムの絵（Enemy._make_figure）の高さ（ドット）

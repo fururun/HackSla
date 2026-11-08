@@ -96,6 +96,7 @@ func take_hit(amount: float, _skill: SkillDef) -> void:
 	manager.enemy_hit.emit(self, damage, life <= 0.0)
 	if life <= 0.0:
 		DeathDebris.spawn(manager, global_position)
+		manager.play_death(self)
 		manager.despawn(self)
 
 

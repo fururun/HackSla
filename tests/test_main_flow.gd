@@ -659,3 +659,33 @@ func test_slime_animation_frames_and_state() -> void:
 	spitter.play_strike()
 	t.check(spitter.current_anim_texture() == Enemy.anim_texture("spitter_attack", 2), "吐いた瞬間は、吐く絵")
 	spitter.free()
+
+
+func test_death_animation_layer() -> void:
+	var tree: SceneTree = t
+	for anim: String in ["slime_death", "spitter_death", "rockgolem_death"]:
+		var count: int = int(DeathAnimLayer.FRAMES[anim])
+		for i: int in count:
+			var tex: Texture2D = load("res://art/sprites/enemies/%s_%d.png" % [anim, i])
+			t.check(tex != null, "死ぬ動きの絵 %s の%dコマ目がある" % [anim, i])
+		t.check(Enemy.anim_texture(anim, count) == null, "%s は %d コマで終わる" % [anim, count])
+	var manager := EnemyManager.new()
+	tree.root.add_child(manager)
+	manager.set_physics_process(false)
+	var slime: Enemy = manager.spawn(DataDB.enemy("swarmling"), Vector2(10, 10))
+	t.check_eq(manager.death_anim_count(), 0, "最初は、死ぬ動きはない")
+	slime.take_hit(slime.life + 1.0, DataDB.skill("slash"))
+	t.check_eq(manager.death_anim_count(), 1, "倒すと、死ぬ動きが1つ出る")
+	var golem: Enemy = manager.spawn(DataDB.enemy("brute"), Vector2(40, 10))
+	golem.take_hit(golem.life + 1.0, DataDB.skill("slash"))
+	t.check_eq(manager.death_anim_count(), 2, "岩殻を倒しても、出る")
+	var layer: DeathAnimLayer = manager._death_layer
+	layer._process(5.0)
+	t.check_eq(manager.death_anim_count(), 0, "時間がたてば、消える")
+	# 案山子など、絵のない敵は、何もしない
+	var dummy_def := EnemyDef.new()
+	dummy_def.behavior = "dummy"
+	layer.play(dummy_def, Vector2.ZERO)
+	t.check_eq(layer.active_count(), 0, "絵のない敵は、何も出さない")
+	manager.queue_free()
+	await tree.process_frame

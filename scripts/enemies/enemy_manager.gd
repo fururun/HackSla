@@ -54,6 +54,21 @@ func _show_aoe_telegraph(enemy: Enemy, radius: float, windup: float) -> void:
 
 
 var enemy_parent: Node  ## 敵を置く先。Y軸ソートする親を指定する（空なら自分の子）
+var _death_layer: DeathAnimLayer  ## 倒れた敵の、死ぬ動きの絵をまとめて描く
+
+
+## 倒した敵の場所に、死ぬ動きの絵（はじける・崩れる）を置く。見た目だけ
+func play_death(enemy: Enemy) -> void:
+	if enemy.definition == null:
+		return
+	if _death_layer == null or not is_instance_valid(_death_layer):
+		_death_layer = DeathAnimLayer.new()
+		(enemy_parent if enemy_parent != null else self).add_child(_death_layer)
+	_death_layer.play(enemy.definition, enemy.global_position)
+
+
+func death_anim_count() -> int:
+	return _death_layer.active_count() if _death_layer != null and is_instance_valid(_death_layer) else 0
 var _feedback: HitFeedback
 
 var _packs: Dictionary[int, Array] = {}
