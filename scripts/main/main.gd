@@ -19,8 +19,8 @@ var _camera_label: Label
 ## カメラの見え方の候補（F4 で順に切り替えて、がくつきの出ないものを探す）。
 ## [名前, 引き, 追従をなめらかにする, ピクセルへの吸着]
 const CAMERA_MODES: Array = [
-	["A: 引き0.5・なめらか追従・吸着あり（標準）", 0.5, true, true],
-	["B: 引き0.5・なめらか追従・吸着なし", 0.5, false, false],
+	["A: 引き0.5・なめらか追従・吸着あり", 0.5, true, true],
+	["B: 引き0.5・追従なし（固定）・吸着なし（標準）", 0.5, false, false],
 	["C: 引き0.5・追従なし（プレイヤーに固定）・吸着あり", 0.5, false, true],
 	["D: 引き2/3・なめらか追従・吸着あり（ドットがちょうど2ピクセル）", 0.6667, true, true],
 	["E: 引き2/3・追従なし・吸着あり", 0.6667, false, true],
@@ -48,7 +48,7 @@ func _ready() -> void:
 	camera = Camera2D.new()
 	camera.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS  # プレイヤーと同じ物理の刻みで追う（がくつき防止）
-	camera.position_smoothing_enabled = true
+	camera.position_smoothing_enabled = false  # 標準は、追従なし（プレイヤーに固定）。ふるるん さんが、がくつきのない設定として選んだ（設定B）
 	camera.position_smoothing_speed = 8.0
 	camera.offset = Vector2(0, -10)
 	player.add_child(camera)
