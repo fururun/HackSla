@@ -570,3 +570,28 @@ func test_walk_animation_frames() -> void:
 		seen[Player.walk_texture("front", step * Player.WALK_FRAME_MS)] = true
 	t.check_eq(seen.size(), 4, "4コマが順に出る")
 	t.check(Player.walk_texture("diag_down", 0) != null and Player.walk_texture("diag_up", 0) != null, "斜めにも、歩きの絵がある")
+
+
+func test_attack_animation_frames() -> void:
+	for view: String in Player.ATTACK_VIEWS:
+		for i: int in Player.ATTACK_FRAMES:
+			var tex: Texture2D = load("res://art/sprites/player/player_attack_%s_%d.png" % [view, i])
+			t.check(tex != null and tex.get_size() == Vector2(48, 40), "攻撃の絵 %s の%dコマ目（48x40）" % [view, i])
+			var img: Image = tex.get_image()
+			var opaque: int = 0
+			for y: int in 40:
+				for x: int in 48:
+					if img.get_pixel(x, y).a > 0.5:
+						opaque += 1
+			t.check(opaque > 150, "攻撃の絵 %s の%dコマ目に、キャラが描かれている" % [view, i])
+	var seen: Dictionary = {}
+	for i: int in Player.ATTACK_FRAMES:
+		seen[Player.attack_texture("side", float(i) * Player.ATTACK_FRAME_SECONDS + 0.001)] = true
+	t.check_eq(seen.size(), 5, "5コマが順に出る")
+	t.check(Player.attack_texture("diag_down", 0.0) == null, "斜めは、攻撃の絵がない（立ち絵のまま）")
+	# 再生：スキルを使うと始まり、5コマぶん たつと終わる
+	var player := Player.new()
+	t.check(not player.is_attack_animating(), "最初は再生していない")
+	player.play_attack_animation()
+	t.check(player.is_attack_animating(), "スキルを使うと再生が始まる")
+	player.free()

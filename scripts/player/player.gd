@@ -17,6 +17,7 @@ const AUTO_AIM_RANGE: float = 80.0  ## この距離（地面の距離）以内�
 var facing: int = 2  ## Facing の番号（最初は下向き）
 var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
 var vitals: PlayerVitals = PlayerVitals.new(caster.stats)  ## 体力・経験値（stats は caster と共有）
+var _attack_t: float = -1.0  ## 攻撃の絵（5コマ）を出し始めてからの秒。負なら、出していない
 var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
 var autopilot: Autopilot  ## デバッグ用の自動戦闘（F2）。入っているあいだ、操作の代わりをする
 var _dodge_left: float = 0.0  ## 回避で動いている残り時間
@@ -70,6 +71,10 @@ func _physics_process(delta: float) -> void:
 
 	if _swing_t > 0.0:
 		_swing_t -= delta
+	if _attack_t >= 0.0:
+		_attack_t += delta
+		if _attack_t >= ATTACK_FRAMES * ATTACK_FRAME_SECONDS:
+			_attack_t = -1.0
 
 	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
 		if Input.is_action_pressed("skill_%d" % slot) or (auto and autopilot.wants_skill(self)):
@@ -141,6 +146,7 @@ func use_skill(slot: int, target: Vector2) -> bool:
 	if aim.length() >= CombatConsts.MIN_AIM_DISTANCE:
 		facing = Facing.dir8(aim)
 	_swing_t = CombatConsts.SWING_TIME
+	play_attack_animation()
 	attacked.emit(caster.last_skill, hits)
 	return true
 
@@ -157,6 +163,33 @@ const SPRITE_SCALE: float = 1.0  ## 絵の拡大率（絵はすでにゲーム�
 const WALK_FRAME_MS: int = 110  ## 歩きのモーションの1コマの長さ（ミリ秒）。4コマで1歩ずつ（右足・左足）
 const LEG_ROWS: int = 6  ## 絵の下から、足として動かす行数
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
+
+
+const ATTACK_VIEWS: PackedStringArray = ["front", "side", "back"]  ## 攻撃の絵（5コマ）がある向き。ない向き（斜め）は、立ち絵のまま
+const ATTACK_FRAMES: int = 5  ## 構え→振りかぶり→斬り下ろし→残心→構えに戻る
+const ATTACK_FRAME_SECONDS: float = 0.07  ## 1コマの長さ。5コマで0.35秒
+const ATTACK_FEET_ROW: float = 37.0  ## 攻撃の絵（48x40）の、足元の行
+static var _attack_textures: Dictionary = {}  ## "向き_コマ" -> Texture2D
+
+
+## 攻撃の絵のうち、出し始めて elapsed 秒のときのもの。絵がない向きは null
+static func attack_texture(view: String, elapsed: float) -> Texture2D:
+	if not ATTACK_VIEWS.has(view):
+		return null
+	var index: int = clampi(int(elapsed / ATTACK_FRAME_SECONDS), 0, ATTACK_FRAMES - 1)
+	var key: String = "%s_%d" % [view, index]
+	if not _attack_textures.has(key):
+		_attack_textures[key] = load(SPRITE_DIR + "player_attack_%s_%d.png" % [view, index]) as Texture2D
+	return _attack_textures[key]
+
+
+## スキルを使った瞬間に、攻撃の絵の再生を始める（途中なら、最初から）
+func play_attack_animation() -> void:
+	_attack_t = 0.0
+
+
+func is_attack_animating() -> bool:
+	return _attack_t >= 0.0
 
 
 const WALK_VIEWS: PackedStringArray = ["front", "side", "back", "diag_down", "diag_up"]  ## 歩きの絵（4コマ）がある向き（8方向すべて。左右は反転）
@@ -210,6 +243,12 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(-s if v["flip"] else s, s))
 	# 絵ごとに幅が違う（斜めは刀の分だけ広い）ので、絵の大きさから足元の中心を決める
 	var size := tex.get_size()
+	if _attack_t >= 0.0 and not vitals.is_dead():
+		var attack_tex: Texture2D = attack_texture(v["view"], _attack_t)
+		if attack_tex != null:
+			# 攻撃の絵（斬撃の弧が入るので、立ち絵より広い）。足元の行を、足元に合わせる
+			draw_texture(attack_tex, Vector2(-attack_tex.get_size().x * 0.5, -ATTACK_FEET_ROW), tint)
+			return
 	var moving: bool = velocity != Vector2.ZERO and not vitals.is_dead()
 	var walk_tex: Texture2D = walk_texture(v["view"], Time.get_ticks_msec()) if moving else null
 	if walk_tex != null:
