@@ -165,7 +165,7 @@ const LEG_ROWS: int = 6  ## 絵の下から、足として動かす行数
 static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
 
 
-const ATTACK_VIEWS: PackedStringArray = ["front", "side", "back"]  ## 攻撃の絵（5コマ）がある向き。ない向き（斜め）は、立ち絵のまま
+const ATTACK_VIEWS: PackedStringArray = ["front", "side", "back", "diag_down", "diag_up"]  ## 攻撃の絵（5コマ）がある向き（8方向すべて。左右は反転）
 const ATTACK_FRAMES: int = 5  ## 構え→振りかぶり→斬り下ろし→残心→構えに戻る
 const ATTACK_FRAME_SECONDS: float = 0.07  ## 1コマの長さ。5コマで0.35秒
 const ATTACK_FEET_ROW: float = 37.0  ## 攻撃の絵（48x40）の、足元の行
