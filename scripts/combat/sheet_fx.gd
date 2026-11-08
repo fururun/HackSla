@@ -88,6 +88,13 @@ static func hit_key(element: String) -> String:
 	return str((config().get("hit_by_element", {}) as Dictionary).get(element, ""))
 
 
+## チェイン技の演出に重ねる絵：{"origin": [キー...], "target": [キー...]}（data/fx/sheets.json の chain_fx）
+static func chain_keys(skill: SkillDef) -> Dictionary:
+	var table: Dictionary = config().get("chain_fx", {})
+	var entry: Dictionary = table.get(skill.id, table.get("default", {}))
+	return {"origin": entry.get("origin", []), "target": entry.get("target", [])}
+
+
 ## 範囲の絵の再生キー（属性ごと。なければ、物理のもの）
 static func area_key(element: String) -> String:
 	var area: Dictionary = (config().get("by_kind", {}) as Dictionary).get("area", {})

@@ -238,23 +238,28 @@ func _play_ring(pos: Vector2, radius: float, color: Color) -> void:
 	ring.play(pos, radius, color)
 
 
-## チェイン技の演出（pixelfx の絵を重ねる）：当たる場所に爆発と、命中の火花を、少しずつ遅らせて3回。
-## 足元に、属性の範囲の絵を大きく。技そのものの絵は、ふだんより大きく出ている（_fx_boost）
+## チェイン技の演出（pixelfx の絵を重ねる）。技ごとに決めた絵（data/fx/sheets.json の chain_fx）を、
+## 足元（origin）と、当たる場所（target）に出す。target の絵は、少しずつ遅らせて、重ねていく
 func play_chain_fx(skill: SkillDef, origin: Vector2, target: Vector2) -> void:
 	if fx_parent == null or not fx_parent.is_inside_tree():
 		return
 	var saved: float = _fx_boost
 	_fx_boost = 1.0
-	var reach: float = maxf(skill.radius, 36.0)
-	_play_fx(SheetFx.area_key(skill.element), origin, reach * 2.2)
-	_play_fx(SheetFx.explosion_key(), target, reach * 1.8)
-	var hit_key: String = SheetFx.hit_key(skill.element)
-	for i: int in 3:
-		var offset := Vector2(randf_range(-16.0, 16.0), randf_range(-10.0, 10.0))
-		var timer: SceneTreeTimer = fx_parent.get_tree().create_timer(0.06 * float(i + 1), true, true)
+	var keys: Dictionary = SheetFx.chain_keys(skill)
+	for key: Variant in keys["origin"]:
+		_play_fx(str(key), origin)
+	var index: int = 0
+	for key: Variant in keys["target"]:
+		var delay: float = 0.07 * float(index)
+		index += 1
+		var position: Vector2 = target
+		if delay <= 0.0:
+			_play_fx(str(key), position)
+			continue
+		var timer: SceneTreeTimer = fx_parent.get_tree().create_timer(delay, true, true)
 		timer.timeout.connect(func() -> void:
 			if is_instance_valid(fx_parent):
-				_play_fx(hit_key, target + CombatConsts.HIT_FX_OFFSET + offset))
+				_play_fx(str(key), position))
 	_fx_boost = saved
 
 

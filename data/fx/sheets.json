@@ -1,30 +1,312 @@
 {
   "_about": "pixelfx (MIT, https://github.com/patch-gg/pixelfx) から書き出したスプライトシートの再生設定。画像は art/fx/pixelfx/。ref は絵の中の『届く距離（斬撃・突きは長さ、範囲・爆発は半径）』のドット数で、スキルの実際の範囲に合わせて拡大縮小する。scale は大きさを固定したいもの（飛び道具・命中）。frames は再生する範囲（長い余韻を切る）、speed は再生速度の倍率。",
   "sheets": {
-    "slash":          {"sheet": "slash",          "ref": 66,  "frames": [0, 17],  "speed": 1.6},
-    "slash_cold":     {"sheet": "slash_cold",     "ref": 80,  "frames": [0, 23],  "speed": 1.5},
-    "thrust":         {"sheet": "thrust",         "ref": 150, "frames": [0, 14],  "speed": 1.5},
-    "area_cold":      {"sheet": "area_cold",      "ref": 105, "fit": 0.7, "frames": [0, 41],  "speed": 2.0},
-    "area_fire":      {"sheet": "area_fire",      "ref": 98, "fit": 0.7,  "frames": [0, 62],  "speed": 2.2},
-    "area_physical":  {"sheet": "area_physical",  "ref": 100, "fit": 0.7, "frames": [0, 45],  "speed": 2.0},
-    "explosion":      {"sheet": "explosion",      "ref": 80, "fit": 0.75,  "frames": [0, 43],  "speed": 2.0},
-    "proj_fire":      {"sheet": "proj_fire",      "scale": 0.5, "loop": true},
-    "proj_cold":      {"sheet": "proj_cold",      "scale": 0.5, "loop": true},
-    "proj_lightning": {"sheet": "proj_lightning", "scale": 0.5, "loop": true},
-    "hit_physical":   {"sheet": "hit_physical",   "scale": 0.45, "frames": [0, 12], "speed": 1.5},
-    "hit_fire":       {"sheet": "hit_fire",       "scale": 0.45, "frames": [0, 12], "speed": 1.5},
-    "hit_cold":       {"sheet": "hit_cold",       "scale": 0.45, "frames": [0, 12], "speed": 1.5},
-    "hit_lightning":  {"sheet": "hit_lightning",  "scale": 0.45, "frames": [0, 12], "speed": 1.5}
+    "slash": {
+      "sheet": "slash",
+      "ref": 66,
+      "frames": [
+        0,
+        17
+      ],
+      "speed": 1.6
+    },
+    "slash_cold": {
+      "sheet": "slash_cold",
+      "ref": 80,
+      "frames": [
+        0,
+        23
+      ],
+      "speed": 1.5
+    },
+    "thrust": {
+      "sheet": "thrust",
+      "ref": 150,
+      "frames": [
+        0,
+        14
+      ],
+      "speed": 1.5
+    },
+    "area_cold": {
+      "sheet": "area_cold",
+      "ref": 105,
+      "fit": 0.7,
+      "frames": [
+        0,
+        41
+      ],
+      "speed": 2.0
+    },
+    "area_fire": {
+      "sheet": "area_fire",
+      "ref": 98,
+      "fit": 0.7,
+      "frames": [
+        0,
+        62
+      ],
+      "speed": 2.2
+    },
+    "area_physical": {
+      "sheet": "area_physical",
+      "ref": 100,
+      "fit": 0.7,
+      "frames": [
+        0,
+        45
+      ],
+      "speed": 2.0
+    },
+    "explosion": {
+      "sheet": "explosion",
+      "ref": 80,
+      "fit": 0.75,
+      "frames": [
+        0,
+        43
+      ],
+      "speed": 2.0
+    },
+    "proj_fire": {
+      "sheet": "proj_fire",
+      "scale": 0.5,
+      "loop": true
+    },
+    "proj_cold": {
+      "sheet": "proj_cold",
+      "scale": 0.5,
+      "loop": true
+    },
+    "proj_lightning": {
+      "sheet": "proj_lightning",
+      "scale": 0.5,
+      "loop": true
+    },
+    "hit_physical": {
+      "sheet": "hit_physical",
+      "scale": 0.45,
+      "frames": [
+        0,
+        12
+      ],
+      "speed": 1.5
+    },
+    "hit_fire": {
+      "sheet": "hit_fire",
+      "scale": 0.45,
+      "frames": [
+        0,
+        12
+      ],
+      "speed": 1.5
+    },
+    "hit_cold": {
+      "sheet": "hit_cold",
+      "scale": 0.45,
+      "frames": [
+        0,
+        12
+      ],
+      "speed": 1.5
+    },
+    "hit_lightning": {
+      "sheet": "hit_lightning",
+      "scale": 0.45,
+      "frames": [
+        0,
+        12
+      ],
+      "speed": 1.5
+    },
+    "crit_hit": {
+      "sheet": "crit-hit",
+      "scale": 0.6,
+      "frames": [
+        0,
+        20
+      ],
+      "speed": 1.3
+    },
+    "plasma_explosion": {
+      "sheet": "plasma-explosion",
+      "scale": 0.55,
+      "frames": [
+        0,
+        40
+      ],
+      "speed": 1.6
+    },
+    "ice_shatter": {
+      "sheet": "ice-shatter",
+      "scale": 0.5,
+      "frames": [
+        0,
+        60
+      ],
+      "speed": 1.8
+    },
+    "frost_nova": {
+      "sheet": "frost-nova",
+      "scale": 0.5,
+      "frames": [
+        0,
+        80
+      ],
+      "speed": 1.8
+    },
+    "lightning_strike": {
+      "sheet": "lightning-strike",
+      "scale": 0.6,
+      "frames": [
+        0,
+        70
+      ],
+      "speed": 1.7
+    },
+    "thunderclap": {
+      "sheet": "thunderclap",
+      "scale": 0.5,
+      "frames": [
+        0,
+        45
+      ],
+      "speed": 1.6
+    },
+    "flame_pillar": {
+      "sheet": "flame-pillar",
+      "scale": 0.55,
+      "frames": [
+        0,
+        110
+      ],
+      "speed": 2.0
+    },
+    "meteor": {
+      "sheet": "meteor",
+      "scale": 0.5,
+      "frames": [
+        0,
+        110
+      ],
+      "speed": 2.0
+    },
+    "heavy_cleave": {
+      "sheet": "heavy-cleave",
+      "scale": 0.5,
+      "frames": [
+        0,
+        45
+      ],
+      "speed": 1.6
+    },
+    "double_slash": {
+      "sheet": "double-slash",
+      "scale": 0.6,
+      "frames": [
+        0,
+        24
+      ],
+      "speed": 1.3
+    },
+    "mana_burst": {
+      "sheet": "mana-burst",
+      "scale": 0.6,
+      "frames": [
+        0,
+        45
+      ],
+      "speed": 1.6
+    }
   },
   "skill_overrides": {
     "shatter": "slash_cold",
     "thrust": "thrust"
   },
   "by_kind": {
-    "melee": {"default": "slash"},
-    "area": {"cold": "area_cold", "fire": "area_fire", "physical": "area_physical", "lightning": "area_physical"},
-    "projectile": {"fire": "proj_fire", "cold": "proj_cold", "lightning": "proj_lightning", "physical": "proj_lightning"}
+    "melee": {
+      "default": "slash"
+    },
+    "area": {
+      "cold": "area_cold",
+      "fire": "area_fire",
+      "physical": "area_physical",
+      "lightning": "area_physical"
+    },
+    "projectile": {
+      "fire": "proj_fire",
+      "cold": "proj_cold",
+      "lightning": "proj_lightning",
+      "physical": "proj_lightning"
+    }
   },
-  "hit_by_element": {"physical": "hit_physical", "fire": "hit_fire", "cold": "hit_cold", "lightning": "hit_lightning"},
-  "explosion": "explosion"
+  "hit_by_element": {
+    "physical": "hit_physical",
+    "fire": "hit_fire",
+    "cold": "hit_cold",
+    "lightning": "hit_lightning"
+  },
+  "explosion": "explosion",
+  "chain_fx": {
+    "_about": "チェイン技が出たときに、pixelfx の絵を重ねる設定。技のidごとに、origin（使った人の足元）と target（当たる場所）に出す絵のキー（sheets の名前）。target の絵は、少しずつ遅らせて出す。なければ default。",
+    "default": {
+      "origin": [],
+      "target": [
+        "plasma_explosion",
+        "crit_hit"
+      ]
+    },
+    "shatter": {
+      "origin": [
+        "frost_nova"
+      ],
+      "target": [
+        "ice_shatter",
+        "heavy_cleave",
+        "crit_hit"
+      ]
+    },
+    "frost_lance": {
+      "origin": [
+        "frost_nova"
+      ],
+      "target": [
+        "ice_shatter",
+        "crit_hit"
+      ]
+    },
+    "blaze_thrust": {
+      "origin": [],
+      "target": [
+        "flame_pillar",
+        "double_slash",
+        "crit_hit"
+      ]
+    },
+    "thunder_fall": {
+      "origin": [
+        "thunderclap"
+      ],
+      "target": [
+        "lightning_strike",
+        "crit_hit"
+      ]
+    },
+    "magma_ball": {
+      "origin": [],
+      "target": [
+        "meteor",
+        "crit_hit"
+      ]
+    },
+    "steam_burst": {
+      "origin": [
+        "mana_burst"
+      ],
+      "target": [
+        "plasma_explosion",
+        "crit_hit"
+      ]
+    }
+  }
 }

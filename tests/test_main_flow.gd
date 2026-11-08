@@ -1048,7 +1048,7 @@ func test_chain_skill_has_flashy_effects() -> void:
 	player.caster.cast_done.emit(1, DataDB.skill("shatter"), 1, true)
 	var added: int = world.get_child_count() - before
 	t.check(added >= 4, "チェイン技で、pixelfxの絵・画面の閃光・文字が出る（%d個）" % added)
-	t.check(player.caster.fx_created >= 2, "爆発と範囲の絵が、pixelfxの絵で出る")
+	t.check(player.caster.fx_created >= 2, "技ごとの pixelfx の絵が出る")
 	var flashes: int = 0
 	for child: Node in world.get_children():
 		if child is ScreenFlash:
@@ -1073,3 +1073,17 @@ func test_chain_skill_has_flashy_effects() -> void:
 			left += 1
 	t.check_eq(left, 0, "文字は消える")
 	main.queue_free()
+
+
+func test_chain_fx_sheets_are_defined_for_every_chain_result() -> void:
+	for rule: ChainRule in DataDB.chains:
+		var skill: SkillDef = DataDB.skill(rule.result)
+		t.check(skill != null, "チェイン技 %s がある" % rule.result)
+		var keys: Dictionary = SheetFx.chain_keys(skill)
+		t.check((keys["target"] as Array).size() >= 2, "チェイン技 %s に、当たる場所の絵が2つ以上ある" % rule.result)
+		for group: String in ["origin", "target"]:
+			for key: Variant in keys[group]:
+				var def: Dictionary = SheetFx.def_of(str(key))
+				t.check(not def.is_empty() and def["frame_size"] is Vector2, "絵 %s が読み込める" % key)
+	var default_keys: Dictionary = SheetFx.chain_keys(DataDB.skill("slash"))
+	t.check((default_keys["target"] as Array).size() >= 1, "指定のない技にも、既定の絵がある")
