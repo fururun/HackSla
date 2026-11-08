@@ -1,6 +1,7 @@
 ---
 id: T00
 agent: codex
+role: impl
 title: ここにタスクの名前
 allowed: scripts/xxx/ scenes/xxx/
 ---
@@ -9,7 +10,8 @@ allowed: scripts/xxx/ scenes/xxx/
 書き方メモ（このコメントはAIにもそのまま渡ります。気になるなら消してください）
 - 先頭の --- で囲まれた部分は、配布スクリプトが読みます
   - id:      タスクID。ブランチ名 task/<id> になる
-  - agent:   claude / codex / gemini / muse のどれか
+  - agent:   claude / codex / gemini のどれか
+  - role:    その会社の役割（agents/README.md）。省略すると codex は impl、gemini は balance
   - title:   コミットとPRのタイトルになる
   - allowed: 変更してよい場所（スペース区切り）
 - 本文は、そのままAIへの指示になります

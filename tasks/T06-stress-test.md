@@ -1,6 +1,7 @@
 ---
 id: T06
 agent: codex
+role: perf
 title: 敵の大量表示の負荷テスト（150体で60fps）
 allowed: scripts/enemies/ scenes/test/ tests/test_enemies.gd
 ---

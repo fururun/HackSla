@@ -1,6 +1,7 @@
 ---
 id: T12
 agent: gemini
+role: balance
 title: プロトタイプの数値の初期値（スキル・補助・敵・装備）
 allowed: data/skills/ data/supports/ data/enemies/ data/items/ data/chains/ docs/balance.md
 ---

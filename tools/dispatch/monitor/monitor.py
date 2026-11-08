@@ -149,6 +149,7 @@ def build_state(root):
                 "ordered_at": None, "started_at": None, "finished_at": None,
                 "secs": None, "rc": None, "changed": "", "pr": "", "note": "",
                 "rejects": 0, "runs": 0, "mock": False, "file": "", "tail": [],
+                "review": "", "reviewer": "", "review_note": "",
             }
         return tasks[tid]
 
@@ -196,6 +197,13 @@ def build_state(root):
                 t["stage"] = "no_change"
             else:
                 t["stage"] = "delivered"
+        elif kind == "review_started":
+            t["review"] = "確認中"
+            t["reviewer"] = ev.get("agent", "")
+        elif kind == "reviewed":
+            t["review"] = ev.get("verdict", "")
+            t["reviewer"] = ev.get("agent", "")
+            t["review_note"] = ev.get("note", "")
         elif kind == "accepted":
             t["stage"] = "accepted"
             t["note"] = ev.get("note", "")
@@ -249,6 +257,16 @@ def build_state(root):
         t = tasks.get(tid, {})
         comp = COMPANIES.get(t.get("agent", ""), {}).get("name", "")
         kind = ev.get("event")
+        if kind == "review_started":
+            rv = COMPANIES.get(ev.get("agent", ""), {}).get("name", ev.get("agent", ""))
+            feed.append({"t": ev.get("t", ""), "ts": ev["ts"], "text": f"{rv}が{tid}の相互チェックを開始", "tone": "info", "id": tid})
+            continue
+        if kind == "reviewed":
+            rv = COMPANIES.get(ev.get("agent", ""), {}).get("name", ev.get("agent", ""))
+            v = ev.get("verdict", "")
+            feed.append({"t": ev.get("t", ""), "ts": ev["ts"], "text": f"{rv}の相互チェック：{tid} は {v}" + (f"（{ev.get('note', '')[:60]}）" if v != "OK" and ev.get("note") else ""),
+                         "tone": "good" if v == "OK" else "bad", "id": tid})
+            continue
         if kind == "finished":
             if str(ev.get("rc")) != "0":
                 text, tone = f"{comp}の{tid}が失敗（終了コード {ev.get('rc')}）", "bad"

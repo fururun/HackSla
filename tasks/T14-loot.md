@@ -1,6 +1,7 @@
 ---
 id: T14
 agent: codex
+role: impl
 title: ドロップの抽選とアイテム生成
 allowed: scripts/loot/ tests/test_loot.gd
 ---

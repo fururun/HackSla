@@ -17,6 +17,7 @@ tasks/T14.md ─┘                       └─ task/T14 ブランチ → PR
 | `tools/dispatch/agents.conf` | 各AIの起動コマンド（ここだけ環境に合わせて直す） |
 | `tools/dispatch/cleanup.sh` | 終わったタスクの作業場所とブランチを片付ける |
 | `tools/dispatch/review.sh` | 納品物の検収OK・差し戻しを記録する |
+| `tools/dispatch/crossreview.sh` | 納品物を、書いたAIとは別のAIに確認させる（相互チェック）。例：`crossreview.sh T06:gemini T09:codex` |
 | `tools/dispatch/lib.sh` | 取引の記録（共通の関数） |
 | `tools/dispatch/monitor/` | 監視ボード（`monitor.py` と `index.html`） |
 | `tools/dispatch/mock/agent.sh` | 模擬AI（仕組みのテスト用） |

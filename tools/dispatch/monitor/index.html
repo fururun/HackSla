@@ -165,6 +165,7 @@
 <script>
 const COLORS = { claude: "var(--c-claude)", codex: "var(--c-codex)", gemini: "var(--c-gemini)", muse: "var(--c-muse)" };
 const MONO = { claude: "Cl", codex: "Cx", gemini: "Ge", muse: "Mu" };
+const COMPANY_NAMES = { claude: "Claude社", codex: "Codex社", gemini: "Gemini社", muse: "Muse社" };
 const COLUMNS = [
   { key: "draft", label: "発注準備", stages: ["draft"] },
   { key: "work", label: "作業中", stages: ["ordered", "working"] },
@@ -271,6 +272,7 @@ function card(t) {
   if (t.secs != null && t.stage !== "working") meta.push("所要 " + dur(t.secs));
   if (t.changed && t.changed !== "なし") meta.push(esc(t.changed_ja || t.changed));
   if (isUrl(t.pr)) meta.push(`<a href="${esc(t.pr)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PRを開く</a>`);
+  if (t.review) meta.push(`相互チェック：${esc(t.review)}${t.reviewer ? "（" + esc((COMPANY_NAMES[t.reviewer] || t.reviewer)) + "）" : ""}`);
   if (t.rejects) meta.push(`差し戻し${t.rejects}回`);
   if (t.mock) meta.push("模擬");
   return `<div class="card" style="--c:${color(t.agent)}" data-id="${esc(t.id)}">
