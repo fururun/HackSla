@@ -34,6 +34,20 @@ func setup(manager: EnemyManager, player: Node2D, parent: Node2D, stash: Stash, 
 	_level_provider = level_provider
 	_manager.enemy_hit.connect(_on_enemy_hit)
 
+## 落ちているものの位置を、近い順に（自動戦闘が、行けるものを選ぶのに使う）
+func drop_positions_by_distance(from: Vector2) -> Array[Vector2]:
+	var list: Array = []
+	for drop: GroundDrop in _active:
+		if drop.value == null or not drop.visible:
+			continue
+		list.append([Iso.ground_distance(from, drop.global_position), drop.global_position])
+	list.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var result: Array[Vector2] = []
+	for entry: Array in list:
+		result.append(entry[1])
+	return result
+
+
 ## 落ちているもののうち、いちばん近いものの位置（なければ null）。自動戦闘が拾いに行くのに使う
 func nearest_drop_position(from: Vector2) -> Variant:
 	var best: Variant = null

@@ -477,3 +477,30 @@ func test_autopilot_heals_at_20_percent_loss_and_clears_all() -> void:
 	t.check(pilot.cleared, "敵を全滅させたと分かる")
 	t.check(pilot.settings_text().contains("全滅"), "全滅が画面に出る")
 	main.queue_free()
+
+
+func test_autopilot_ignores_unreachable_drops_and_fights_the_room() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var pilot: Autopilot = main.autopilot
+	var map: IsoMap = main.map
+	pilot.toggle()
+	pilot.open_chests = false
+	pilot.route = Autopilot.Route.NEAREST_ENEMY
+	player.global_position = map.marker("P")
+	# 壁の中に落ちているもの（行けない）は、拾いに行かず、敵のほうへ向かう
+	var director: LootDirector = pilot.director
+	var wall_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(0, 0)) + Vector2(0, 0)
+	director.spawn_drop(5, wall_pos)
+	pilot.move_input(player, 0.016)
+	t.check(pilot.goal_kind != "拾う", "壁の中のドロップは、拾いに行かない")
+	t.check(pilot.goal_kind == "敵", "代わりに、敵の部屋へ向かう")
+	# 行ける場所のドロップは、拾いに行く
+	director.spawn_drop(5, map.marker("P") + Vector2(40, 0))
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy:
+			n.hide()
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "拾う", "行けるドロップは拾いに行く")
+	main.queue_free()

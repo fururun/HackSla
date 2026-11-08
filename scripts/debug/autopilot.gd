@@ -22,7 +22,10 @@ const EDGE_WEIGHT: float = 4.0  ## 壁ぎわのマスの通りにくさ（通路
 const STUCK_CHECK_SECONDS: float = 0.6
 const STUCK_MOVE: float = 2.0
 const DETOUR_SECONDS: float = 0.7
-const NEAREST_CANDIDATES: int = 4  ## 近い敵を選ぶとき、道のりを比べる候補の数
+const MAX_PICKUP_PATH: float = 80.0  ## 拾いに行くのは、道のりがこのマス数以内のものだけ
+const MAX_STUCK_BEFORE_GIVE_UP: int = 3  ## 同じ目的地で、これだけ引っかかったら、あきらめる
+const IGNORE_SECONDS: float = 30.0  ## あきらめた目的地を、この秒数のあいだ、選ばない
+const NEAREST_CANDIDATES: int = 8  ## 近い敵を選ぶとき、道のりを比べる候補の数
 
 var enabled: bool = false
 var route: Route = Route.NEAREST_ENEMY
@@ -33,6 +36,10 @@ var dodge_direction: Vector2 = Vector2.ZERO  ## wants_dodge が true のとき�
 var cleared: bool = false  ## 倒せる敵が、もういない
 var goal_kind: String = ""  ## いま向かっているもの（表示用）：敵 / ボス / 宝箱 / 拾う
 
+var _clock: float = 0.0
+var _ignored: Dictionary = {}  ## 目的地のマス -> あきらめを解く時刻（行けない・引っかかり続ける場所）
+var _stuck_count: int = 0
+var _current_goal_cell: Vector2i = Vector2i(-99999, -99999)
 var _astar: AStarGrid2D
 var _path: Array[Vector2i] = []
 var _path_index: int = 0
@@ -46,6 +53,8 @@ var _detour_sign: float = 1.0
 
 func toggle() -> bool:
 	enabled = not enabled
+	_ignored.clear()
+	_stuck_count = 0
 	_stuck_timer = 0.0
 	_detour_left = 0.0
 	_path.clear()
@@ -118,6 +127,29 @@ func path_length(from: Vector2, to: Vector2) -> int:
 	return path.size() - 1 if not path.is_empty() else -1
 
 
+func _is_ignored(pos: Vector2) -> bool:
+	if map == null or map.floor_layer == null:
+		return false
+	var cell: Vector2i = cell_of(pos)
+	return _ignored.has(cell) and float(_ignored[cell]) > _clock
+
+
+func _give_up(pos: Vector2) -> void:
+	if map == null or map.floor_layer == null:
+		return
+	_ignored[cell_of(pos)] = _clock + IGNORE_SECONDS
+	_path.clear()
+	_stuck_count = 0
+
+
+## 行ける場所か（床の上で、道がつながっていて、あきらめていない）
+func _reachable(from: Vector2, to: Vector2, max_path: float = 100000.0) -> bool:
+	if _is_ignored(to):
+		return false
+	var length: int = path_length(from, to)
+	return length >= 0 and float(length) <= max_path
+
+
 # ---- 目的地を決める ----
 
 ## いちばん近い、倒せる敵（案山子は、ほかに敵がいないときだけ）
@@ -171,11 +203,13 @@ func _nearest_by_path(player: Node2D) -> Node2D:
 	for i: int in mini(NEAREST_CANDIDATES, candidates.size()):
 		var e2: Node2D = candidates[i][1]
 		var length: int = path_length(player.global_position, e2.global_position)
-		if length < 0:
-			length = 100000  # 行けない敵は、後回し
+		if length < 0 or _is_ignored(e2.global_position):
+			length = 100000  # 行けない・あきらめた敵は、後回し
 		if length < best_len:
 			best_len = length
 			best = e2
+	if best != null and best_len >= 100000:
+		return null  # 候補がみな行けない
 	return best
 
 
@@ -184,7 +218,7 @@ func _nearest_chest(player: Node2D) -> Node2D:
 	var best_len: int = 1 << 30
 	for node: Node in player.get_tree().get_nodes_in_group("chests"):
 		var chest := node as TreasureChest
-		if chest == null or chest.is_open or _in_boss_zone(player, chest.global_position):
+		if chest == null or chest.is_open or _in_boss_zone(player, chest.global_position) or _is_ignored(chest.global_position):
 			continue
 		var length: int = path_length(player.global_position, chest.global_position)
 		if length >= 0 and length <= CHEST_DETOUR_PATH and length < best_len:
@@ -196,6 +230,7 @@ func _nearest_chest(player: Node2D) -> Node2D:
 ## 動く向き（画面上の入力と同じ。止まるなら 0）
 func move_input(player: Node2D, delta: float) -> Vector2:
 	_path_age += delta
+	_clock += delta
 	var goal_pos: Variant = null
 	var stop_distance: float = ENGAGE_DISTANCE
 	goal_kind = ""
@@ -208,9 +243,12 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 	else:
 		# 落ちているもの → 宝箱 → ルートの目的地
 		if director != null:
-			goal_pos = director.nearest_drop_position(player.global_position)
-			if goal_pos != null and _in_boss_zone(player, goal_pos):
-				goal_pos = null
+			goal_pos = null
+			for drop_pos: Vector2 in director.drop_positions_by_distance(player.global_position):
+				if _in_boss_zone(player, drop_pos) or not _reachable(player.global_position, drop_pos, MAX_PICKUP_PATH):
+					continue  # ボスの近く・壁の中・遠回りのものは、拾いに行かない
+				goal_pos = drop_pos
+				break
 			if goal_pos != null:
 				goal_kind = "拾う"
 				stop_distance = 3.0
@@ -235,6 +273,11 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 		goal_kind = ""
 		return Vector2.ZERO
 	var goal: Vector2 = goal_pos
+	if map != null and map.floor_layer != null:
+		var goal_cell: Vector2i = cell_of(goal)
+		if goal_cell != _current_goal_cell:
+			_current_goal_cell = goal_cell
+			_stuck_count = 0
 	if Iso.ground_distance(player.global_position, goal) <= stop_distance:
 		_stuck_timer = 0.0
 		return Vector2.ZERO
@@ -254,8 +297,11 @@ func _steer(player: Node2D, goal: Vector2) -> Vector2:
 		_path_age = 0.0
 	while _path_index < _path.size() and player.global_position.distance_to(position_of(_path[_path_index])) < WAYPOINT_REACHED:
 		_path_index += 1
+	if _path.is_empty() and from_cell != to_cell:
+		_give_up(goal)  # 道がない（壁の中・島）：この目的地はあきらめる
+		return Vector2.ZERO
 	if _path.size() < 2 or _path_index >= _path.size():
-		return (goal - player.global_position).normalized()  # 同じマス、または経路なし：まっすぐ
+		return (goal - player.global_position).normalized()  # 同じマス：まっすぐ
 	return (position_of(_path[_path_index]) - player.global_position).normalized()
 
 
@@ -267,6 +313,11 @@ func _avoid_stuck(player: Node2D, dir: Vector2, delta: float) -> Vector2:
 			_detour_left = DETOUR_SECONDS
 			_detour_sign = -_detour_sign
 			_path.clear()
+			_stuck_count += 1
+			if _stuck_count >= MAX_STUCK_BEFORE_GIVE_UP and map != null:
+				_give_up(position_of(_current_goal_cell))  # 何度も引っかかる目的地は、しばらくあきらめる
+		else:
+			_stuck_count = 0
 		_last_pos = player.global_position
 		_stuck_timer = 0.0
 	if _detour_left > 0.0:
