@@ -8,6 +8,9 @@ const SHADOW := Color(0, 0, 0, 0.35)
 const EYE := Color("#fff0bd")
 const PUPIL := Color("#272034")
 const FANG := Color("#eee3c9")
+const SLIME_RIM := Color("#9be860")  ## スライムの縁と目（明るい黄緑）
+const SLIME_SHINE := Color("#c8f77a")  ## スライムのつや
+const SLIME_UNDER := Color("#10304a")  ## スライムの下の影（紺）
 const LIGHTEN: float = 0.22
 const DARKEN: float = 0.28
 const LEAN_PIXELS: float = 1.0
@@ -128,19 +131,23 @@ func _make_figure(flash: bool) -> ArrayMesh:
 		figure.add_rect(Rect2(-3, -14, 2, 1), Color.WHITE if flash else EYE)
 		figure.add_rect(Rect2(2, -14, 2, 1), Color.WHITE if flash else EYE)
 	else:
-		# スライム：ぷるんとした半球。段を付けたドーム、下に広がる裾、つやのある光、まるい目と小さな口。
-		# 輪郭（暗）→ 本体（base）→ 下の影（dark）→ 光（light）→ 目 の順に、整数の矩形を重ねる。
-		for row: Array in [[-14, -14, 3], [-13, -13, 5], [-12, -12, 6], [-11, -11, 7], [-10, -5, 8], [-4, -2, 9], [-1, -1, 8]]:
-			figure.add_rect(Rect2(-row[2], row[0], row[2] * 2, row[1] - row[0] + 1), edge)
-		for row: Array in [[-13, -13, 2], [-12, -12, 4], [-11, -11, 5], [-10, -10, 6], [-9, -5, 7], [-4, -2, 8]]:
-			figure.add_rect(Rect2(-row[2], row[0], row[2] * 2, row[1] - row[0] + 1), base)
-		figure.add_rect(Rect2(-8, -3, 16, 2), dark)
-		figure.add_rect(Rect2(-7, -5, 14, 1), dark)
-		figure.add_rect(Rect2(-5, -12, 3, 2), light)
-		figure.add_rect(Rect2(-6, -10, 2, 2), light)
-		figure.add_rect(Rect2(-5, -8, 4, 4), Color.WHITE if flash else EYE)
-		figure.add_rect(Rect2(1, -8, 4, 4), Color.WHITE if flash else EYE)
-		figure.add_rect(Rect2(-3, -7, 2, 3), Color.WHITE if flash else PUPIL)
-		figure.add_rect(Rect2(3, -7, 2, 3), Color.WHITE if flash else PUPIL)
-		figure.add_rect(Rect2(-1, -3, 2, 1), Color.WHITE if flash else PUPIL)
+		# スライム：横に広い平たい半球。明るい黄緑の縁、濃い緑の本体、上のつや、内向きにつり上がった目、下に紺の影。
+		# 段を付けた輪郭を、1行ずつの整数の矩形（y, 半幅）で重ねる。
+		var rim: Color = Color.WHITE if flash else SLIME_RIM
+		var shine: Color = Color.WHITE if flash else SLIME_SHINE
+		var body: Color = Color.WHITE if flash else base
+		var under: Color = Color.WHITE if flash else SLIME_UNDER
+		for row: Array in [[-8, 2], [-7, 4], [-6, 5], [-5, 6], [-4, 6], [-3, 6], [-2, 5]]:
+			figure.add_rect(Rect2(-row[1], row[0], row[1] * 2, 1), rim)
+		for row: Array in [[-1, 4], [0, 2]]:
+			figure.add_rect(Rect2(-row[1], row[0], row[1] * 2, 1), under)
+		for row: Array in [[-7, 2], [-6, 3], [-5, 4], [-4, 4], [-3, 4], [-2, 3]]:
+			figure.add_rect(Rect2(-row[1], row[0], row[1] * 2, 1), body)
+		figure.add_rect(Rect2(-3, -6, 2, 1), shine)
+		figure.add_rect(Rect2(-4, -5, 1, 1), shine)
+		figure.add_rect(Rect2(1, -6, 1, 1), shine)
+		figure.add_rect(Rect2(-3, -4, 1, 1), rim)  # 目（内向きにつり上がる）
+		figure.add_rect(Rect2(-2, -3, 1, 1), rim)
+		figure.add_rect(Rect2(2, -4, 1, 1), rim)
+		figure.add_rect(Rect2(1, -3, 1, 1), rim)
 	return figure.make_mesh()

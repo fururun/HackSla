@@ -10,7 +10,7 @@
     "attack_interval": 1,
     "xp": 3,
     "pack": [8, 14],
-    "color": "#5fcf7a",
+    "color": "#3a9a4c",
     "aggro_range": 120,
     "windup": 0
   },
