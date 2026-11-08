@@ -54,6 +54,8 @@ var _mana_denied_at: Dictionary = {}
 var _last_mana: float = -1.0
 var _damage_taken_by: Dictionary = {}  ## "敵のid:攻撃の種類" -> 受けたダメージの合計
 var _recent_hits: Array[Dictionary] = []  ## 直近に受けた攻撃（死因を調べるため。最大 RECENT_HITS 件）
+var legend_chest_spawned: bool = false  ## レジェンドの宝箱が置かれたプレイか
+var legend_chest: TreasureChest
 var last_record: Dictionary = {}
 
 
@@ -313,6 +315,7 @@ func build_record(reason: String) -> Dictionary:
 		"damage_dealt": roundi(_damage_dealt),
 		"damage_taken": roundi(_damage_taken),
 		"damage_taken_by": _damage_taken_by,
+		"legend_chest": {"spawned": legend_chest_spawned, "opened": legend_chest != null and is_instance_valid(legend_chest) and legend_chest.is_open},
 		"dodges": _dodges,
 		"mana": {"max": roundi(_player.vitals.max_mana()) if _player != null else 0, "regen": snappedf(_player.vitals.mana_regen(), 0.1) if _player != null else 0.0,
 			"spent": roundi(_mana_spent), "spent_per_second": snappedf(_mana_spent / maxf(_time, 1.0), 0.1),

@@ -4,6 +4,7 @@ extends Node2D
 const MAP_PATH: String = "res://data/maps/field_01.txt"  ## 広いマップ。作り方は tools/maps/make_field_01.py、設計は docs/map_field_01.md
 const RARE_CHANCE_AT_BRUTE: float = 0.3  ## 岩殻の印で、レアモンスター（黄金の岩殻）に入れ替わる確率
 const RARE_CHANCE_AT_PACK: float = 0.06  ## スライムの群れの印で、近くにレアモンスターも現れる確率
+const LEGEND_CHEST_CHANCE: float = 0.03  ## ゲームを始めるたびに、レジェンドの宝箱が置かれる確率（超低確率）
 const START_NOTICE_SECONDS: float = 10.0  ## スタート構成のお知らせを出す秒数
 const SMALL_PACK_SIZE: int = 6  ## マップの印 f の群れの数
 ## カメラの引き（拡大率）。1.0 で、画面が 480x270 ドットの範囲。0.5 なら、2倍の範囲（960x540）が見える。
@@ -17,6 +18,7 @@ var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
 var game_log: GameLog  ## 遊んだ記録とデバッグの記録
 var camera: Camera2D
 var loot_hud: LootHud
+var legend_chest: TreasureChest  ## 置かれたレジェンドの宝箱（置かれなかったときは空）
 var balance_log: BalanceLog  ## バランス調整用の記録（1プレイにつき1行。balance_logs/runs.jsonl）
 var dps_meter: DpsMeter
 var loot_director: LootDirector
@@ -94,6 +96,8 @@ func _ready() -> void:
 	balance_log.name = "BalanceLog"
 	add_child(balance_log)
 	balance_log.setup(manager, player, stash, loot_director, autopilot, dps_meter, start_skill_ids)
+	balance_log.legend_chest_spawned = legend_chest != null
+	balance_log.legend_chest = legend_chest
 	# 自動戦闘の周回：ボスを倒す・やられたら、自動でやり直す
 	var auto_loop := AutoLoop.new()
 	auto_loop.name = "AutoLoop"
@@ -190,6 +194,27 @@ func _roll_start_loadout() -> void:
 	start_loadout_text = StartLoadout.describe(start_skill_ids)
 
 
+## 超低確率で、金色のレジェンドの宝箱を、マップの印 L のうち1か所に置く。force が true なら、かならず置く（試験用）
+func _place_legend_chest(force: bool) -> TreasureChest:
+	var spots: Array = map.markers.get("L", [])
+	if spots.is_empty() or loot_director == null:
+		return null
+	if not force and randf() >= LEGEND_CHEST_CHANCE:
+		return null
+	var chest := TreasureChest.new()
+	chest.legend = true
+	chest.position = spots[randi() % spots.size()]
+	world.add_child(chest)
+	chest.opened.connect(func(c: TreasureChest) -> void:
+		loot_director.drop_legend_chest(c.global_position)
+		if game_log != null:
+			game_log.play("legend_chest_opened", {})
+		if loot_hud != null:
+			loot_hud.notify("レジェンドの宝箱を開けた！", Color("#ffb03d"), 6.0))
+	legend_chest = chest
+	return chest
+
+
 ## 体力・経験値・ドロップ・装備をつなぐ
 func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	var hud := Hud.new()
@@ -247,6 +272,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 		world.add_child(chest)
 		chest.opened.connect(func(c: TreasureChest) -> void: director.drop_chest(c.global_position))
 
+	_place_legend_chest(false)
 	var equip_screen := EquipScreen.new()
 	equip_screen.name = "EquipScreen"
 	add_child(equip_screen)
@@ -256,6 +282,8 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	add_child(loot_hud)
 	loot_hud.setup(stash)
 	loot_hud.notify(start_loadout_text, UiStyle.ACCENT, START_NOTICE_SECONDS)  # 今回の、スタート構成と、組めるチェイン
+	if legend_chest != null:
+		loot_hud.notify("どこかに、金色に輝く宝箱がある…", Color("#ffb03d"), START_NOTICE_SECONDS)
 
 	# 装備のステータスを、体力・スキルのダメージ計算が見ている入れ物に反映する
 	var apply_equipment := func() -> void:

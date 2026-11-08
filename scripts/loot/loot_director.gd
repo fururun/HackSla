@@ -84,6 +84,17 @@ func _scatter_position(origin: Vector2) -> Vector2:
 	return origin
 
 
+## レジェンドの宝箱を開けたとき：レジェンド以上の装備を1つ（かならず）と、エピック以上を1つ、通常の宝箱の中身、通貨を、まとめて出す
+func drop_legend_chest(at: Vector2) -> void:
+	var level: int = int(_level_provider.call())
+	for min_tier: int in [4, 3]:
+		var item: ItemInstance = _roller.roll_item(level, min_tier)
+		if item != null:
+			spawn_drop(item, _scatter_position(at))
+	drop_chest(at)
+	spawn_drop(500, _scatter_position(at))
+
+
 ## 宝箱を開けたとき。敵1体ぶんではなく、まとまった数が出る（CHEST_XP で数が決まる）
 func drop_chest(at: Vector2) -> void:
 	var level: int = int(_level_provider.call())

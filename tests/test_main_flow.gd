@@ -1179,3 +1179,41 @@ func test_chain_aftershock_hits_enemies_where_the_effect_appears() -> void:
 		await tree.physics_frame
 	t.check(victim.life < before2, "チェインのあと、少し遅れて、絵の場所の敵に追加のダメージが入る")
 	main.queue_free()
+
+
+func test_legend_chest_is_rare_and_drops_legend() -> void:
+	var main_script: GDScript = load("res://scripts/main/main.gd")
+	t.check(main_script.LEGEND_CHEST_CHANCE > 0.0 and main_script.LEGEND_CHEST_CHANCE <= 0.05, "レジェンドの宝箱は、超低確率（5%以下）")
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var spots: Array = main.map.markers.get("L", [])
+	t.check(spots.size() >= 3, "マップに、レジェンドの宝箱の候補の印（L）が、いくつかある")
+	for spot: Vector2 in spots:
+		t.check(main.map.is_floor_at(spot, true), "候補は、床の上（壁ぎわでない）")
+	var chests_before: int = tree.get_nodes_in_group("chests").size()
+	var chest: TreasureChest = main._place_legend_chest(true)
+	t.check(chest != null and chest.legend, "置くと、レジェンドの宝箱ができる")
+	t.check_eq(tree.get_nodes_in_group("chests").size(), chests_before + 1, "宝箱の仲間に入る（自動戦闘も、開けに行ける）")
+	var director: LootDirector = main.loot_director
+	var drops: Array[Variant] = []
+	director.dropped.connect(func(value: Variant) -> void: drops.append(value))
+	chest.open()
+	var top_tier: int = -1
+	var items: int = 0
+	for value: Variant in drops:
+		if value is ItemInstance:
+			items += 1
+			top_tier = maxi(top_tier, (value as ItemInstance).rarity.tier)
+	t.check(items >= 2, "装備が、まとまって出る（%d個）" % items)
+	t.check(top_tier >= 4, "かならず、レジェンド以上の装備が出る（最高の段階 %d）" % top_tier)
+	chest.open()
+	t.check(chest.is_open, "開いた")
+	main.queue_free()
+	# 抽選：ほとんどのプレイでは、置かれない
+	var placed: int = 0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+	for i: int in 2000:
+		if rng.randf() < main_script.LEGEND_CHEST_CHANCE:
+			placed += 1
+	t.check(placed < 120, "2000回のうち、置かれるのは、ごくわずか（%d回）" % placed)
