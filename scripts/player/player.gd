@@ -74,14 +74,46 @@ func try_basic_attack(target: Vector2) -> bool:
 	return use_skill(1, target)
 
 
-# ---- 仮の絵 ----
+# ---- 絵（art/sprites/player/。作り方は make_player.py） ----
+const SPRITE_DIR: String = "res://art/sprites/player/"
+const SPRITE_SIZE: Vector2 = Vector2(20, 24)  ## 絵の大きさ。足元の中心が原点
+const BOB_INTERVAL_MS: int = 140  ## 歩いているときの上下の揺れの間隔
+static var _textures: Dictionary = {}  ## 向き（front / back / side）-> Texture2D
+
+
+static func _texture(view: String) -> Texture2D:
+	if not _textures.has(view):
+		_textures[view] = load(SPRITE_DIR + "player_%s.png" % view) as Texture2D
+	return _textures[view]
+
+
+## 向き（Facing の番号）から、使う絵と左右反転を決める。下向き=前、上向き=後ろ、横=横（左向きは反転）
+static func view_for(facing_index: int) -> Dictionary:
+	match facing_index:
+		0: return {"view": "side", "flip": false}
+		1: return {"view": "front", "flip": false}
+		2: return {"view": "front", "flip": false}
+		3: return {"view": "front", "flip": true}
+		4: return {"view": "side", "flip": true}
+		5: return {"view": "back", "flip": true}
+		6: return {"view": "back", "flip": false}
+		_: return {"view": "back", "flip": false}  # 7: 右上
+
+
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
 	draw_circle(Vector2.ZERO, 6.0, Color(0, 0, 0, 0.35))  # 影
-	draw_set_transform(Vector2.ZERO)
-	var body := Color("#6b5a5a") if vitals.is_dead() else Color("#e8e2d0")
-	draw_rect(Rect2(-3, -15, 6, 11), body)               # 体
-	draw_circle(Vector2(0, -18), 3.0, Color("#f2d6b3"))  # 頭
-	var f := Facing.to_vector(facing)
-	var tip := Vector2(f.x * 9.0, f.y * 4.5 - 9.0)       # 向きの印（武器の代わり）
-	draw_line(Vector2(0, -9), tip, Color("#ffd34d"), 2.0)
+	var v := view_for(facing)
+	var tex := _texture(v["view"])
+	if tex == null:
+		return
+	var bob := 0.0
+	if velocity != Vector2.ZERO and (Time.get_ticks_msec() / BOB_INTERVAL_MS) % 2 == 1:
+		bob = -1.0  # 歩いているとき、1ドットだけ上下に揺れる
+	var tint := Color(0.45, 0.4, 0.45) if vitals.is_dead() else Color.WHITE
+	var half := SPRITE_SIZE.x * 0.5
+	if v["flip"]:
+		draw_set_transform(Vector2(half, bob), 0.0, Vector2(-1, 1))
+	else:
+		draw_set_transform(Vector2(-half, bob), 0.0, Vector2(1, 1))
+	draw_texture(tex, Vector2(0, -SPRITE_SIZE.y), tint)
