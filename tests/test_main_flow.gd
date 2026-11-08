@@ -799,3 +799,25 @@ func test_main_uses_random_start_loadout() -> void:
 	t.check(not StartLoadout.chain_pairs(skills).is_empty(), "実際の構成でも、チェインが組める")
 	t.check(main.start_loadout_text.begins_with("スタート構成"), "お知らせの文がある")
 	main.queue_free()
+
+
+func test_skill_screen_can_change_the_third_slot() -> void:
+	var tree: SceneTree = t
+	var caster := SkillCaster.new()
+	tree.root.add_child(caster)
+	var stash := Stash.new()
+	var screen := SkillScreen.new()
+	tree.root.add_child(screen)
+	screen.setup(caster, stash)
+	t.check_eq(SkillScreen.VISIBLE_SLOTS, 3, "装備画面に、3つの枠が出る")
+	t.check_eq(caster.loadout.skill_id(3), "fire_bolt", "3つ目の枠は、はじめ火の矢")
+	screen._selected_slot = 3
+	screen._select_support = false
+	t.check(screen._equip("frost_bloom"), "3つ目の枠のスキルを、付け替えられる")
+	t.check_eq(caster.loadout.skill_id(3), "frost_bloom", "3つ目の枠が、変わっている")
+	screen._select_support = true
+	t.check(screen._equip("burst_on_kill"), "3つ目の枠の補助ジェムも、付け替えられる")
+	t.check_eq(caster.loadout.support_id(3), "burst_on_kill", "3つ目の補助が、変わっている")
+	screen.queue_free()
+	caster.queue_free()
+	await tree.process_frame

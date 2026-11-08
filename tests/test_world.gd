@@ -62,6 +62,7 @@ func test_main_scene_runs() -> void:
 			swarm_in_world = false
 	t.check(swarm_in_world, "敵は壁・プレイヤーと同じY軸ソートの親(World)の直下にいる")
 	var dummy: Node2D = dummies[0]
+	player.caster.loadout.set_skill(1, "slash")  # スタート構成はランダムなので、近接の払いに決めておく
 	player.global_position = dummy.global_position + Vector2(-16, 4)
 	t.check(player.try_basic_attack(dummy.global_position), "斬撃を出せる")
 	t.check(not player.try_basic_attack(dummy.global_position), "再使用時間中は出せない")

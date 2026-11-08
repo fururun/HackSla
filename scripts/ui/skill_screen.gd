@@ -2,7 +2,7 @@ class_name SkillScreen
 extends CanvasLayer
 ## 仮の装備画面。一覧の供給元は後で所持品へ差し替えられる。
 
-const VISIBLE_SLOTS: int = 2
+const VISIBLE_SLOTS: int = 3  ## スキル装備画面で付け替えられる枠の数（左クリック・右クリック・Q）
 const FONT_SIZE: int = UiStyle.FONT_STANDARD
 const PANEL_COLOR: Color = UiStyle.PANEL
 const TEXT_COLOR: Color = UiStyle.TEXT
