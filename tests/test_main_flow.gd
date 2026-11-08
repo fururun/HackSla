@@ -504,3 +504,50 @@ func test_autopilot_ignores_unreachable_drops_and_fights_the_room() -> void:
 	pilot.move_input(player, 0.016)
 	t.check_eq(pilot.goal_kind, "拾う", "行けるドロップは拾いに行く")
 	main.queue_free()
+
+
+func test_autopilot_clears_rooms_before_chests_and_boss() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var pilot: Autopilot = main.autopilot
+	var map: IsoMap = main.map
+	pilot.toggle()
+	pilot.director = null
+	pilot.open_chests = true
+	pilot.route = Autopilot.Route.NEAREST_ENEMY
+	# 宝箱が近くにあっても、部屋に敵が残っているあいだは、敵を先に倒しに行く
+	var chest: TreasureChest = null
+	for c: Node in tree.get_nodes_in_group("chests"):
+		if chest == null or Iso.ground_distance(c.global_position, map.marker("P")) < Iso.ground_distance(chest.global_position, map.marker("P")):
+			chest = c as TreasureChest
+	player.global_position = chest.global_position + Vector2(40, 0)
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "敵", "敵が残っているあいだは、宝箱より敵を先にする")
+	# ボス以外を全部倒したら、宝箱（ボスの部屋の外）へ
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and not n.definition.is_boss:
+			n.take_hit(1000000.0, DataDB.skill("slash"))
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "宝箱", "ボス以外を倒したら、宝箱へ")
+	# 宝箱を全部開けたら、ボスへ
+	for c2: Node in tree.get_nodes_in_group("chests"):
+		(c2 as TreasureChest).is_open = true
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "ボス", "宝箱が済んだら、ボスへ")
+	# ボスの部屋の宝箱は、ボスを倒すまで寄らない
+	for c3: Node in tree.get_nodes_in_group("chests"):
+		(c3 as TreasureChest).is_open = false
+	var boss: Enemy = pilot.find_boss(player) as Enemy
+	var near_boss: Array = []
+	for c4: Node in tree.get_nodes_in_group("chests"):
+		if Iso.ground_distance(c4.global_position, boss.global_position) <= Autopilot.BOSS_AVOID_DISTANCE:
+			near_boss.append(c4)
+	t.check(near_boss.size() > 0, "ボスの部屋に宝箱がある")
+	for c5: Node in tree.get_nodes_in_group("chests"):
+		if not near_boss.has(c5):
+			(c5 as TreasureChest).is_open = true
+	player.global_position = boss.global_position + Vector2(300, 0)
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "ボス", "ボスを倒すまで、ボスの部屋の宝箱へは寄らない")
+	main.queue_free()

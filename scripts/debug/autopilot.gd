@@ -182,7 +182,7 @@ func find_boss(player: Node2D) -> Node2D:
 
 
 ## 道のりが短い敵を選ぶ（地面の距離が近い数体だけ、道のりを比べる）
-func _nearest_by_path(player: Node2D) -> Node2D:
+func _nearest_by_path(player: Node2D, include_boss: bool = true) -> Node2D:
 	var candidates: Array = []
 	var boss_candidates: Array = []
 	for node: Node in player.get_tree().get_nodes_in_group("enemies"):
@@ -193,10 +193,10 @@ func _nearest_by_path(player: Node2D) -> Node2D:
 				boss_candidates.append(entry)  # ボスは、ほかの敵を倒しきってから
 			elif not _in_boss_zone(player, e.global_position):
 				candidates.append(entry)
-	if candidates.is_empty():
+	if candidates.is_empty() and include_boss:
 		candidates = boss_candidates
 	if candidates.is_empty():
-		return find_target(player)
+		return find_target(player) if include_boss else null
 	candidates.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	var best: Node2D = null
 	var best_len: int = 1 << 30
@@ -252,6 +252,12 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 			if goal_pos != null:
 				goal_kind = "拾う"
 				stop_distance = 3.0
+		# 全滅ルート：ボス以外の敵を全部倒す → 宝箱 → ボス。ボスへ直行：宝箱（寄り道）→ ボス
+		if goal_pos == null and route == Route.NEAREST_ENEMY:
+			var enemy: Node2D = _nearest_by_path(player, false)
+			if enemy != null:
+				goal_pos = enemy.global_position
+				goal_kind = "敵"
 		if goal_pos == null and open_chests:
 			var chest: Node2D = _nearest_chest(player)
 			if chest != null:
@@ -259,10 +265,8 @@ func move_input(player: Node2D, delta: float) -> Vector2:
 				goal_kind = "宝箱"
 				stop_distance = 3.0
 		if goal_pos == null:
-			var target: Node2D = null
-			if route == Route.BOSS_RUSH:
-				target = find_boss(player)
-				goal_kind = "ボス"
+			var target: Node2D = find_boss(player)
+			goal_kind = "ボス"
 			if target == null:
 				target = _nearest_by_path(player)
 				goal_kind = "敵"
@@ -326,15 +330,13 @@ func _avoid_stuck(player: Node2D, dir: Vector2, delta: float) -> Vector2:
 	return dir
 
 
-## ボスを起こさないために避ける場所か（全滅ルートで、ボス以外の敵が残っていて、ボスがまだ眠っているとき）
+## ボスの部屋のまわりか（全滅ルートでは、ボスを倒すまで、ここの宝箱・ドロップには寄らない。ボスを起こさないため。部屋の宝箱は、倒した先のごほうび）
 func _in_boss_zone(player: Node2D, pos: Vector2) -> bool:
 	if route != Route.NEAREST_ENEMY:
 		return false
 	var boss: Node2D = find_boss(player)
-	if boss == null or (boss as Enemy).state != Enemy.State.IDLE:
-		return false
-	if _count_enemies(player) <= 1:
-		return false  # ボスだけが残っているなら、行ってよい
+	if boss == null:
+		return false  # ボスを倒したあとは、ボスの部屋の宝箱も開ける
 	return Iso.ground_distance(pos, boss.global_position) <= BOSS_AVOID_DISTANCE
 
 
