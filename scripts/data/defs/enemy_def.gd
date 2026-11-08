@@ -18,6 +18,8 @@ var xp: int = 0
 var pack_min: int = 1
 var pack_max: int = 1
 var color: Color = Color.WHITE
+var scale: float = 1.0  ## 絵と当たりの大きさの倍率（ボスは大きい）
+var is_boss: bool = false  ## true なら、画面の上にボスの体力の棒を出す
 
 
 var is_immortal: bool:
@@ -43,6 +45,10 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 		e.pack_min = int(pack[0])
 		e.pack_max = int(pack[1])
 	e.color = Color.from_string(str(d.get("color", "#ffffff")), Color.WHITE)
+	e.scale = float(d.get("scale", 1.0))
+	e.is_boss = bool(d.get("boss", false))
+	if e.scale <= 0.0:
+		errors.append("enemy %s: scale は 0 より大きくしてください" % e.id)
 	if e.id.is_empty():
 		errors.append("enemy: id がありません")
 	if not BEHAVIORS.has(e.behavior):

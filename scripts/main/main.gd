@@ -11,6 +11,7 @@ var world: Node2D
 var map: IsoMap
 var player: Player
 var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
+var game_log: GameLog  ## 遊んだ記録とデバッグの記録
 
 
 func _ready() -> void:
@@ -46,6 +47,11 @@ func _ready() -> void:
 	stash = Stash.new()
 	_add_skill_screen(stash)
 	_add_progression(manager, stash)
+	game_log = GameLog.new()  # 遊んだ記録とデバッグの記録（user://logs/）
+	game_log.name = "GameLog"
+	add_child(game_log)
+	game_log.open()
+	game_log.setup(player, manager, stash)
 	add_child(RestartListener.new())
 	_add_help()
 
@@ -56,6 +62,10 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	hud.name = "Hud"
 	add_child(hud)
 	hud.setup(player.vitals)
+	var boss_bar := BossBar.new()  # ボスの体力の棒（画面の上の中央）
+	boss_bar.name = "BossBar"
+	add_child(boss_bar)
+	boss_bar.setup(manager)
 	var skill_bar := SkillBar.new()  # 画面下の、使えるスキルと再使用までの秒数
 	skill_bar.name = "SkillBar"
 	add_child(skill_bar)
@@ -113,6 +123,9 @@ func _add_enemies() -> EnemyManager:
 		manager.spawn_pack(swarm, pos, rng)
 	for pos: Vector2 in map.markers.get("b", []):
 		manager.spawn(brute, pos)
+	var boss_def: EnemyDef = DataDB.enemy("rock_lord")
+	for pos: Vector2 in map.markers.get("X", []):  # ボス（最後の部屋）
+		manager.spawn(boss_def, pos)
 	return manager
 
 

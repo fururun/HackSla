@@ -11,6 +11,7 @@ const FANG := Color("#eee3c9")
 const GOLEM_PATH: String = "res://art/sprites/enemies/rockgolem_front.png"
 const GOLEM_SIZE: Vector2 = Vector2(30, 30)  ## 岩殻の絵の大きさ。足元の中心が原点
 const GOLEM_FLASH := Color(3.0, 3.0, 3.0, 1.0)
+const BOSS_TINT := Color(1.0, 0.72, 0.72, 1.0)  ## ボスは、岩殻の絵を赤みがかった色にして、ふつうの岩殻と見分ける
 const DEFAULT_HIT_RADIUS: float = 6.0
 const TANK_HIT_RADIUS: float = 10.0  ## 岩殻は大きいので、押し合いの半径も大きい
 static var _golem: Texture2D
@@ -112,7 +113,11 @@ func _draw() -> void:
 		# 岩殻はドット絵（AI が描いたもの）。被弾の点滅は明るく飛ばす
 		var tex := _golem_texture()
 		if tex != null:
-			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), GOLEM_FLASH if is_flashing() else Color.WHITE)
+			var tint: Color = GOLEM_FLASH if is_flashing() else (BOSS_TINT if definition.is_boss else Color.WHITE)
+			var s: float = definition.scale  # ボスは大きく描く（足元の中心が原点のまま）
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(s, s))
+			draw_texture(tex, Vector2(-GOLEM_SIZE.x * 0.5, -GOLEM_SIZE.y), tint)
+			draw_set_transform(Vector2.ZERO)
 		return
 	var key: String = definition.behavior + definition.color.to_html() + str(is_flashing())
 	if not _figures.has(key):

@@ -790,6 +790,31 @@
      "description": "一発の威力が軽くなる代わりに、短い間隔で繰り出せる。"
     }
    ]
+  },
+  {
+   "category": "enemy",
+   "id": "rock_lord",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "岩殻の主",
+     "reading": "いわがらのぬし",
+     "description": "長いあいだ眠っていた、巨大な岩殻の親玉。ゆっくり、しかし重く殴ってくる。"
+    },
+    {
+     "plan": 2,
+     "display_name": "ごろ岩の大親分",
+     "reading": "ごろいわのおおおやぶん",
+     "description": "岩殻たちをまとめる、山のように大きな親分。"
+    },
+    {
+     "plan": 3,
+     "display_name": "動かずの大岩",
+     "reading": "うごかずのおおいわ",
+     "description": "誰かが近づくまで、ずっとそこで眠っていた大きな岩。"
+    }
+   ]
   }
  ]
 }

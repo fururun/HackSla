@@ -30,6 +30,23 @@
     "windup": 0.3
   },
   {
+    "id": "rock_lord",
+    "name": "岩殻の主",
+    "behavior": "tank",
+    "life": 2400,
+    "speed": 34,
+    "damage": 22,
+    "attack_range": 28,
+    "attack_interval": 1.8,
+    "xp": 120,
+    "pack": [1, 1],
+    "color": "#8a7a9a",
+    "aggro_range": 200,
+    "windup": 0.6,
+    "scale": 1.9,
+    "boss": true
+  },
+  {
     "id": "training_dummy",
     "name": "案山子",
     "behavior": "dummy",

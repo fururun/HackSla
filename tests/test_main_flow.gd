@@ -30,6 +30,41 @@ func test_skills_aim_where_the_character_faces() -> void:
 	main.queue_free()
 
 
+func test_boss_is_placed_big_and_bar_follows_its_life() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var boss: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.is_boss:
+			boss = n
+	t.check(boss != null, "マップの印 X にボスがいる")
+	if boss == null:
+		main.queue_free()
+		return
+	t.check(boss.definition.scale > 1.5, "ボスは大きい")
+	t.check(boss.hit_radius > Enemy.TANK_HIT_RADIUS, "ボスは押し合いの半径も大きい")
+	t.check(boss.definition.life > 5 * DataDB.enemy("brute").life, "ボスは岩殻よりずっと硬い")
+	var bar: BossBar = null
+	for child: Node in main.get_children():
+		if child is BossBar:
+			bar = child
+	t.check(bar != null, "ボスの体力の棒がある")
+	if bar != null:
+		bar.tick(1.0)
+		t.check(not bar.is_showing(), "ボスが待機のあいだは、棒を出さない")
+		boss.state = Enemy.State.CHASING
+		bar.tick(1.0)
+		t.check(bar.is_showing(), "ボスが動き出したら、棒を出す")
+		t.check(is_equal_approx(bar.fill_ratio(), 1.0), "最初は満タン")
+		boss.take_hit(boss.definition.life * 0.5, DataDB.skill("slash"))
+		bar.tick(0.0)
+		t.check(absf(bar.fill_ratio() - 0.5) < 0.02, "体力が半分になると、棒も半分")
+		boss.take_hit(boss.life + 1.0, DataDB.skill("slash"))
+		bar.tick(0.0)
+		t.check(not bar.is_showing(), "倒したら、棒は消える")
+	main.queue_free()
+
+
 func test_skills_turn_toward_a_nearby_enemy() -> void:
 	var main: Node = await _start_main()
 	var tree: SceneTree = t

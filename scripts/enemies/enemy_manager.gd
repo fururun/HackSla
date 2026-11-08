@@ -36,7 +36,7 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 		(enemy_parent if enemy_parent != null else self).add_child(enemy)
 	enemy.manager = self
 	enemy.definition = def
-	enemy.hit_radius = Enemy.TANK_HIT_RADIUS if def.behavior == "tank" else Enemy.DEFAULT_HIT_RADIUS
+	enemy.hit_radius = (Enemy.TANK_HIT_RADIUS if def.behavior == "tank" else Enemy.DEFAULT_HIT_RADIUS) * def.scale
 	enemy.life = def.life
 	enemy.global_position = pos
 	enemy.ai_enabled = def.behavior == "melee_swarm" or def.behavior == "tank"
