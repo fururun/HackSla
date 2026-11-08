@@ -3,8 +3,8 @@ extends CanvasLayer
 ## HUD：左下に体力の棒とレベル・経験値の棒。レベルアップと死亡のメッセージ。
 
 const FONT_SIZE: int = UiStyle.FONT_STANDARD
-const BAR_W: float = 120.0
-const BAR_H: float = 14.0
+const BAR_W: float = 96.0  ## 画面にかぶらないよう、小さめ
+const BAR_H: float = 11.0
 const MARGIN: float = 6.0
 const SCREEN_H: float = 270.0
 const TEXT_COLOR: Color = UiStyle.TEXT
@@ -87,8 +87,8 @@ func _make_bar(pos: Vector2, color: Color) -> Panel:
 
 func _make_label(bar: Panel) -> Label:
 	var label := Label.new()
-	UiStyle.label(label)
-	label.position = Vector2(4, -1)
+	UiStyle.label(label, UiStyle.FONT_SMALL)
+	label.position = Vector2(4, -2)
 	bar.add_child(label)
 	return label
 

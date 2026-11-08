@@ -1,8 +1,9 @@
 class_name LootHud
 extends CanvasLayer
 
-const MESSAGE_LIFETIME: float = 4.0
+const MESSAGE_LIFETIME: float = 3.0
 const MAX_MESSAGES: int = 3
+var _panel: PanelContainer
 var _duplicate_pending: GemInstance
 var _stash: Stash
 var _currency: Label
@@ -36,22 +37,27 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var panel: PanelContainer = PanelContainer.new()
-	root.add_child(panel)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	panel.offset_left = -180
-	panel.offset_right = -6
-	panel.offset_top = 30
-	panel.add_theme_stylebox_override("panel", UiStyle.panel())
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var box: VBoxContainer = VBoxContainer.new()
-	panel.add_child(box)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 通貨は、枠なしの小さな文字（撃破数の下）。拾ったものの通知は、通知があるあいだだけ、枠つきで出す
 	_currency = Label.new()
+	root.add_child(_currency)
+	_currency.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_currency.offset_left = -120
+	_currency.offset_right = -6
+	_currency.offset_top = 24
+	_currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_currency.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UiStyle.label(_currency, UiStyle.FONT_SMALL, UiStyle.ACCENT)
-	box.add_child(_currency)
+	_panel = PanelContainer.new()
+	root.add_child(_panel)
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_panel.offset_left = -150
+	_panel.offset_right = -6
+	_panel.offset_top = 36
+	_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # 枠なし（文字のふちどりだけ）
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_messages = VBoxContainer.new()
-	box.add_child(_messages)
+	_panel.add_child(_messages)
+	_messages.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_refresh()
 
 func _process(delta: float) -> void:
@@ -102,20 +108,24 @@ func _on_duplicate_gem(gem: GemInstance) -> void:
 func _refresh() -> void:
 	if _currency == null:
 		return
-	_currency.text = "通貨: %d" % (_stash.currency if _stash != null else 0)
+	_currency.text = "通貨 %d" % (_stash.currency if _stash != null else 0)
+	if _panel != null:
+		_panel.visible = not _recent.is_empty()  # 通知がないときは、枠ごと消す
 	for child: Node in _messages.get_children():
 		_messages.remove_child(child)
 		child.queue_free()
 	for entry: Dictionary in _recent:
 		var label: Label = Label.new()
 		label.text = entry["text"]
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UiStyle.label(label, UiStyle.FONT_STANDARD, entry["color"])
 		_messages.add_child(label)
 		for line: Dictionary in entry["lines"]:
 			var detail: Label = Label.new()
-			detail.text = "  " + line["text"]
+			detail.text = line["text"]
+			detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			UiStyle.label(detail, UiStyle.FONT_SMALL, line["color"])
 			detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

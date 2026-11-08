@@ -114,7 +114,8 @@ func test_loot_hud() -> void:
 	t.check(rect.position.x >= 300 and rect.end.x <= 480, "HUDは画面右端の内側")
 	t.check_eq(hud._currency.get_theme_font_size("font_size"), 8, "HUDの文字サイズ")
 	stash.collect(5)
-	t.check_eq(hud._currency.text, "通貨: 5", "通貨表示を更新")
+	t.check_eq(hud._currency.text, "通貨 5", "通貨表示を更新")
+	t.check(not hud._panel.visible or hud._recent.size() > 0, "通知がないときは、枠を出さない（画面にかぶらない）")
 	for index: int in 4:
 		stash.collect(GemInstance.new(GemInstance.Kind.SKILL, "slash"))
 	t.check_eq(hud._recent.size(), 3, "直近3行")

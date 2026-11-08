@@ -3,6 +3,8 @@ extends CanvasLayer
 ## ゲーム状態は変更せずに読む。初期3枠と、後方に装備された枠までを表示。
 const SLOT_SIZE: Vector2 = Vector2(32, 42)
 const GAP: float = 4.0
+const BAR_SCALE: float = 0.7  ## 画面にかぶらないよう、全体を小さく描く
+const IDLE_ALPHA: float = 0.6  ## どれも再使用待ちでないときは、うすくする
 const FLASH_TIME: float = 0.22
 const INPUT_SETUP: Script = preload("res://scripts/core/input_setup.gd")
 var _caster: SkillCaster
@@ -115,6 +117,9 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(_caster) or _root == null:
 		return
 	var width: float = _slots.size() * (SLOT_SIZE.x + GAP) - GAP
+	_root.pivot_offset = Vector2(_root.size.x * 0.5, _root.size.y)  # 画面の下の中央を軸に、縮める
+	_root.scale = Vector2.ONE * BAR_SCALE
+	var busy: bool = false
 	for index: int in _slots.size():
 		var entry: Dictionary = _slots[index]
 		var slot: int = index + 1
@@ -141,3 +146,5 @@ func _process(delta: float) -> void:
 		veil.size = Vector2(24, 24 * ratio)
 		veil.visible = not state["ready"] and not state["empty"]
 		(entry["timer"] as Label).text = "%.1f" % state["left"] if veil.visible else ""
+		busy = busy or veil.visible or entry["flash"] > 0.0 or state["chain"]
+	_root.modulate.a = lerpf(_root.modulate.a, 1.0 if busy else IDLE_ALPHA, minf(1.0, delta * 8.0))

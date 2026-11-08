@@ -73,6 +73,8 @@ func _ready() -> void:
 
 ## F4：カメラの見え方を切り替える（がくつきの原因を探すため）
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_help"):
+		set_help_open(not _help_open)
 	if event.is_action_pressed("cycle_camera"):
 		apply_camera_mode((camera_mode + 1) % CAMERA_MODES.size())
 
@@ -189,14 +191,31 @@ static func load_map(path: String) -> PackedStringArray:
 	return rows
 
 
+const HELP_FULL: String = "WASD: 移動\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nF4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
+const HELP_COMPACT: String = "H: 操作ヘルプ"
+const HELP_SHOW_SECONDS: float = 8.0  ## 起動してすぐは操作を出し、この時間がたったら、小さな「H: 操作ヘルプ」だけにする
+
+var _help_label: Label
+var _help_open: bool = true
+
+
+## 操作ヘルプ。画面にかぶらないよう、最初の数秒だけ出し、あとは小さな一言にする（H で開閉）
 func _add_help() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
-	var help := Label.new()
-	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　I: 装備　F4: カメラ切替　F5: やり直し"
-	help.position = Vector2(6, 4)
-	help.add_theme_font_size_override("font_size", 8)
-	help.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
-	help.add_theme_constant_override("outline_size", 2)
-	help.add_theme_color_override("font_outline_color", Color.BLACK)
-	layer.add_child(help)
+	_help_label = Label.new()
+	_help_label.position = Vector2(6, 4)
+	_help_label.add_theme_font_size_override("font_size", 8)
+	_help_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
+	_help_label.add_theme_constant_override("outline_size", 2)
+	_help_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	layer.add_child(_help_label)
+	set_help_open(true)
+	get_tree().create_timer(HELP_SHOW_SECONDS).timeout.connect(func() -> void: set_help_open(false))
+
+
+func set_help_open(open: bool) -> void:
+	_help_open = open
+	if _help_label != null:
+		_help_label.text = HELP_FULL if open else HELP_COMPACT
+		_help_label.modulate.a = 1.0 if open else 0.55

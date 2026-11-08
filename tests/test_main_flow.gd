@@ -65,6 +65,26 @@ func test_boss_is_placed_big_and_bar_follows_its_life() -> void:
 	main.queue_free()
 
 
+func test_ui_does_not_cover_the_screen() -> void:
+	var main: Node = await _start_main()
+	# 操作ヘルプは、最初は開き、H で小さな一言と切り替わる
+	t.check(main._help_open and main._help_label.text.contains("WASD"), "最初は、操作ヘルプが開いている")
+	main.set_help_open(false)
+	t.check(main._help_label.text == main.HELP_COMPACT and main._help_label.modulate.a < 1.0, "閉じると、小さくうすい一言になる")
+	main.set_help_open(true)
+	t.check(main._help_label.text.contains("WASD"), "H でまた開ける")
+	# 通知がないあいだは、右上に枠が出ない
+	var loot_hud: LootHud = null
+	for child: Node in main.get_children():
+		if child is LootHud:
+			loot_hud = child
+	t.check(loot_hud != null and not loot_hud._panel.visible, "拾ったものの通知がないあいだは、枠が出ない")
+	# 体力・経験値の棒と、スキルバーは、小さい
+	t.check(Hud.BAR_W <= 100.0 and Hud.BAR_H <= 12.0, "体力・経験値の棒は小さめ")
+	t.check(SkillBar.BAR_SCALE <= 0.8, "スキルバーは小さめ")
+	main.queue_free()
+
+
 func test_skills_turn_toward_a_nearby_enemy() -> void:
 	var main: Node = await _start_main()
 	var tree: SceneTree = t
