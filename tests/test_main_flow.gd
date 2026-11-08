@@ -695,6 +695,9 @@ func test_death_animation_layer() -> void:
 func test_autopilot_prioritizes_chain_skills() -> void:
 	var player := Player.new()
 	var pilot := Autopilot.new()
+	t.check_eq(pilot.skill_mode, Autopilot.SkillMode.ALL_READY, "標準は、出せるものを全部出す（DPSがいちばん高い）")
+	pilot.skill_mode = Autopilot.SkillMode.CHAIN_PRIORITY
+	pilot.chain_wait_seconds = 0.5
 	var caster: SkillCaster = player.caster
 	caster.loadout.set_skill(1, "slash")  # 近接
 	caster.loadout.set_skill(2, "frost_bloom")  # 冷気の範囲（→ 近接で「砕氷」）
@@ -720,4 +723,16 @@ func test_autopilot_prioritizes_chain_skills() -> void:
 	t.check_eq(pilot.pick_skill_slot(player), 3, "チェインがなければ、出せるスキルを出す")
 	caster._cooldowns[2] = 2.0
 	t.check_eq(pilot.pick_skill_slot(player), 0, "出せるスキルがなければ 0")
+	player.free()
+
+
+func test_autopilot_default_casts_all_ready_skills() -> void:
+	var player := Player.new()
+	var pilot := Autopilot.new()
+	player.caster.loadout.set_skill(1, "slash")
+	player.caster.loadout.set_skill(2, "frost_bloom")
+	player.caster.loadout.set_skill(3, "fire_bolt")
+	t.check_eq(pilot.skills_to_cast(player), [1, 2, 3] as Array[int], "標準は、出せるスキルを全部、枠の順に出す")
+	player.caster._cooldowns[1] = 1.0
+	t.check_eq(pilot.skills_to_cast(player), [1, 3] as Array[int], "再使用待ちのものは出さない")
 	player.free()

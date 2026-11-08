@@ -26,9 +26,15 @@ const DETOUR_SECONDS: float = 0.7
 const MAX_PICKUP_PATH: float = 80.0  ## 拾いに行くのは、道のりがこのマス数以内のものだけ
 const MAX_STUCK_BEFORE_GIVE_UP: int = 3  ## 同じ目的地で、これだけ引っかかったら、あきらめる
 const IGNORE_SECONDS: float = 30.0  ## あきらめた目的地を、この秒数のあいだ、選ばない
-const CHAIN_WAIT_SECONDS: float = 0.5  ## チェインの相棒の再使用まで、この秒数以内なら、ほかのスキルを出さずに待つ（チェインを切らさない）
 const NEAREST_CANDIDATES: int = 8  ## 近い敵を選ぶとき、道のりを比べる候補の数
 
+## スキルの回し方。標準は ALL_READY（出せるものを、全部、枠の順に出す）。
+## 20秒の案山子で測ったDPSは、ALL_READY が最も高かった（161）。チェインを優先する CHAIN_PRIORITY（147）と CHAIN_GREEDY（154）は、
+## 「霜囲い→払い」のようなチェインを狙って、「火の矢→霜囲い（蒸気の爆発）」の、もっと強いチェインを崩すので、かえって低い。
+## ほかの構成で試したいときのために、残してある（Autopilot.skill_mode を変える）
+enum SkillMode { ALL_READY, CHAIN_PRIORITY, CHAIN_GREEDY }
+var skill_mode: SkillMode = SkillMode.ALL_READY
+var chain_wait_seconds: float = 0.0  ## チェインの相棒の再使用まで、この秒数以内なら、ほかのスキルを出さずに待つ（0 なら待たない）
 var enabled: bool = false
 var route: Route = Route.NEAREST_ENEMY
 var open_chests: bool = true
@@ -371,6 +377,60 @@ func wants_heal(player: Player) -> bool:
 	return vitals.heal_charges > 0 and not vitals.is_dead() and vitals.life <= vitals.max_life() * HEAL_BELOW_RATIO
 
 
+## このフレームに出すスキルの枠。ALL_READY は、出せるものを全部（枠の順）。CHAIN_PRIORITY は、pick_skill_slot の1つだけ
+func skills_to_cast(player: Player) -> Array[int]:
+	var slots: Array[int] = []
+	if skill_mode == SkillMode.ALL_READY:
+		for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+			if player.caster.loadout.skill(slot) != null and player.caster.cooldown_left(slot) <= 0.0:
+				slots.append(slot)
+		return slots
+	if skill_mode == SkillMode.CHAIN_GREEDY:
+		return _greedy_order(player)
+	var pick: int = pick_skill_slot(player)
+	if pick > 0:
+		slots.append(pick)
+	return slots
+
+
+## 出せるスキルを全部、チェインが成立する順に並べる（出せるものを減らさない）。
+## 1つ決めるたびに、「直前のスキル」が変わったものとして、次を決める
+func _greedy_order(player: Player) -> Array[int]:
+	var caster: SkillCaster = player.caster
+	var rules: Array[ChainRule] = DataDB.chains
+	var order: Array[int] = []
+	var remaining: Array[int] = []
+	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+		if caster.loadout.skill(slot) != null and caster.cooldown_left(slot) <= 0.0:
+			remaining.append(slot)
+	var last: SkillDef = caster.chain.last_skill
+	while not remaining.is_empty():
+		var chosen: int = -1
+		# 完成させるスキル
+		if last != null:
+			for slot: int in remaining:
+				if ChainTracker.find_rule(last, caster.loadout.skill(slot), rules) != null:
+					chosen = slot
+					break
+		# 1発目になれるスキル（相棒が、この中にいる）
+		if chosen < 0:
+			for slot: int in remaining:
+				for other: int in remaining:
+					if other != slot and ChainTracker.find_rule(caster.loadout.skill(slot), caster.loadout.skill(other), rules) != null:
+						chosen = slot
+						break
+				if chosen >= 0:
+					break
+		if chosen < 0:
+			chosen = remaining[0]
+		order.append(chosen)
+		remaining.erase(chosen)
+		var skill: SkillDef = caster.loadout.skill(chosen)
+		var rule: ChainRule = ChainTracker.find_rule(last, skill, rules)
+		last = null if rule != null else skill  # チェインが出たら、数え直し（企画書の2段階まで）
+	return order
+
+
 ## 次に出すスキルの枠（出せるものがなければ 0）。チェインを優先する：
 ##   1) 出せば、チェインが成立するスキル（直前のスキルと組み合わさる）があれば、それを出す
 ##   2) 直前のスキルの相棒が、もうすぐ（CHAIN_WAIT_SECONDS 以内に）使えるなら、ほかのスキルは出さずに待つ
@@ -394,7 +454,7 @@ func pick_skill_slot(player: Player) -> int:
 			var partner: SkillDef = caster.loadout.skill(slot)
 			if partner == null or ready.has(slot):
 				continue
-			if caster.cooldown_left(slot) <= CHAIN_WAIT_SECONDS and ChainTracker.find_rule(last, partner, rules) != null:
+			if caster.cooldown_left(slot) <= chain_wait_seconds and ChainTracker.find_rule(last, partner, rules) != null:
 				return 0
 	if ready.is_empty():
 		return 0
@@ -404,7 +464,7 @@ func pick_skill_slot(player: Player) -> int:
 		for other: int in range(1, SkillLoadout.SLOT_COUNT + 1):
 			if other == slot or caster.loadout.skill(other) == null:
 				continue
-			if caster.cooldown_left(other) <= CHAIN_WAIT_SECONDS and ChainTracker.find_rule(starter, caster.loadout.skill(other), rules) != null:
+			if caster.cooldown_left(other) <= maxf(chain_wait_seconds, 0.0) and ChainTracker.find_rule(starter, caster.loadout.skill(other), rules) != null:
 				return slot
 	# 4) ふつうに
 	return ready[0]
