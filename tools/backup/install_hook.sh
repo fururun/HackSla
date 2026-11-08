@@ -12,9 +12,10 @@ if [ "${1:-}" = "--remove" ]; then
   exit 0
 fi
 mkdir -p "$ROOT/.git/hooks"
+# フックの中身は、文字化けしないよう英数字だけで書く（日本語の説明は、このファイルの上と docs/backup_and_logs.md にある）
 cat > "$HOOK" <<'EOF'
 #!/bin/sh
-# HackSla: コミットのあとに、バックグラウンドでバックアップを取る（失敗してもコミットは止めない）
+# HackSla: run tools/backup/backup.sh in the background after every commit (never blocks the commit)
 ROOT="$(git rev-parse --show-toplevel)"
 ( "$ROOT/tools/backup/backup.sh" >/dev/null 2>&1 & )
 exit 0

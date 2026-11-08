@@ -2,8 +2,8 @@ class_name BossBar
 extends CanvasLayer
 ## ボスの体力の棒（画面の上の中央）。ボスが動き出したら出て、倒したら「撃破！」を数秒出して消える。
 
-const BAR_SIZE: Vector2 = Vector2(260, 12)
-const TOP_MARGIN: float = 26.0
+const BAR_SIZE: Vector2 = Vector2(200, 10)
+const TOP_MARGIN: float = 172.0  ## 画面の下のほう（スキルバーのすぐ上）。上は、操作ヘルプと取得の表示があるので避ける
 const VICTORY_SECONDS: float = 4.0
 const SCAN_INTERVAL: float = 0.25
 
