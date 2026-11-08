@@ -53,6 +53,7 @@ func _activate(pos: Vector2, amount: float) -> void:
 	_t = 0.0
 	active = true
 	modulate = Color.WHITE
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF  # 画面の文字。描画のたびに動かすので、補間しない
 	global_position = pos + Vector2(randf_range(-FeedbackConfig.NUMBER_JITTER, FeedbackConfig.NUMBER_JITTER) - FeedbackConfig.NUMBER_SIZE.x * 0.5, 0)
 	_start = position
 	show()

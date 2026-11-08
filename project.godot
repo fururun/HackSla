@@ -1,4 +1,4 @@
-﻿; Engine configuration file.
+; Engine configuration file.
 ; Godot 4.7 で作成。設定の意味は docs/project_settings.md を参照。
 
 config_version=5
@@ -28,6 +28,7 @@ window/stretch/scale_mode="integer"
 [physics]
 
 common/physics_ticks_per_second=60
+common/physics_interpolation=true
 
 [rendering]
 

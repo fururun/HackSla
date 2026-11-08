@@ -39,6 +39,7 @@ func launch(caster: SkillCaster, def: SkillDef, context: SkillCaster.CastContext
 	_hit_ids.clear()
 	_color = CombatConsts.ELEMENT_COLORS.get(def.element, Color.WHITE)
 	global_position = pos
+	reset_physics_interpolation()  # 使い回しの瞬間移動で、前の場所から滑ってこないように
 	active = true
 	show()
 	set_physics_process(true)

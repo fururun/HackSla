@@ -61,6 +61,41 @@ func test_number_pool_limit_oldest_and_expired_reuse() -> void:
 	parent.free()
 
 
+func test_light_enemies_do_not_stop_time_or_shake_the_camera() -> void:
+	var tree: SceneTree = t
+	await tree.create_timer(FeedbackConfig.HITSTOP_MAX_SECONDS + FeedbackConfig.HITSTOP_RECOVERY_SECONDS, true, false, true).timeout
+	var original_scale: float = Engine.time_scale
+	Engine.time_scale = 1.0
+	var manager := EnemyManager.new()
+	tree.root.add_child(manager)
+	manager.set_physics_process(false)
+	var camera := Camera2D.new()
+	camera.offset = Vector2(3, 4)
+	tree.root.add_child(camera)
+	camera.make_current()
+	var def := EnemyDef.new()
+	def.life = 30.0
+	def.behavior = "melee_swarm"  # スライムなどの雑魚
+	var enemies: Array[Enemy] = []
+	for i: int in 40:
+		enemies.append(manager.spawn(def, Vector2(i, 20)))
+	for enemy: Enemy in enemies:
+		enemy.take_hit(40.0, null)  # 雑魚を、通常の攻撃（70未満）で倒す
+	var feedback: HitFeedback = manager._feedback
+	feedback._process(0.0)
+	t.check_eq(feedback.kill_count, 40, "撃破は数える")
+	t.check_eq(Engine.time_scale, 1.0, "雑魚を倒しても、時間は止まらない")
+	t.check_eq(feedback._shake_left, 0.0, "雑魚を倒しても、画面は揺れない")
+	# 重い一撃のときは、揺れる
+	var heavy_hit: Enemy = manager.spawn(def, Vector2(500, 20))
+	heavy_hit.life = 500.0
+	heavy_hit.take_hit(FeedbackConfig.SHAKE_DAMAGE + 1.0, null)
+	t.check(feedback._shake_left > 0.0, "重い一撃のときは、揺れる")
+	manager.free()
+	camera.free()
+	Engine.time_scale = original_scale
+
+
 func test_hitstop_burst_bound_restore_and_camera() -> void:
 	var tree: SceneTree = t
 	await tree.create_timer(FeedbackConfig.HITSTOP_MAX_SECONDS + FeedbackConfig.HITSTOP_RECOVERY_SECONDS, true, false, true).timeout
@@ -75,6 +110,7 @@ func test_hitstop_burst_bound_restore_and_camera() -> void:
 	camera.make_current()
 	var def := EnemyDef.new()
 	def.life = 30.0
+	def.behavior = "tank"  # 重い敵の撃破だけが、一瞬の停止・揺れを起こす
 	var enemies: Array[Enemy] = []
 	for i: int in 150:
 		enemies.append(manager.spawn(def, Vector2(i, 20)))

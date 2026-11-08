@@ -59,6 +59,7 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	enemy.rain_timer = 0.0
 	enemy.life = def.life
 	enemy.global_position = pos
+	enemy.reset_physics_interpolation()  # 使い回しの瞬間移動で、前の場所から滑ってこないように
 	enemy.ai_enabled = def.behavior == "melee_swarm" or def.behavior == "tank"
 	enemy.can_be_pushed = enemy.ai_enabled
 	enemy.state = Enemy.State.IDLE

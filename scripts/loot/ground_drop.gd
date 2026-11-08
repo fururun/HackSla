@@ -23,6 +23,7 @@ func activate(payload: Variant, at: Vector2) -> void:
 	if payload is int:
 		tint = Color("ffd36a")
 	global_position = at
+	reset_physics_interpolation()  # 使い回しの瞬間移動で、前の場所から滑ってこないように
 	show()
 	queue_redraw()
 

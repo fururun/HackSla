@@ -22,6 +22,7 @@ func _init() -> void:
 
 func play(pos: Vector2, radius: float, color: Color) -> void:
 	global_position = pos
+	reset_physics_interpolation()  # 使い回しの瞬間移動で、前の場所から滑ってこないように
 	_radius = maxf(radius, 1.0)
 	_color = color
 	_t = 0.0

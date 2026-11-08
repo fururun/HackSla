@@ -46,13 +46,19 @@ func _ready() -> void:
 
 func on_enemy_hit(enemy: Enemy, amount: float, killed: bool) -> void:
 	DamageNumber.spawn(self, enemy.global_position + FeedbackConfig.NUMBER_OFFSET, amount)
+	# 手応え（一瞬の停止・画面揺れ）は、重い敵（岩殻・ボス）の撃破と、重い一撃のときだけ。
+	# 雑魚の群れを倒すたびに出すと、ほぼ連続して止まり・揺れて、がくがくして見えるため
+	var heavy: bool = enemy.definition != null and enemy.definition.behavior == "tank"
 	if killed:
 		kill_count += 1
 		_counter.text = "撃破 %d" % kill_count
 		_pulse_left = FeedbackConfig.COUNTER_PULSE_SECONDS
-		request_hitstop()
-	if killed or amount >= FeedbackConfig.LARGE_DAMAGE:
-		_start_shake(FeedbackConfig.SHAKE_KILL if killed else FeedbackConfig.SHAKE_HIT)
+		if heavy:
+			request_hitstop()
+	if killed and heavy:
+		_start_shake(FeedbackConfig.SHAKE_KILL)
+	elif amount >= FeedbackConfig.SHAKE_DAMAGE:
+		_start_shake(FeedbackConfig.SHAKE_HIT)
 
 
 func request_hitstop() -> void:

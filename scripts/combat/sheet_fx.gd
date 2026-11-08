@@ -119,6 +119,7 @@ func play(key: String, pos: Vector2, size_px: float = 0.0, rot: float = 0.0, mir
 	scale = Vector2(-s if mirror else s, s)
 	rotation = rot
 	global_position = pos
+	reset_physics_interpolation()  # 使い回しの瞬間移動で、前の場所から滑ってこないように
 	_loop = bool(def["loop"])
 	_t = 0.0
 	busy = true

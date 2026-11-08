@@ -33,6 +33,7 @@ func _ready() -> void:
 
 	var cam := Camera2D.new()
 	cam.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える
+	cam.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS  # プレイヤーと同じ物理の刻みで追う（がくつき防止）
 	cam.position_smoothing_enabled = true
 	cam.position_smoothing_speed = 8.0
 	cam.offset = Vector2(0, -10)
