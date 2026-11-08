@@ -30,7 +30,7 @@ func restart(mode: RunCarry.Mode = RunCarry.Mode.RESET) -> void:
 	var pilot: Variant = get_parent().get("autopilot") if get_parent() != null else null
 	if pilot is Autopilot:
 		(pilot as Autopilot).save_state()  # 自動戦闘が入っていれば、やり直したあとも続ける
-	RunCarry.prepare(mode, vitals, stash if stash is Stash else null, skill_tree if skill_tree is SkillTree else null)
+	RunCarry.prepare(mode, vitals, stash if stash is Stash else null, skill_tree if skill_tree is SkillTree else null, (player as Player).caster.loadout if player is Player else null)
 	PauseHolder.reset()  # 開いている画面の数え直し（シーンを作り直すので）
 	tree.paused = false
 	Engine.time_scale = 1.0  # ヒットストップ中に押しても、時間が遅いまま残らないように戻す

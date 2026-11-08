@@ -86,7 +86,7 @@ func _ready() -> void:
 	_roll_start_loadout()
 	_add_skill_screen(stash)
 	_add_progression(manager, stash)
-	carried_over = RunCarry.apply(player.vitals, stash, skill_tree)  # 引き継いでリスタートなら、レベル・ツリー・装備を戻す
+	carried_over = RunCarry.apply(player.vitals, stash, skill_tree, player.caster.loadout)  # 引き継いでリスタートなら、レベル・ツリー・装備を戻す
 	game_log = GameLog.new()  # 遊んだ記録とデバッグの記録（user://logs/）
 	game_log.name = "GameLog"
 	add_child(game_log)
@@ -203,7 +203,8 @@ func apply_camera_mode(index: int) -> void:
 func _roll_start_loadout() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	start_skill_ids = StartLoadout.roll(rng)
+	var carried: Array[String] = RunCarry.carried_skills()
+	start_skill_ids = carried if not carried.is_empty() else StartLoadout.roll(rng)  # 引き継ぎなら、前のスキル構成のまま
 	for slot: int in start_skill_ids.size():
 		player.caster.loadout.set_skill(slot + 1, start_skill_ids[slot])
 		stash.add_gem(GemInstance.new(GemInstance.Kind.SKILL, start_skill_ids[slot]))

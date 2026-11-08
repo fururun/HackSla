@@ -1393,7 +1393,15 @@ func test_reset_discards_everything_and_carry_keeps_growth() -> void:
 	var slot: String = item.base.slot
 
 	# 引き継ぎ
-	RunCarry.prepare(RunCarry.Mode.CARRY, vitals, main.stash, main.skill_tree)
+	main.stash.add_gem(GemInstance.new(GemInstance.Kind.SKILL, "ground_slam"))
+	main.stash.currency = 40
+	vitals.heal_charges = 1
+	main.player.caster.loadout.set_skill(3, "ground_slam")
+	main.player.caster.loadout.set_support(3, "heavy_blow")
+	var skills_before: Array[String] = []
+	for k: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+		skills_before.append(main.player.caster.loadout.skill_id(k))
+	RunCarry.prepare(RunCarry.Mode.CARRY, vitals, main.stash, main.skill_tree, main.player.caster.loadout)
 	t.check_eq(RunCarry.carry_depth, 1, "引き継ぎの回数が数えられる")
 	main.free()
 	var carried: Node = await _start_main()
@@ -1407,10 +1415,12 @@ func test_reset_discards_everything_and_carry_keeps_growth() -> void:
 	t.check(carried.stash.equipment.has(slot) and carried.stash.equipment[slot] == item, "装備を引き継ぐ")
 	t.check(carried.player.caster.stats.get_value("damage_pct") >= 10.0, "ツリーと装備の効果が、ステータスに戻っている")
 	_near(v2.life, v2.max_life(), 0.01, "ライフは満タンで始まる")
-	t.check(not carried.stash.has_gem(GemInstance.Kind.SKILL, "ground_slam") or carried.start_skill_ids.has("ground_slam"), "拾ったジェムは引き継がない（スタートの3つだけ）")
-	t.check_eq(carried.stash.currency, 0, "通貨は引き継がない")
-	t.check_eq(v2.heal_charges, PlayerVitals.MAX_HEAL_CHARGES, "回復の回数は元に戻る")
-	t.check_eq(carried.start_skill_ids.size(), StartLoadout.COUNT, "スタートのスキル構成は、また決まる")
+	t.check(carried.stash.has_gem(GemInstance.Kind.SKILL, "ground_slam"), "拾ったジェムを引き継ぐ")
+	t.check_eq(carried.stash.currency, 40, "通貨を引き継ぐ")
+	t.check_eq(v2.heal_charges, 1, "回復の残り回数を引き継ぐ")
+	for k: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+		t.check_eq(carried.player.caster.loadout.skill_id(k), skills_before[k - 1], "枠 %d のスキルを引き継ぐ（ランダムにしない）" % k)
+	t.check_eq(carried.player.caster.loadout.support_id(3), "heavy_blow", "補助ジェムも引き継ぐ")
 	t.check_eq(RunCarry.mode_name(RunCarry.last_mode), "carry", "記録用のモード名")
 	var record: Dictionary = carried.balance_log.build_record("quit")
 	t.check_eq(record["restart"]["mode"], "carry", "バランス記録に、引き継ぎと書かれる")
