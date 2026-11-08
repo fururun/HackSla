@@ -77,8 +77,12 @@ func _physics_process(delta: float) -> void:
 			_attack_t = -1.0
 
 	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
-		if Input.is_action_pressed("skill_%d" % slot) or (auto and autopilot.wants_skill(self)):
+		if Input.is_action_pressed("skill_%d" % slot):
 			use_skill(slot, aim_target())
+	if auto and autopilot.wants_skill(self):
+		var pick: int = autopilot.pick_skill_slot(self)  # 自動戦闘は、チェインを優先して、1回に1つだけ出す
+		if pick > 0:
+			use_skill(pick, aim_target())
 	queue_redraw()
 
 

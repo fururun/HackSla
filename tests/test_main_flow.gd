@@ -361,6 +361,7 @@ func test_autopilot_finds_paths_around_walls_and_options() -> void:
 		t.check(pilot.path_length(map.marker("P"), chest_pos) >= 0, "宝箱へ歩いて行ける")
 	# 壁の向こうの目的地へ、まっすぐではなく、道に沿った向きに歩く
 	player.global_position = map.marker("P")
+	pilot.director = null  # 宝箱から出たドロップに、目的地が引っぱられないように
 	pilot.toggle()
 	pilot.route = Autopilot.Route.BOSS_RUSH
 	pilot.open_chests = false
@@ -689,3 +690,34 @@ func test_death_animation_layer() -> void:
 	t.check_eq(layer.active_count(), 0, "絵のない敵は、何も出さない")
 	manager.queue_free()
 	await tree.process_frame
+
+
+func test_autopilot_prioritizes_chain_skills() -> void:
+	var player := Player.new()
+	var pilot := Autopilot.new()
+	var caster: SkillCaster = player.caster
+	caster.loadout.set_skill(1, "slash")  # 近接
+	caster.loadout.set_skill(2, "frost_bloom")  # 冷気の範囲（→ 近接で「砕氷」）
+	caster.loadout.set_skill(3, "fire_bolt")
+	# 何も出していないとき：チェインの1発目になれる霜囲い（相棒の払いが出せる）を先に出す
+	t.check_eq(pilot.pick_skill_slot(player), 2, "チェインの1発目になるスキルを先に出す")
+	# 霜囲いを出したあと：払いを出せばチェインが完成するので、それを出す
+	caster.chain.on_cast(caster.loadout.skill(2), DataDB.chains, DataDB.skills)
+	caster._cooldowns[1] = 3.0  # 霜囲いは再使用待ち
+	t.check_eq(pilot.pick_skill_slot(player), 1, "チェインを完成させるスキルを、ほかより先に出す")
+	# 相棒（払い）がもうすぐ使えるなら、ほかのスキル（火の矢）を出さずに待つ
+	caster._cooldowns[0] = 0.3
+	t.check_eq(pilot.pick_skill_slot(player), 0, "相棒がもうすぐなら、待つ（チェインを切らさない）")
+	# 相棒が当分使えなければ、待たずにほかのスキルを出す
+	caster._cooldowns[0] = 5.0
+	t.check_eq(pilot.pick_skill_slot(player), 3, "相棒が当分使えないなら、ほかのスキルを出す")
+	# チェインがまったく組めないときは、出せるものを、枠の順に出す
+	caster.chain.reset()
+	caster._cooldowns[0] = 0.0
+	caster._cooldowns[1] = 0.0
+	caster.loadout.clear_skill(1)
+	caster.loadout.clear_skill(2)
+	t.check_eq(pilot.pick_skill_slot(player), 3, "チェインがなければ、出せるスキルを出す")
+	caster._cooldowns[2] = 2.0
+	t.check_eq(pilot.pick_skill_slot(player), 0, "出せるスキルがなければ 0")
+	player.free()

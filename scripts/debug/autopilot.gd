@@ -26,6 +26,7 @@ const DETOUR_SECONDS: float = 0.7
 const MAX_PICKUP_PATH: float = 80.0  ## 拾いに行くのは、道のりがこのマス数以内のものだけ
 const MAX_STUCK_BEFORE_GIVE_UP: int = 3  ## 同じ目的地で、これだけ引っかかったら、あきらめる
 const IGNORE_SECONDS: float = 30.0  ## あきらめた目的地を、この秒数のあいだ、選ばない
+const CHAIN_WAIT_SECONDS: float = 0.5  ## チェインの相棒の再使用まで、この秒数以内なら、ほかのスキルを出さずに待つ（チェインを切らさない）
 const NEAREST_CANDIDATES: int = 8  ## 近い敵を選ぶとき、道のりを比べる候補の数
 
 var enabled: bool = false
@@ -370,7 +371,46 @@ func wants_heal(player: Player) -> bool:
 	return vitals.heal_charges > 0 and not vitals.is_dead() and vitals.life <= vitals.max_life() * HEAL_BELOW_RATIO
 
 
-## 近くに敵がいるあいだ、スキルを全部使う（出せるかどうかは、再使用時間などで決まる）
+## 次に出すスキルの枠（出せるものがなければ 0）。チェインを優先する：
+##   1) 出せば、チェインが成立するスキル（直前のスキルと組み合わさる）があれば、それを出す
+##   2) 直前のスキルの相棒が、もうすぐ（CHAIN_WAIT_SECONDS 以内に）使えるなら、ほかのスキルは出さずに待つ
+##   3) 相棒（チェインの2発目になるスキル）が、出せる状態でいる、チェインの1発目になれるスキルを出す
+##   4) なければ、出せるスキルのうち、枠の番号が小さいもの
+func pick_skill_slot(player: Player) -> int:
+	var caster: SkillCaster = player.caster
+	var rules: Array[ChainRule] = DataDB.chains
+	var last: SkillDef = caster.chain.last_skill
+	var ready: Array[int] = []
+	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+		if caster.loadout.skill(slot) != null and caster.cooldown_left(slot) <= 0.0:
+			ready.append(slot)
+	# 1) チェインを完成させる
+	if last != null:
+		for slot: int in ready:
+			if ChainTracker.find_rule(last, caster.loadout.skill(slot), rules) != null:
+				return slot
+		# 2) 相棒がもうすぐ使えるなら、待つ
+		for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+			var partner: SkillDef = caster.loadout.skill(slot)
+			if partner == null or ready.has(slot):
+				continue
+			if caster.cooldown_left(slot) <= CHAIN_WAIT_SECONDS and ChainTracker.find_rule(last, partner, rules) != null:
+				return 0
+	if ready.is_empty():
+		return 0
+	# 3) チェインの1発目になれるスキル（相棒がすぐ使える）
+	for slot: int in ready:
+		var starter: SkillDef = caster.loadout.skill(slot)
+		for other: int in range(1, SkillLoadout.SLOT_COUNT + 1):
+			if other == slot or caster.loadout.skill(other) == null:
+				continue
+			if caster.cooldown_left(other) <= CHAIN_WAIT_SECONDS and ChainTracker.find_rule(starter, caster.loadout.skill(other), rules) != null:
+				return slot
+	# 4) ふつうに
+	return ready[0]
+
+
+## 近くに敵がいるあいだ、スキルを使う（どれを出すかは pick_skill_slot）（出せるかどうかは、再使用時間などで決まる）
 func wants_skill(player: Player) -> bool:
 	return player.nearest_enemy() != null
 
