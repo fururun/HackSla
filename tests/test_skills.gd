@@ -363,7 +363,8 @@ func test_explosion_damage_uses_killed_enemy_max_life() -> void:
 	_finish_projectiles(world)
 	t.check(not victim.active, "火球で倒れる")
 	var dealt: float = brute.definition.life - brute.life
-	t.check(absf(dealt - 20.0 * 1.5) < 0.001, "爆発のダメージは 最大ライフ20 × 1.5 = 30（実際 %f）" % dealt)
+	var victim_life: float = victim.definition.life  # スライムの最大ライフ（調整で変わる）
+	t.check(absf(dealt - victim_life * 1.5) < 0.001, "爆発のダメージは 倒した敵の最大ライフ%d × 1.5（実際 %f）" % [int(victim_life), dealt])
 	_remove_supports(["t_boom2"])
 	await _cleanup(world, c)
 

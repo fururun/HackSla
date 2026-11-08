@@ -128,5 +128,57 @@
     "speed": 300,
     "chain_only": true,
     "description": "冷気で凍えた敵へ大ぶりな氷の槍を撃ち込み、深く射抜く。"
+  },
+  {
+    "id": "blaze_thrust",
+    "name": "焔突き",
+    "element": "fire",
+    "kind": "melee",
+    "damage": [66, 90],
+    "cooldown": 0.5,
+    "range": 60,
+    "radius": 14,
+    "speed": 0,
+    "chain_only": true,
+    "description": "炎をまとった一突きで、燃える敵を深く貫く。"
+  },
+  {
+    "id": "thunder_fall",
+    "name": "雷落とし",
+    "element": "lightning",
+    "kind": "area",
+    "damage": [54, 76],
+    "cooldown": 0.7,
+    "range": 0,
+    "radius": 58,
+    "speed": 0,
+    "chain_only": true,
+    "description": "雷を受けた敵の足元へ、続けて雷を落とす。"
+  },
+  {
+    "id": "magma_ball",
+    "name": "溶岩玉",
+    "element": "fire",
+    "kind": "projectile",
+    "damage": [58, 80],
+    "cooldown": 0.5,
+    "range": 230,
+    "radius": 12,
+    "speed": 250,
+    "chain_only": true,
+    "description": "砕けた地面から、溶けた岩の玉を撃ち出す。"
+  },
+  {
+    "id": "steam_burst",
+    "name": "湯気爆ぜ",
+    "element": "cold",
+    "kind": "area",
+    "damage": [50, 70],
+    "cooldown": 0.7,
+    "range": 0,
+    "radius": 64,
+    "speed": 0,
+    "chain_only": true,
+    "description": "火で温まった敵に冷気をぶつけ、蒸気を爆ぜさせる。"
   }
 ]

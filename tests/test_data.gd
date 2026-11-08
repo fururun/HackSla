@@ -118,10 +118,15 @@ func test_text_has_no_numbers_and_all_have_three_plans() -> void:
 
 func test_t22_new_skills_supports_and_chains() -> void:
 	var db := _db()
-	t.check_eq(db.skills.size(), 10, "スキルは既存4＋追加6で計10個")
-	t.check_eq(db.droppable_skills().size(), 8, "ドロップするスキルは計8個")
+	t.check_eq(db.skills.size(), 14, "スキルは10個＋チェイン技4つで計14個")
+	t.check_eq(db.droppable_skills().size(), 8, "ドロップするスキルは計8個（チェイン技は落ちない）")
 	t.check_eq(db.supports.size(), 6, "補助ジェムは既存2＋追加4で計6個")
-	t.check_eq(db.chains.size(), 2, "チェインは既存1＋追加1で計2個")
+	t.check_eq(db.chains.size(), 6, "チェインは、砕氷・凍て槍・焔突き・雷落とし・溶岩玉・湯気爆ぜの6つ")
+	# 砕氷（冷気の範囲→近接）だけが強すぎないよう、別の起点のチェインを足してある（弱めてはいない）
+	var starts := {}
+	for c: ChainRule in db.chains:
+		starts[str(c.prev_tags)] = true
+	t.check(starts.size() >= 4, "チェインの起点は、4種類以上ある（冷気の範囲だけに偏らない）")
 
 	# 新しい5つの通常スキルが DataDB と droppable_skills() に入っていること
 	var expected_skills: Dictionary = {

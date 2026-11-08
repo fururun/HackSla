@@ -815,6 +815,106 @@
      "description": "誰かが近づくまで、ずっとそこで眠っていた大きな岩。"
     }
    ]
+  },
+  {
+   "category": "skill",
+   "id": "blaze_thrust",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "焔突き",
+     "reading": "ほむらづき",
+     "description": "炎をまとった一突きで、燃える敵を深く貫く。"
+    },
+    {
+     "plan": 2,
+     "display_name": "火走り",
+     "reading": "ひばしり",
+     "description": "燃える刃が走り、まっすぐ貫く。"
+    },
+    {
+     "plan": 3,
+     "display_name": "紅蓮突き",
+     "reading": "ぐれんづき",
+     "description": "紅蓮の炎を乗せた突きで、敵を貫く。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "thunder_fall",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "雷落とし",
+     "reading": "かみなりおとし",
+     "description": "雷を受けた敵の足元へ、続けて雷を落とす。"
+    },
+    {
+     "plan": 2,
+     "display_name": "雷鳴の輪",
+     "reading": "らいめいのわ",
+     "description": "雷鳴とともに、足元に光の輪が広がる。"
+    },
+    {
+     "plan": 3,
+     "display_name": "稲光の庭",
+     "reading": "いなびかりのにわ",
+     "description": "辺り一面が、稲光で白く染まる。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "magma_ball",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "溶岩玉",
+     "reading": "ようがんだま",
+     "description": "砕けた地面から、溶けた岩の玉を撃ち出す。"
+    },
+    {
+     "plan": 2,
+     "display_name": "熱岩投げ",
+     "reading": "ねつがんなげ",
+     "description": "熱い岩のかたまりを、まっすぐ投げつける。"
+    },
+    {
+     "plan": 3,
+     "display_name": "岩火の弾",
+     "reading": "いわびのたま",
+     "description": "燃える岩の弾が、敵を押し潰す。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "steam_burst",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "湯気爆ぜ",
+     "reading": "ゆげばぜ",
+     "description": "火で温まった敵に冷気をぶつけ、蒸気を爆ぜさせる。"
+    },
+    {
+     "plan": 2,
+     "display_name": "霧ふき",
+     "reading": "きりふき",
+     "description": "熱と冷気がぶつかって、白い霧を吹き出す。"
+    },
+    {
+     "plan": 3,
+     "display_name": "白煙の輪",
+     "reading": "はくえんのわ",
+     "description": "白い煙が輪になって、一気に広がる。"
+    }
+   ]
   }
  ]
 }

@@ -6,8 +6,22 @@ extends Node2D
 signal enemy_hit(enemy: Enemy, amount: float, killed: bool)
 
 signal player_hit(damage: float, source: Enemy)
+signal aoe_telegraph(enemy: Enemy, radius: float, windup: float)  ## 範囲攻撃の予告が始まった
+signal aoe_burst(enemy: Enemy, radius: float)  ## 範囲攻撃が当たった（予告が終わった）
 
 const SEPARATION_PASSES: int = 4
+const AOE_FIRST_DELAY_RATIO: float = 0.6  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
+
+func _ready() -> void:
+	aoe_telegraph.connect(_show_aoe_telegraph)
+
+
+## 範囲攻撃の予告の絵（赤い円が広がる）
+func _show_aoe_telegraph(enemy: Enemy, radius: float, windup: float) -> void:
+	var fx := AoeTelegraph.new()
+	(enemy_parent if enemy_parent != null else self).add_child(fx)
+	fx.play(enemy.global_position, radius, windup)
+
 
 var enemy_parent: Node  ## 敵を置く先。Y軸ソートする親を指定する（空なら自分の子）
 var _feedback: HitFeedback
@@ -37,6 +51,8 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	enemy.manager = self
 	enemy.definition = def
 	enemy.hit_radius = (Enemy.TANK_HIT_RADIUS if def.behavior == "tank" else Enemy.DEFAULT_HIT_RADIUS) * def.scale
+	enemy.aoe_timer = def.aoe_interval * AOE_FIRST_DELAY_RATIO  # 範囲攻撃は、動き出してから少し待ってから
+	enemy.aoe_windup_left = 0.0
 	enemy.life = def.life
 	enemy.global_position = pos
 	enemy.ai_enabled = def.behavior == "melee_swarm" or def.behavior == "tank"
@@ -81,10 +97,33 @@ func _alert(enemy: Enemy) -> void:
 			member.state = Enemy.State.CHASING
 
 
+## 範囲攻撃（ボスなど）。一定の間隔で、足元に赤い円で予告し、予告が終わったときに円の中にいたらダメージ。
+## 予告のあいだ、本人は足を止める（避ける時間を作る）
+func _update_aoe(enemy: Enemy, target: Vector2, delta: float) -> void:
+	var def: EnemyDef = enemy.definition
+	if enemy.aoe_windup_left > 0.0:
+		enemy.aoe_windup_left -= delta
+		if enemy.aoe_windup_left <= 0.0:
+			enemy.aoe_windup_left = 0.0
+			enemy.aoe_timer = def.aoe_interval
+			if Iso.ground_distance(enemy.global_position, target) <= def.aoe_radius:
+				player_hit.emit(def.aoe_damage, enemy)
+			aoe_burst.emit(enemy, def.aoe_radius)
+		return
+	enemy.aoe_timer -= delta
+	if enemy.aoe_timer <= 0.0:
+		enemy.aoe_windup_left = def.aoe_windup
+		aoe_telegraph.emit(enemy, def.aoe_radius, def.aoe_windup)
+
+
 func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 	if enemy.state == Enemy.State.IDLE or not enemy.ai_enabled:
 		return
 	var def: EnemyDef = enemy.definition
+	if def.aoe_radius > 0.0:
+		_update_aoe(enemy, target, delta)
+		if enemy.aoe_windup_left > 0.0:
+			return  # 予告のあいだは、動かない・殴らない
 	var distance: float = Iso.ground_distance(enemy.global_position, target)
 	if enemy.state == Enemy.State.WINDUP:
 		# ため中は足を止め、振り終わりに射程を再確認する（離れれば回避できる）。

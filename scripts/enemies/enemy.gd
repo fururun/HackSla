@@ -32,6 +32,8 @@ var can_be_pushed: bool = true
 var state: State = State.IDLE
 var pack_id: int = -1
 var attack_timer: float = 0.0
+var aoe_timer: float = 0.0  ## 範囲攻撃までの待ち（秒）
+var aoe_windup_left: float = 0.0  ## 範囲攻撃の予告のあいだ、残りの秒（0 なら予告していない）
 
 var definition: EnemyDef
 var life: float = 0.0

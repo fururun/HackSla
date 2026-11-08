@@ -18,6 +18,10 @@ var xp: int = 0
 var pack_min: int = 1
 var pack_max: int = 1
 var color: Color = Color.WHITE
+var aoe_radius: float = 0.0  ## 範囲攻撃の半径（地面のドット）。0 なら範囲攻撃なし
+var aoe_damage: float = 0.0  ## 範囲攻撃のダメージ
+var aoe_interval: float = 0.0  ## 範囲攻撃の間隔（秒）
+var aoe_windup: float = 0.0  ## 範囲攻撃の予告の時間（秒）。この間に範囲の外へ出れば避けられる
 var scale: float = 1.0  ## 絵と当たりの大きさの倍率（ボスは大きい）
 var is_boss: bool = false  ## true なら、画面の上にボスの体力の棒を出す
 
@@ -45,6 +49,12 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 		e.pack_min = int(pack[0])
 		e.pack_max = int(pack[1])
 	e.color = Color.from_string(str(d.get("color", "#ffffff")), Color.WHITE)
+	e.aoe_radius = float(d.get("aoe_radius", 0))
+	e.aoe_damage = float(d.get("aoe_damage", 0))
+	e.aoe_interval = float(d.get("aoe_interval", 0))
+	e.aoe_windup = float(d.get("aoe_windup", 0))
+	if e.aoe_radius > 0.0 and (e.aoe_interval <= 0.0 or e.aoe_windup <= 0.0 or e.aoe_damage <= 0.0):
+		errors.append("enemy %s: aoe_radius があるときは、aoe_damage / aoe_interval / aoe_windup も 0 より大きくしてください" % e.id)
 	e.scale = float(d.get("scale", 1.0))
 	e.is_boss = bool(d.get("boss", false))
 	if e.scale <= 0.0:
