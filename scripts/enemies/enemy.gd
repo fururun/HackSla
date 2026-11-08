@@ -12,6 +12,7 @@ const GOLEM_PATH: String = "res://art/sprites/enemies/rockgolem_front.png"
 const GOLEM_SIZE: Vector2 = Vector2(30, 30)  ## 岩殻の絵の大きさ。足元の中心が原点
 const GOLEM_FLASH := Color(3.0, 3.0, 3.0, 1.0)
 const RAGE_TINT := Color(1.0, 0.42, 0.36, 1.0)  ## 激昂したボスは、さらに赤くなる
+const WINDUP_TINT := Color(1.6, 0.55, 0.45, 1.0)  ## 攻撃の直前の、赤い光
 const BOSS_TINT := Color(1.0, 0.72, 0.72, 1.0)  ## ボスは、岩殻の絵を赤みがかった色にして、ふつうの岩殻と見分ける
 const DEFAULT_HIT_RADIUS: float = 6.0
 const TANK_HIT_RADIUS: float = 10.0  ## 岩殻は大きいので、押し合いの半径も大きい
@@ -44,6 +45,13 @@ var aoe_timer: float = 0.0  ## 範囲攻撃までの待ち（秒）
 var aoe_windup_left: float = 0.0  ## 範囲攻撃の予告のあいだ、残りの秒（0 なら予告していない）
 var raged: bool = false  ## 激昂している（ボスの体力が半分以下）
 var rain_timer: float = 0.0  ## 岩落としまでの待ち（秒）
+var charge_phase: int = 0  ## 0:なし 1:予告中 2:突進中
+var charge_timer: float = 0.0  ## 次の突進までの秒
+var charge_left: float = 0.0  ## 予告または突進の、残りの秒
+var charge_dir: Vector2 = Vector2.ZERO  ## 突進の向き（画面上の、1秒あたりの単位の向き）
+var charge_hit: bool = false  ## この突進で、もう当てたか
+var shot_timer: float = 0.0  ## 次に撃つまでの秒
+var shot_windup_left: float = 0.0  ## 撃つ前のため。0 なら、ためていない
 var rain_spots: Array = []  ## 予告中の岩落とし。{"pos": 地面の位置, "left": 残りの秒}
 
 var definition: EnemyDef
@@ -129,6 +137,8 @@ func _draw() -> void:
 			var tint: Color = Color.WHITE
 			if is_flashing():
 				tint = GOLEM_FLASH
+			elif state == State.WINDUP or charge_phase == 1:
+				tint = WINDUP_TINT  # 殴る・突進の直前は、赤く光る（見てから避けられる）
 			elif definition.is_boss:
 				tint = RAGE_TINT if raged else BOSS_TINT
 			var s: float = definition.scale  # ボスは大きく描く（足元の中心が原点のまま）
@@ -196,8 +206,9 @@ func _make_figure(flash: bool) -> ArrayMesh:
 	else:
 		# スライム：横に広い平たい半球。明るい黄緑の縁、濃い緑の本体、上のつや、内向きにつり上がった目、下に紺の影。
 		# 段を付けた輪郭を、1行ずつの整数の矩形（y, 半幅）で重ねる。
-		var rim: Color = Color.WHITE if flash else SLIME_RIM
-		var shine: Color = Color.WHITE if flash else SLIME_SHINE
+		var custom: bool = definition.behavior == "ranged"  # 遠くから撃つスライムは、色を変える（縁とつやも、本体の色から作る）
+		var rim: Color = Color.WHITE if flash else (base.lightened(0.5) if custom else SLIME_RIM)
+		var shine: Color = Color.WHITE if flash else (base.lightened(0.7) if custom else SLIME_SHINE)
 		var body: Color = Color.WHITE if flash else base
 		var under: Color = Color.WHITE if flash else SLIME_UNDER
 		for row: Array in [[-8, 2], [-7, 4], [-6, 5], [-5, 6], [-4, 6], [-3, 6], [-2, 5]]:

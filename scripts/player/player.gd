@@ -4,6 +4,7 @@ extends CharacterBody2D
 ## 絵はドット絵ができるまでコードで描く仮のもの。向きは Facing の8方向で持つ。
 
 signal attacked(skill: SkillDef, hits: int)
+signal damaged(amount: float, source: Node)  ## 敵に殴られて、体力が減った（回避中は出ない。見た目用）
 
 const MOVE_SPEED: float = 80.0
 const AIM_DISTANCE: float = 100.0  ## 向いている方向の、狙う位置までの距離（向きだけが使われる）
@@ -93,10 +94,11 @@ func nearest_enemy() -> Node2D:
 
 
 ## 敵に殴られた（EnemyManager.player_hit につなぐ）
-func on_player_hit(damage: float, _source: Node) -> void:
-	if is_invulnerable():
+func on_player_hit(damage: float, source: Node) -> void:
+	if is_invulnerable() or vitals.is_dead():
 		return
 	vitals.take_damage(damage)
+	damaged.emit(damage, source)
 
 
 ## 緊急回避：動いている向き（止まっているときは向いている向き）へ、すばやく動く。そのあいだは攻撃を受けない。出せたら true

@@ -59,6 +59,11 @@ func _ready() -> void:
 		world.add_child(dummy)
 
 	var manager := _add_enemies()
+	manager.blocked = func(pos: Vector2) -> bool: return not map.is_floor_at(pos)  # 弾・突進・後退が、壁を抜けない
+	var enemy_fx := EnemyFxDirector.new()  # 敵の攻撃のエフェクト
+	enemy_fx.name = "EnemyFxDirector"
+	add_child(enemy_fx)
+	enemy_fx.setup(manager, player, world)
 	stash = Stash.new()
 	_add_skill_screen(stash)
 	_add_progression(manager, stash)
@@ -170,6 +175,9 @@ func _add_enemies() -> EnemyManager:
 		manager.spawn_pack(swarm, pos, rng)
 	for pos: Vector2 in map.markers.get("b", []):
 		manager.spawn(brute, pos)
+	var spitter: EnemyDef = DataDB.enemy("spitter")
+	for pos: Vector2 in map.markers.get("r", []):  # 遠くから撃つスライム（2〜3匹）
+		manager.spawn_pack(spitter, pos, rng)
 	var boss_def: EnemyDef = DataDB.enemy("rock_lord")
 	for pos: Vector2 in map.markers.get("X", []):  # ボス（最後の部屋）
 		manager.spawn(boss_def, pos)

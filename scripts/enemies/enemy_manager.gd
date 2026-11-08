@@ -9,13 +9,41 @@ signal player_hit(damage: float, source: Enemy)
 signal aoe_telegraph(enemy: Enemy, radius: float, windup: float)  ## 範囲攻撃の予告が始まった
 signal aoe_burst(enemy: Enemy, radius: float)  ## 範囲攻撃が当たった（予告が終わった）
 signal boss_raged(enemy: Enemy)  ## ボスが激昂した（体力が半分以下になった）
+signal rain_impact(pos: Vector2, radius: float)  ## 岩落としが落ちた（見た目用）
+signal charge_telegraph(enemy: Enemy, dir: Vector2, length: float, width: float, windup: float)  ## 突進の予告が始まった
+signal charge_started(enemy: Enemy)  ## 突進が始まった
+signal charge_ended(enemy: Enemy)  ## 突進が終わった（見た目用）
+signal shot_charging(enemy: Enemy, windup: float)  ## 撃つ前のためが始まった
+signal shot_fired(enemy: Enemy)  ## 弾を撃った
+signal bullet_landed(pos: Vector2, color: Color)  ## 弾が当たった・消えた（見た目用）
 
 const SEPARATION_PASSES: int = 4
 const RAIN_STAGGER_SECONDS: float = 0.15  ## 岩落としの円を、1つずつ遅らせて落とす間隔
 const AOE_FIRST_DELAY_RATIO: float = 0.35  ## 最初の範囲攻撃までの待ち（aoe_interval に対する割合）
 
+const BULLET_HIT_RADIUS: float = 6.0  ## 弾がプレイヤーに当たる距離（地面）
+const CHARGE_MIN_DISTANCE: float = 24.0  ## これより近いと、突進せずに殴る
+const RANGED_RETREAT_RATIO: float = 0.55  ## 遠距離の敵は、射程のこの割合より近づかれると、下がる
+const RANGED_RETREAT_SPEED: float = 0.8
+
+## 位置が壁などで通れないとき true を返す関数（弾・突進・後退が壁を抜けないように。main が設定する）
+var blocked: Callable = Callable()
+var _bullets: Array[Dictionary] = []  ## {node, dir(地面の単位の向き), left(残りの距離), damage, speed, source, color}
+
+
+func _is_blocked(pos: Vector2) -> bool:
+	return blocked.is_valid() and bool(blocked.call(pos))
+
+
 func _ready() -> void:
 	aoe_telegraph.connect(_show_aoe_telegraph)
+	charge_telegraph.connect(_show_charge_telegraph)
+
+
+func _show_charge_telegraph(enemy: Enemy, dir: Vector2, length: float, width: float, windup: float) -> void:
+	var fx := LineTelegraph.new()
+	(enemy_parent if enemy_parent != null else self).add_child(fx)
+	fx.play(enemy.global_position, dir, length, width, windup)
 
 
 ## 範囲攻撃の予告の絵（赤い円が広がる）
@@ -58,10 +86,15 @@ func spawn(def: EnemyDef, pos: Vector2) -> Enemy:
 	enemy.raged = false
 	enemy.rain_spots.clear()
 	enemy.rain_timer = 0.0
+	enemy.charge_phase = 0
+	enemy.charge_timer = def.charge_interval * AOE_FIRST_DELAY_RATIO
+	enemy.charge_left = 0.0
+	enemy.shot_timer = def.shot_interval * AOE_FIRST_DELAY_RATIO
+	enemy.shot_windup_left = 0.0
 	enemy.life = def.life
 	enemy.global_position = pos
 	enemy.reset_physics_interpolation()  # 使い回しの瞬間移動で、前の場所から滑ってこないように
-	enemy.ai_enabled = def.behavior == "melee_swarm" or def.behavior == "tank"
+	enemy.ai_enabled = def.behavior == "melee_swarm" or def.behavior == "tank" or def.behavior == "ranged"
 	enemy.can_be_pushed = enemy.ai_enabled
 	enemy.state = Enemy.State.IDLE
 	enemy.pack_id = -1
@@ -146,6 +179,7 @@ func _update_rain(enemy: Enemy, target: Vector2, delta: float) -> void:
 		spot["left"] = float(spot["left"]) - delta
 		if float(spot["left"]) <= 0.0:
 			enemy.rain_spots.erase(spot)
+			rain_impact.emit(spot["pos"], def.rain_radius)
 			if Iso.ground_distance(spot["pos"], target) <= def.rain_radius:
 				player_hit.emit(def.rain_damage, enemy)
 	enemy.rain_timer -= delta
@@ -177,16 +211,166 @@ func _show_rain_telegraph(pos: Vector2, radius: float, windup: float) -> void:
 	fx.play(pos, radius, windup)
 
 
+## 画面上の位置の差を、地面の単位の向き（y を2倍）にする
+func _ground_dir(from: Vector2, to: Vector2) -> Vector2:
+	return _ground(to - from).normalized()
+
+
+## 地面の向きを、画面上の動き（y を半分）にする
+func _screen_dir(ground: Vector2) -> Vector2:
+	return Vector2(ground.x, ground.y * 0.5)
+
+
+## 突進：間隔ごとに、細長い赤い帯で予告し、そのあとまっすぐ駆け抜ける。通り道にいたらダメージ（1回の突進で1回）。
+## 予告と突進のあいだは、ほかの行動をしない。true を返したら、この敵は突進に専念している
+func _update_charge(enemy: Enemy, target: Vector2, delta: float) -> bool:
+	var def: EnemyDef = enemy.definition
+	if def.charge_damage <= 0.0:
+		return false
+	var rage_mult: float = def.rage_interval_mult if enemy.raged else 1.0
+	match enemy.charge_phase:
+		0:
+			enemy.charge_timer -= delta
+			var distance: float = Iso.ground_distance(enemy.global_position, target)
+			if enemy.charge_timer <= 0.0 and distance >= CHARGE_MIN_DISTANCE and distance <= def.charge_length * 1.5:
+				enemy.charge_phase = 1
+				enemy.charge_left = def.charge_windup
+				var ground: Vector2 = _ground_dir(enemy.global_position, target)
+				enemy.charge_dir = ground
+				charge_telegraph.emit(enemy, _screen_dir(ground), def.charge_length, def.charge_width, def.charge_windup)
+				enemy.queue_redraw()
+				return true
+			return false
+		1:
+			enemy.charge_left -= delta
+			if enemy.charge_left <= 0.0:
+				enemy.charge_phase = 2
+				enemy.charge_left = def.charge_length / def.charge_speed
+				enemy.charge_hit = false
+				charge_started.emit(enemy)
+				enemy.queue_redraw()
+			return true
+		_:
+			var step: float = def.charge_speed * delta
+			var next: Vector2 = enemy.global_position + _screen_dir(enemy.charge_dir) * step
+			var stopped: bool = _is_blocked(next)
+			if not stopped:
+				enemy.global_position = next
+			enemy.charge_left -= delta
+			if not enemy.charge_hit:
+				var reach: float = def.charge_width * 0.5 + enemy.hit_radius * 0.5
+				if Iso.ground_distance(enemy.global_position, target) <= reach:
+					enemy.charge_hit = true
+					player_hit.emit(def.charge_damage, enemy)
+			if stopped or enemy.charge_left <= 0.0:
+				enemy.charge_phase = 0
+				enemy.charge_timer = def.charge_interval * rage_mult
+				charge_ended.emit(enemy)
+				enemy.queue_redraw()
+			return true
+
+
+## 飛び道具：プレイヤーが shot_range 以内にいたら、ためてから、shot_count 発を扇形に撃つ。ためているあいだは足を止める。
+## true を返したら、ためている最中
+func _update_shot(enemy: Enemy, target: Vector2, delta: float) -> bool:
+	var def: EnemyDef = enemy.definition
+	if def.shot_damage <= 0.0:
+		return false
+	if enemy.shot_windup_left > 0.0:
+		enemy.shot_windup_left -= delta
+		if enemy.shot_windup_left <= 0.0:
+			enemy.shot_windup_left = 0.0
+			_fire(enemy, target)
+			enemy.shot_timer = def.shot_interval * (def.rage_interval_mult if enemy.raged else 1.0)
+		return enemy.shot_windup_left > 0.0
+	enemy.shot_timer -= delta
+	if enemy.shot_timer <= 0.0 and Iso.ground_distance(enemy.global_position, target) <= def.shot_range:
+		if def.shot_windup <= 0.0:
+			_fire(enemy, target)
+			enemy.shot_timer = def.shot_interval
+			return false
+		enemy.shot_windup_left = def.shot_windup
+		shot_charging.emit(enemy, def.shot_windup)
+		return true
+	return false
+
+
+func _fire(enemy: Enemy, target: Vector2) -> void:
+	var def: EnemyDef = enemy.definition
+	var base_dir: Vector2 = _ground_dir(enemy.global_position, target)
+	if base_dir == Vector2.ZERO:
+		base_dir = Vector2.RIGHT
+	var parent: Node = enemy_parent if enemy_parent != null else self
+	for i: int in def.shot_count:
+		var offset_deg: float = 0.0 if def.shot_count == 1 else lerpf(-def.shot_spread * 0.5, def.shot_spread * 0.5, float(i) / float(def.shot_count - 1))
+		var dir: Vector2 = base_dir.rotated(deg_to_rad(offset_deg))
+		var node := EnemyBullet.new()
+		var color: Color = def.color.lightened(0.45)
+		node.color = color
+		node.direction = _screen_dir(dir).normalized()
+		parent.add_child(node)
+		node.global_position = enemy.global_position
+		_bullets.append({"node": node, "dir": dir, "left": def.shot_range * 1.3, "damage": def.shot_damage, "speed": def.shot_speed, "source": enemy, "color": color})
+	shot_fired.emit(enemy)
+
+
+## 弾を進める。プレイヤーに当たる・壁にぶつかる・飛びきったら消える
+func _update_bullets(target: Vector2, delta: float) -> void:
+	for bullet: Dictionary in _bullets.duplicate():
+		var node: EnemyBullet = bullet["node"]
+		if not is_instance_valid(node):
+			_bullets.erase(bullet)
+			continue
+		var step: float = float(bullet["speed"]) * delta
+		node.global_position += _screen_dir(bullet["dir"]) * step
+		bullet["left"] = float(bullet["left"]) - step
+		var hit: bool = Iso.ground_distance(node.global_position, target) <= BULLET_HIT_RADIUS
+		if hit or bullet["left"] <= 0.0 or _is_blocked(node.global_position):
+			if hit and is_instance_valid(bullet["source"]):
+				player_hit.emit(bullet["damage"], bullet["source"])
+			bullet_landed.emit(node.global_position, bullet["color"])
+			_bullets.erase(bullet)
+			node.queue_free()
+
+
+func bullet_count() -> int:
+	return _bullets.size()
+
+
+## 遠距離の敵：射程の中で撃つ。近づかれたら下がり、離れたら近づく。殴らない
+func _update_ranged(enemy: Enemy, target: Vector2, delta: float) -> void:
+	var def: EnemyDef = enemy.definition
+	if _update_shot(enemy, target, delta):
+		return  # ためている間は動かない
+	var distance: float = Iso.ground_distance(enemy.global_position, target)
+	enemy.state = Enemy.State.CHASING
+	if distance > def.attack_range:
+		var step: float = minf(def.speed * delta, distance - def.attack_range)
+		enemy.global_position += (target - enemy.global_position) * (step / distance)
+	elif distance < def.attack_range * RANGED_RETREAT_RATIO and distance > 0.001:
+		var away: Vector2 = _screen_dir(_ground_dir(target, enemy.global_position))
+		var next: Vector2 = enemy.global_position + away * def.speed * RANGED_RETREAT_SPEED * delta
+		if not _is_blocked(next):
+			enemy.global_position = next
+
+
 func _update_enemy(enemy: Enemy, target: Vector2, delta: float) -> void:
 	if enemy.state == Enemy.State.IDLE or not enemy.ai_enabled:
 		return
 	var def: EnemyDef = enemy.definition
 	_update_rage(enemy)
 	_update_rain(enemy, target, delta)
+	if def.behavior == "ranged":
+		_update_ranged(enemy, target, delta)
+		return
 	if def.aoe_radius > 0.0:
 		_update_aoe(enemy, target, delta)
 		if enemy.aoe_windup_left > 0.0:
 			return  # 予告のあいだは、動かない・殴らない
+	if _update_charge(enemy, target, delta):
+		return  # 突進の予告・突進のあいだは、ほかのことをしない
+	if _update_shot(enemy, target, delta):
+		return  # 撃つ前のためのあいだは、動かない
 	var distance: float = Iso.ground_distance(enemy.global_position, target)
 	if enemy.state == Enemy.State.WINDUP:
 		# ため中は足を止め、振り終わりに射程を再確認する（離れれば回避できる）。
@@ -253,6 +437,7 @@ func _physics_process(delta: float) -> void:
 		for enemy: Enemy in _active.duplicate():
 			if enemy.active:
 				_update_enemy(enemy, player.global_position, delta)
+		_update_bullets(player.global_position, delta)
 	last_pair_checks = 0
 	_cell_size = 1.0
 	for enemy: Enemy in _active:

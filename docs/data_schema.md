@@ -88,6 +88,19 @@
 | rain_radius | ドット | 岩落とし（激昂中に、プレイヤーの足元を狙う小さな円）の半径。省略時 0（岩落としなし）。あるときは rain_damage / rain_interval / rain_windup / rain_count も必要 |
 | rain_damage / rain_interval / rain_windup | 数・秒・秒 | 岩落とし1つのダメージ、間隔、予告の時間 |
 | rain_count | 数 | 1回に落とす数（1つ目はプレイヤーの足元、残りはそのまわり） |
+| charge_damage | ダメージ | 突進（予告のあと、まっすぐ駆け抜ける）のダメージ。省略時 0（突進なし）。あるときは charge_interval / charge_windup / charge_speed / charge_width / charge_length も必要 |
+| charge_interval | 秒 | 突進の間隔（激昂中は rage_interval_mult 倍） |
+| charge_windup | 秒 | 突進の予告。細長い赤い帯が根もとから満ちる。そのあいだ本人は足を止め、岩殻は赤く光る |
+| charge_speed | ドット/秒 | 突進の速さ（地面） |
+| charge_width | ドット | 当たる幅（地面）。帯の横幅 |
+| charge_length | ドット | 突進で進む距離。壁があれば手前で止まる |
+| shot_damage | ダメージ | 飛び道具のダメージ。省略時 0（撃たない）。あるときは shot_interval / shot_speed / shot_range も必要 |
+| shot_interval | 秒 | 撃つ間隔 |
+| shot_windup | 秒 | 撃つ前のため（足を止める。光の粒が集まる） |
+| shot_speed | ドット/秒 | 弾の速さ（地面） |
+| shot_count | 数 | 1回に撃つ数。2以上は扇形（省略時 1） |
+| shot_spread | 度 | 扇形の、いちばん外どうしの角度 |
+| shot_range | ドット | プレイヤーがこの距離（地面）以内にいたら撃つ。弾もこれだけ飛ぶ（behavior が ranged の敵は、attack_range を保って撃つ） |
 | attack_range | ドット | 攻撃が届く距離 |
 | attack_interval | 秒 | 攻撃の間隔 |
 | xp | 数 | 倒したときの経験値 |

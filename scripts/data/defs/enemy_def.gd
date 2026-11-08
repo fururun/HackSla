@@ -30,6 +30,19 @@ var rain_damage: float = 0.0
 var rain_interval: float = 0.0
 var rain_windup: float = 0.0
 var rain_count: int = 1  ## 1回に落とす数
+var charge_damage: float = 0.0  ## 突進（予告のあと、まっすぐ駆け抜ける）のダメージ。0 なら突進なし
+var charge_interval: float = 0.0  ## 突進の間隔（秒）
+var charge_windup: float = 0.0  ## 突進の予告の時間（秒）。細長い赤い帯が出る
+var charge_speed: float = 0.0  ## 突進の速さ（地面のドット/秒）
+var charge_width: float = 0.0  ## 突進が当たる幅（地面のドット）
+var charge_length: float = 0.0  ## 突進で進む距離
+var shot_damage: float = 0.0  ## 飛び道具のダメージ。0 なら撃たない
+var shot_interval: float = 0.0  ## 飛び道具の間隔（秒）
+var shot_windup: float = 0.0  ## 撃つ前のため（秒）。この間は足を止める
+var shot_speed: float = 0.0  ## 弾の速さ（地面のドット/秒）
+var shot_count: int = 1  ## 1回に撃つ数（2つ以上は扇形に広がる）
+var shot_spread: float = 0.0  ## 扇形の、いちばん外どうしの角度（度）
+var shot_range: float = 0.0  ## この距離（地面）以内にプレイヤーがいたら撃つ。弾が飛ぶ距離も同じ
 var scale: float = 1.0  ## 絵と当たりの大きさの倍率（ボスは大きい）
 var is_boss: bool = false  ## true なら、画面の上にボスの体力の棒を出す
 
@@ -75,6 +88,23 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> EnemyDef:
 		errors.append("enemy %s: rage_below は 0 以上 1 未満にしてください" % e.id)
 	if e.rain_radius > 0.0 and (e.rain_interval <= 0.0 or e.rain_windup <= 0.0 or e.rain_damage <= 0.0 or e.rain_count < 1):
 		errors.append("enemy %s: rain_radius があるときは、rain_damage / rain_interval / rain_windup / rain_count も必要です" % e.id)
+	e.charge_damage = float(d.get("charge_damage", 0))
+	e.charge_interval = float(d.get("charge_interval", 0))
+	e.charge_windup = float(d.get("charge_windup", 0))
+	e.charge_speed = float(d.get("charge_speed", 0))
+	e.charge_width = float(d.get("charge_width", 0))
+	e.charge_length = float(d.get("charge_length", 0))
+	if e.charge_damage > 0.0 and (e.charge_interval <= 0.0 or e.charge_windup <= 0.0 or e.charge_speed <= 0.0 or e.charge_width <= 0.0 or e.charge_length <= 0.0):
+		errors.append("enemy %s: charge_damage があるときは、charge_interval / windup / speed / width / length も 0 より大きくしてください" % e.id)
+	e.shot_damage = float(d.get("shot_damage", 0))
+	e.shot_interval = float(d.get("shot_interval", 0))
+	e.shot_windup = float(d.get("shot_windup", 0))
+	e.shot_speed = float(d.get("shot_speed", 0))
+	e.shot_count = int(d.get("shot_count", 1))
+	e.shot_spread = float(d.get("shot_spread", 0))
+	e.shot_range = float(d.get("shot_range", 0))
+	if e.shot_damage > 0.0 and (e.shot_interval <= 0.0 or e.shot_speed <= 0.0 or e.shot_range <= 0.0 or e.shot_count < 1):
+		errors.append("enemy %s: shot_damage があるときは、shot_interval / speed / range / count も必要です" % e.id)
 	e.scale = float(d.get("scale", 1.0))
 	e.is_boss = bool(d.get("boss", false))
 	if e.scale <= 0.0:

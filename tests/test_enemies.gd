@@ -169,6 +169,10 @@ func test_tank_windup_and_dodge() -> void:
 	var manager: EnemyManager = nodes[0]
 	var player: Node2D = nodes[1]
 	var def: EnemyDef = (t as SceneTree).root.get_node("DataDB").enemy("brute")
+	var saved_aoe: float = def.aoe_radius  # 岩殻に増えた叩きつけ・突進は、この試験では切る（殴りのため・避けを見る）
+	var saved_charge: float = def.charge_damage
+	def.aoe_radius = 0.0
+	def.charge_damage = 0.0
 	var enemy: Enemy = manager.spawn(def, Vector2(10, 0))
 	var hits: Array[float] = []
 	manager.player_hit.connect(func(damage: float, _source: Enemy) -> void: hits.append(damage))
@@ -195,6 +199,8 @@ func test_tank_windup_and_dodge() -> void:
 	enemy.attack_timer = 1.0
 	manager._physics_process(0.1)
 	t.check_eq(enemy.position, before, "ため中は押し合いでも動かない")
+	def.aoe_radius = saved_aoe
+	def.charge_damage = saved_charge
 	manager.queue_free()
 	player.queue_free()
 	await (t as SceneTree).process_frame
@@ -206,7 +212,7 @@ func test_dummy_and_unsupported_behaviors_remain_idle() -> void:
 	var player: Node2D = nodes[1]
 	var hits: Array[float] = []
 	manager.player_hit.connect(func(damage: float, _source: Enemy) -> void: hits.append(damage))
-	for behavior: String in ["dummy", "ranged", "fast"]:
+	for behavior: String in ["dummy", "fast"]:
 		var def := EnemyDef.new()
 		def.behavior = behavior
 		def.speed = 100.0

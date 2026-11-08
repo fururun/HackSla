@@ -9,10 +9,38 @@
     "attack_range": 12,
     "attack_interval": 1,
     "xp": 4,
-    "pack": [10, 16],
+    "pack": [
+      10,
+      16
+    ],
     "color": "#3a9a4c",
     "aggro_range": 120,
     "windup": 0
+  },
+  {
+    "id": "spitter",
+    "name": "毒吐きスライム",
+    "behavior": "ranged",
+    "life": 36,
+    "speed": 46,
+    "damage": 0,
+    "attack_range": 100,
+    "attack_interval": 1,
+    "xp": 8,
+    "pack": [
+      2,
+      3
+    ],
+    "color": "#8a5ad6",
+    "aggro_range": 140,
+    "windup": 0,
+    "shot_damage": 9,
+    "shot_interval": 2.4,
+    "shot_windup": 0.5,
+    "shot_speed": 85,
+    "shot_count": 1,
+    "shot_spread": 0,
+    "shot_range": 130
   },
   {
     "id": "brute",
@@ -24,10 +52,23 @@
     "attack_range": 15,
     "attack_interval": 1.5,
     "xp": 26,
-    "pack": [1, 2],
+    "pack": [
+      1,
+      2
+    ],
     "color": "#7d8a99",
     "aggro_range": 90,
-    "windup": 0.3
+    "windup": 0.3,
+    "aoe_radius": 36,
+    "aoe_damage": 18,
+    "aoe_interval": 6.0,
+    "aoe_windup": 0.8,
+    "charge_damage": 26,
+    "charge_interval": 7.0,
+    "charge_windup": 0.7,
+    "charge_speed": 150,
+    "charge_width": 18,
+    "charge_length": 90
   },
   {
     "id": "rock_lord",
@@ -39,7 +80,10 @@
     "attack_range": 34,
     "attack_interval": 1.8,
     "xp": 220,
-    "pack": [1, 1],
+    "pack": [
+      1,
+      1
+    ],
     "color": "#8a7a9a",
     "aggro_range": 200,
     "windup": 0.6,
@@ -56,7 +100,20 @@
     "rain_damage": 28,
     "rain_interval": 3.0,
     "rain_windup": 0.8,
-    "rain_count": 6
+    "rain_count": 6,
+    "charge_damage": 38,
+    "charge_interval": 8.0,
+    "charge_windup": 0.75,
+    "charge_speed": 190,
+    "charge_width": 30,
+    "charge_length": 140,
+    "shot_damage": 16,
+    "shot_interval": 6.0,
+    "shot_windup": 0.7,
+    "shot_speed": 95,
+    "shot_count": 5,
+    "shot_spread": 50,
+    "shot_range": 170
   },
   {
     "id": "training_dummy",
@@ -68,7 +125,10 @@
     "attack_range": 0,
     "attack_interval": 0,
     "xp": 0,
-    "pack": [1, 1],
+    "pack": [
+      1,
+      1
+    ],
     "color": "#a0784f",
     "aggro_range": 0,
     "windup": 0
