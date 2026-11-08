@@ -1046,7 +1046,12 @@ func test_chain_skill_has_flashy_effects() -> void:
 	# チェインで出た技では、輪・閃光・火花・文字が出る
 	player.caster.cast_done.emit(1, DataDB.skill("shatter"), 1, true)
 	var added: int = world.get_child_count() - before
-	t.check(added >= 6, "チェイン技で、輪2・閃光・火花2・文字が出る（%d個）" % added)
+	t.check(added >= 10, "チェイン技で、輪・閃光・火花・文字が出る（%d個）" % added)
+	var flashes: int = 0
+	for child: Node in world.get_children():
+		if child is ScreenFlash:
+			flashes += 1
+	t.check_eq(flashes, 1, "画面全体の閃光が出る")
 	var texts: int = 0
 	for child: Node in world.get_children():
 		if child is FloatText and (child as FloatText).text.contains("チェイン"):

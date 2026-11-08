@@ -74,6 +74,12 @@ func shake(strength: float) -> void:
 		_feedback._start_shake(strength)
 
 
+## ほんの一瞬、時間をゆっくりにする（チェイン技の手ごたえ）。ふだんは、撃破の演出と同じ仕組み
+func hitstop() -> void:
+	if _feedback != null:
+		_feedback.request_hitstop()
+
+
 func death_anim_count() -> int:
 	return _death_layer.active_count() if _death_layer != null and is_instance_valid(_death_layer) else 0
 var _feedback: HitFeedback
