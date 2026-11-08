@@ -21,11 +21,11 @@ var fx_parent: Node  ## 弾・円・斬撃を置く先（プレイヤーの親�
 var last_skill: SkillDef = null  ## 直近に実際に出した技（チェイン後の技を含む）
 var last_chained: bool = false
 var projectiles_created: int = 0  ## 弾を new した回数（プール再利用の確認用）
-var areas_created: int = 0
+var fx_created: int = 0  ## エフェクトの部品を new した回数（プール再利用の確認用）
 
 var _cooldowns: PackedFloat32Array = PackedFloat32Array()
 var _free_projectiles: Array[SkillProjectile] = []
-var _area_fx: Array[AreaFx] = []
+var _fx_pool: Array[SheetFx] = []
 
 
 func _init() -> void:
@@ -103,8 +103,10 @@ func _cast_melee(skill: SkillDef, ctx: CastContext, origin: Vector2, aim: Vector
 		if e != null and Iso.in_ground_arc(origin, aim, e.global_position, reach, CombatConsts.MELEE_HALF_ANGLE_DEG):
 			_hit(e, _damage(skill, dmg_mult), skill, ctx)
 			hits += 1
-	if fx_parent != null:
-		SlashFx.spawn(fx_parent, origin, aim, reach)
+	# 画像は右向き。左向きのときは左右を反転し、傾きは反転後の角度にする（上下が逆さにならないように）
+	var mirror := aim.x < 0.0
+	var rot := Vector2(-aim.x, aim.y).angle() if mirror else aim.angle()
+	_play_fx(SheetFx.key_for_skill(skill), origin, reach, rot, mirror)
 	return hits
 
 
@@ -116,7 +118,7 @@ func _cast_area(skill: SkillDef, ctx: CastContext, origin: Vector2, dmg_mult: fl
 		if e != null and Iso.in_ground_circle(origin, e.global_position, radius):
 			_hit(e, _damage(skill, dmg_mult), skill, ctx)
 			hits += 1
-	_play_area_fx(origin, radius, CombatConsts.ELEMENT_COLORS.get(skill.element, Color.WHITE), CombatConsts.AREA_FX_LIFE)
+	_play_fx(SheetFx.key_for_skill(skill), origin, radius)
 	return hits
 
 
@@ -147,6 +149,7 @@ func _damage(skill: SkillDef, mult: float) -> float:
 func _hit(enemy: Node2D, amount: float, skill: SkillDef, ctx: CastContext) -> void:
 	var alive_before := _alive(enemy)
 	enemy.call("take_hit", amount, skill)
+	_play_fx(SheetFx.hit_key(skill.element), enemy.global_position + CombatConsts.HIT_FX_OFFSET)  # 当たった場所の火花
 	if alive_before and not _alive(enemy) and ctx.explode_chance > 0.0 and rng.randf() < ctx.explode_chance:
 		ctx.queue.append({"pos": enemy.global_position, "damage": _max_life(enemy) * ctx.explode_ratio})
 
@@ -159,7 +162,7 @@ func _flush_explosions(ctx: CastContext) -> void:
 		var ex: Dictionary = ctx.queue[i]
 		i += 1
 		var pos: Vector2 = ex["pos"]
-		_play_area_fx(pos, CombatConsts.EXPLOSION_RADIUS, Color("#ffb03d"), CombatConsts.EXPLOSION_FX_LIFE)
+		_play_fx(SheetFx.explosion_key(), pos, CombatConsts.EXPLOSION_RADIUS)
 		for n: Node in enemies():
 			var e := n as Node2D
 			if e != null and Iso.in_ground_circle(pos, e.global_position, CombatConsts.EXPLOSION_RADIUS):
@@ -209,17 +212,23 @@ func recycle_projectile(p: SkillProjectile) -> void:
 	_free_projectiles.append(p)
 
 
-func _play_area_fx(pos: Vector2, radius: float, color: Color, life: float) -> void:
-	if fx_parent == null:
+## スプライトシートのエフェクトを1つ再生する。使い回し（プール）で、同時数の上限を超えたら一番古いものを再利用する。
+## size_px が正なら、絵の「届く距離」がそのドット数になるよう拡大縮小する（範囲・斬撃の実際の範囲に合わせる）
+func _play_fx(key: String, pos: Vector2, size_px: float = 0.0, rot: float = 0.0, mirror: bool = false) -> void:
+	if fx_parent == null or key.is_empty():
 		return
-	var fx: AreaFx = null
-	for f: AreaFx in _area_fx:
+	var fx: SheetFx = null
+	for f: SheetFx in _fx_pool:
 		if not f.busy:
 			fx = f
 			break
 	if fx == null:
-		fx = AreaFx.new()
-		areas_created += 1
-		fx_parent.add_child(fx)
-		_area_fx.append(fx)
-	fx.play(pos, radius, color, life)
+		if _fx_pool.size() < CombatConsts.MAX_SHEET_FX:
+			fx = SheetFx.new()
+			fx_created += 1
+			fx_parent.add_child(fx)
+			_fx_pool.append(fx)
+		else:
+			fx = _fx_pool.pop_front()  # 一番古いものを再利用（末尾へ回す）
+			_fx_pool.append(fx)
+	fx.play(key, pos, size_px, rot, mirror)

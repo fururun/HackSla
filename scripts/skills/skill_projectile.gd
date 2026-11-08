@@ -16,6 +16,7 @@ var _radius: float = 5.0
 var _hops_left: int = 0
 var _hit_ids: Array[int] = []
 var _color: Color = Color.WHITE
+var _art: SheetFx  ## 弾の絵（ループ再生）
 
 
 func _init() -> void:
@@ -41,6 +42,7 @@ func launch(caster: SkillCaster, def: SkillDef, context: SkillCaster.CastContext
 	active = true
 	show()
 	set_physics_process(true)
+	_update_art()
 	queue_redraw()
 
 
@@ -70,6 +72,7 @@ func _move(step_len: float) -> void:
 			if next != null:
 				var d := next.global_position - global_position
 				_dir = Vector2(d.x, d.y * 2.0).normalized()
+				_update_art()  # 向きが変わったので絵も回す
 				_hops_left -= 1
 				_range_left = CombatConsts.HOP_RANGE
 				return
@@ -107,14 +110,27 @@ func _nearest_for_hop() -> Node2D:
 
 
 func _finish() -> void:
+	if _art != null:
+		_art.stop()
 	active = false
 	hide()
 	set_physics_process(false)
 	_caster.recycle_projectile(self)
 
 
+## 弾の絵（スプライトシートのループ）を、進む向きに合わせて回す。足元に影も描く
+func _update_art() -> void:
+	if _art == null:
+		_art = SheetFx.new()
+		_art.z_index = 0
+		add_child(_art)
+	var screen_dir := Vector2(_dir.x, _dir.y * 0.5)
+	var mirror := screen_dir.x < 0.0
+	var rot := Vector2(-screen_dir.x, screen_dir.y).angle() if mirror else screen_dir.angle()
+	_art.play(SheetFx.key_for_skill(skill), Vector2.ZERO, 0.0, rot, mirror)
+	_art.position = CombatConsts.PROJECTILE_FX_OFFSET
+
+
 func _draw() -> void:
-	draw_circle(Vector2(0, -8), 3.0, _color)
-	draw_circle(Vector2(0, -8), 1.5, Color.WHITE)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, 3.0, Color(0, 0, 0, 0.3))
