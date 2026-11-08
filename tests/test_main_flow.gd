@@ -44,6 +44,32 @@ func test_kill_gives_xp_and_drops() -> void:
 	main.queue_free()
 
 
+func test_floor_check_and_drops_avoid_walls() -> void:
+	var main: Node = await _start_main()
+	var map: IsoMap = main.map
+	t.check(map.is_floor_at(map.marker("P")), "プレイヤーの開始位置は床")
+	var wall_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(0, 0))  # マップの左上は壁
+	t.check(not map.is_floor_at(wall_pos), "壁のマスは床ではない")
+	t.check(not map.is_floor_at(wall_pos, true), "壁のマスは壁ぎわ判定でも床ではない")
+	# 壁ぎわの床（左端の列のすぐ内側）は、margin 付きでは置けない
+	var edge_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(1, 1))
+	t.check(map.is_floor_at(edge_pos) and not map.is_floor_at(edge_pos, true), "壁ぎわは余白付きの判定で除外される")
+	# 壁ぎわの敵を倒しても、ドロップは壁の中・壁ぎわに置かれない
+	var director: LootDirector = null
+	for child: Node in main.get_children():
+		if child is LootDirector:
+			director = child
+	t.check(director != null and director.is_valid_position.is_valid(), "ドロップの管理に置き場所の判定がつながっている")
+	if director != null:
+		var bad := 0
+		for i in 200:
+			var pos: Vector2 = director._scatter_position(edge_pos)
+			if pos != edge_pos and not map.is_floor_at(pos, true):
+				bad += 1
+		t.check_eq(bad, 0, "散らした位置が壁の中・壁ぎわにならない")
+	main.queue_free()
+
+
 func test_equipment_stats_reach_player() -> void:
 	var main: Node = await _start_main()
 	var player := (t as SceneTree).get_first_node_in_group("player") as Player

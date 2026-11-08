@@ -74,6 +74,22 @@ static func _is_floor(rows: PackedStringArray, x: int, y: int) -> bool:
 	return rows[y][x] != "#"
 
 
+## その位置が床の上か（壁の中・マップの外は false）。
+## margin が true なら、上下左右のマスもすべて床のときだけ true（壁ぎわを避ける。壁の絵に隠れないように）
+func is_floor_at(global_pos: Vector2, margin: bool = false) -> bool:
+	if floor_layer == null:
+		return false
+	var cell: Vector2i = floor_layer.local_to_map(floor_layer.to_local(global_pos))
+	if floor_layer.get_cell_source_id(cell) == -1:
+		return false
+	if not margin:
+		return true
+	for offset: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if floor_layer.get_cell_source_id(cell + offset) == -1:
+			return false
+	return true
+
+
 func marker(c: String, index: int = 0) -> Vector2:
 	var list: Array = markers.get(c, [])
 	return list[index] if index < list.size() else Vector2.ZERO

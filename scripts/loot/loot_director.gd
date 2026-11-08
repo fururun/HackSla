@@ -5,7 +5,9 @@ const MAX_GROUND_DROPS: int = 256
 const PICKUP_RADIUS: float = 14.0
 const SCATTER_RADIUS: float = 18.0
 const CURRENCY_FLIGHT_TIME: float = 0.35
+const SCATTER_ATTEMPTS: int = 8
 
+var is_valid_position: Callable  ## 散らす位置が置いてよい場所か（Vector2 -> bool）。空なら制限しない
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var drops_created: int = 0
 var _manager: EnemyManager
@@ -36,9 +38,20 @@ func _on_enemy_hit(enemy: Enemy, _amount: float, killed: bool) -> void:
 		return
 	var level: int = int(_level_provider.call())
 	for value: Variant in _roller.roll_drops(enemy.definition, level, _stash.gems):
+		spawn_drop(value, _scatter_position(enemy.global_position))
+
+
+## 倒した敵のまわりに散らす。壁の中や壁ぎわは避ける（is_valid_position が空なら制限しない）。
+## 何度試しても置けなければ、敵がいた場所に置く
+func _scatter_position(origin: Vector2) -> Vector2:
+	for attempt: int in SCATTER_ATTEMPTS:
 		var angle: float = rng.randf_range(0.0, TAU)
 		var radius: float = sqrt(rng.randf()) * SCATTER_RADIUS
-		spawn_drop(value, enemy.global_position + Vector2(cos(angle), sin(angle) * 0.5) * radius)
+		var pos: Vector2 = origin + Vector2(cos(angle), sin(angle) * 0.5) * radius
+		if not is_valid_position.is_valid() or bool(is_valid_position.call(pos)):
+			return pos
+	return origin
+
 
 func spawn_drop(value: Variant, at: Vector2) -> GroundDrop:
 	if _active.size() >= MAX_GROUND_DROPS:
