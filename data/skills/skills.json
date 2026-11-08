@@ -236,5 +236,62 @@
     "speed": 0,
     "chain_only": true,
     "description": "火で温まった敵に冷気をぶつけ、蒸気を爆ぜさせる。"
+  },
+  {
+    "id": "starfall",
+    "name": "星落とし",
+    "element": "fire",
+    "kind": "area",
+    "damage": [
+      34,
+      48
+    ],
+    "cooldown": 2.4,
+    "mana_cost": 14,
+    "rare": true,
+    "support_slots": 3,
+    "range": 0,
+    "radius": 76,
+    "speed": 0,
+    "chain_only": false,
+    "description": "足元に星を降らせ、広い範囲を焼き払う。補助ジェムを3つまではめられるレアスキル。"
+  },
+  {
+    "id": "grave_cleave",
+    "name": "墓割り",
+    "element": "physical",
+    "kind": "melee",
+    "damage": [
+      30,
+      42
+    ],
+    "cooldown": 1.0,
+    "mana_cost": 10,
+    "rare": true,
+    "support_slots": 2,
+    "range": 34,
+    "radius": 18,
+    "speed": 0,
+    "chain_only": false,
+    "description": "重い一撃で、前の敵をまとめて叩き割る。補助ジェムを2つまではめられるレアスキル。"
+  },
+  {
+    "id": "glacial_pulse",
+    "name": "氷河の脈動",
+    "element": "cold",
+    "kind": "area",
+    "damage": [
+      26,
+      36
+    ],
+    "cooldown": 1.8,
+    "mana_cost": 12,
+    "rare": true,
+    "support_slots": 2,
+    "range": 0,
+    "radius": 70,
+    "speed": 0,
+    "chain_only": false,
+    "description": "冷気の波を足元から広げ、踏んだ敵を凍えさせる。補助ジェムを2つまではめられるレアスキル。"
   }
 ]

@@ -257,7 +257,7 @@ func _loadout_snapshot() -> Array[Dictionary]:
 	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
 		var id: String = _player.caster.loadout.skill_id(slot)
 		if not id.is_empty():
-			out.append({"slot": slot, "skill": id, "support": _player.caster.loadout.support_id(slot)})
+			out.append({"slot": slot, "skill": id, "support": _player.caster.loadout.support_id(slot), "supports": _player.caster.loadout.support_ids(slot)})
 	return out
 
 

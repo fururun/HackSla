@@ -52,8 +52,7 @@ func mana_cost(slot: int) -> float:
 	var skill := loadout.skill(slot)
 	if skill == null:
 		return 0.0
-	var sup := loadout.support(slot)
-	var mult: float = _mod(sup.modifiers, "mana_mult") if sup != null else 1.0
+	var mult: float = _mod(support_mods(slot), "mana_mult")
 	mult *= maxf(MANA_COST_MIN_RATIO, 1.0 + stats.get_value("mana_cost_pct") / 100.0)  # スキルツリー：マナ消費%
 	return skill.mana_cost * mult
 
@@ -77,13 +76,11 @@ func cast(slot: int, target: Vector2, origin: Vector2, fallback_dir: Vector2 = V
 	var out := chain.on_cast(base, DataDB.chains, DataDB.skills)
 	var chained := out != base
 	_fx_boost = ChainFx.BOOST_SIZE if chained else 1.0
-	var mods: Dictionary = {}
-	var sup := loadout.support(slot)
-	if sup != null:
-		mods = sup.modifiers
+	var mods: Dictionary = support_mods(slot)
+	var has_support: bool = not loadout.supports(slot).is_empty()
 	var dmg_mult := _mod(mods, "damage_mult")
 	var area_mult := _mod(mods, "area_mult")
-	if sup != null:
+	if has_support:
 		dmg_mult *= 1.0 + stats.get_value("supported_damage_pct") / 100.0  # スキルツリー：補助ジェムをつけたスキル
 	if chained:
 		dmg_mult *= 1.0 + stats.get_value("chain_damage_pct") / 100.0  # スキルツリー：チェイン技（追加ダメージも）
@@ -244,6 +241,24 @@ static func _max_life(enemy: Node) -> float:
 static func enemy_radius(enemy: Node) -> float:
 	var r: Variant = enemy.get("hit_radius")
 	return float(r) if r != null else CombatConsts.DEFAULT_ENEMY_RADIUS
+
+
+## 枠にはめた補助ジェム全部の効果を、1つにまとめる。「〜_mult」は掛け合わせ、「〜_count」は足し、
+## ほか（撃破時の爆発の確率など）は大きいほうをとる
+func support_mods(slot: int) -> Dictionary:
+	var merged: Dictionary = {}
+	for sup: SupportDef in loadout.supports(slot):
+		for key: String in sup.modifiers:
+			var value: float = float(sup.modifiers[key])
+			if not merged.has(key):
+				merged[key] = value
+			elif key.ends_with("_mult"):
+				merged[key] = float(merged[key]) * value
+			elif key.ends_with("_count"):
+				merged[key] = float(merged[key]) + value
+			else:
+				merged[key] = maxf(float(merged[key]), value)
+	return merged
 
 
 static func _mod(mods: Dictionary, key: String) -> float:

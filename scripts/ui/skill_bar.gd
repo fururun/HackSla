@@ -141,7 +141,7 @@ func _process(delta: float) -> void:
 		var icon: ColorRect = entry["icon"]
 		icon.color = CombatConsts.ELEMENT_COLORS.get(skill.element, UiStyle.MUTED).darkened(0.3) if skill != null else UiStyle.BAR_BG
 		(entry["name"] as Label).text = skill.name.substr(0, 2) if skill != null else "—"
-		(entry["dot"] as ColorRect).visible = skill != null and _caster.loadout.support(slot) != null
+		(entry["dot"] as ColorRect).visible = skill != null and not _caster.loadout.supports(slot).is_empty()
 		var ratio: float = clampf(state["left"] / maxf(entry["duration"], 0.001), 0.0, 1.0)
 		var veil: ColorRect = entry["veil"]
 		veil.position = Vector2(4, 37 - 24 * ratio)

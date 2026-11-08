@@ -1464,3 +1464,65 @@ func test_tree_nodes_only_use_stats_the_game_reads() -> void:
 	for node: TreeNodeDef in DataDB.tree_nodes.values():
 		for key: String in node.effects:
 			t.check(working.has(key), "ノード %s の %s は、ゲームが読むステータス" % [node.id, key])
+
+
+func test_rare_skill_has_multiple_support_slots() -> void:
+	var rares: Array[SkillDef] = DataDB.rare_skills()
+	t.check(rares.size() >= 3, "レアスキルが3つ以上ある")
+	for skill: SkillDef in rares:
+		t.check(skill.support_slots >= 2 and skill.support_slots <= 3, "%s は補助ジェムを2〜3個はめられる" % skill.id)
+		t.check(not DataDB.droppable_skills().has(skill), "%s は、スタート構成の候補に入らない" % skill.id)
+	var player := Player.new()
+	var loadout: SkillLoadout = player.caster.loadout
+	loadout.set_skill(1, "slash")
+	t.check_eq(loadout.support_capacity(1), 1, "ふつうのスキルの穴は1つ")
+	t.check(loadout.set_support(1, "heavy_blow"), "1つ目ははめられる")
+	t.check(not loadout.set_support(1, "rapid_cast", 1), "ふつうのスキルに、2つ目はない")
+	loadout.set_skill(2, "starfall")
+	t.check_eq(loadout.support_capacity(2), 3, "星落としの穴は3つ")
+	t.check(loadout.set_support(2, "wide_area", 0), "穴1")
+	t.check(loadout.set_support(2, "heavy_blow", 1), "穴2")
+	t.check(loadout.set_support(2, "burst_on_kill", 2), "穴3")
+	t.check(not loadout.set_support(2, "heavy_blow", 2), "同じ補助ジェムは、同じ枠に2つはめられない")
+	t.check_eq(loadout.supports(2).size(), 3, "3つはまっている")
+	# 効果は合わさる：ダメージ 0.9×1.45、マナ 1.1×1.2×1.15
+	var mods: Dictionary = player.caster.support_mods(2)
+	t.check(absf(float(mods["damage_mult"]) - 0.9 * 1.45) < 0.001, "ダメージの倍率は掛け合わさる")
+	var base_cost: float = DataDB.skill("starfall").mana_cost
+	t.check(absf(player.caster.mana_cost(2) - base_cost * 1.1 * 1.2 * 1.15) < 0.01, "マナの倍率も掛け合わさる")
+	# 穴が少ないスキルに替えると、余った補助ジェムは外れる
+	loadout.set_skill(2, "grave_cleave")
+	t.check_eq(loadout.support_id(2, 2), "", "穴を超えた分は外れる")
+	loadout.set_skill(2, "slash")
+	t.check_eq(loadout.support_id(2, 1), "", "ふつうのスキルに替えると、1つだけ残る")
+	# 引き継ぎ（保存した形で戻せる）
+	loadout.set_skill(3, "glacial_pulse")
+	loadout.set_support(3, "heavy_blow", 0)
+	loadout.set_support(3, "wide_area", 1)
+	var vitals := PlayerVitals.new()
+	RunCarry.prepare(RunCarry.Mode.CARRY, vitals, Stash.new(), null, loadout)
+	var fresh := SkillLoadout.new()
+	RunCarry.apply(vitals, Stash.new(), null, fresh)
+	t.check_eq(fresh.skill_id(3), "glacial_pulse", "レアスキルを引き継ぐ")
+	t.check_eq(fresh.support_id(3, 0), "heavy_blow", "穴1の補助を引き継ぐ")
+	t.check_eq(fresh.support_id(3, 1), "wide_area", "穴2の補助を引き継ぐ")
+	RunCarry.clear()
+	player.free()
+
+
+func test_rare_skill_gems_drop_rarely() -> void:
+	t.check(LootRoller.RARE_SKILL_CHANCE > 0.0 and LootRoller.RARE_SKILL_CHANCE <= 0.1, "レアスキルは超低確率")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var roller := LootRoller.new(rng)
+	var rare_ids: Array[String] = []
+	for skill: SkillDef in DataDB.rare_skills():
+		rare_ids.append(skill.id)
+	var rare_count: int = 0
+	var total: int = 4000
+	for i: int in total:
+		var gem: GemInstance = roller._roll_gem()
+		if gem.kind == GemInstance.Kind.SKILL and rare_ids.has(gem.id):
+			rare_count += 1
+	t.check(rare_count > 0, "ときどき落ちる（%d / %d）" % [rare_count, total])
+	t.check(float(rare_count) / float(total) < 0.1, "ほとんどは、ふつうのジェム")

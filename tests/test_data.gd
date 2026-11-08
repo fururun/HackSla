@@ -118,7 +118,7 @@ func test_text_has_no_numbers_and_all_have_three_plans() -> void:
 
 func test_t22_new_skills_supports_and_chains() -> void:
 	var db := _db()
-	t.check_eq(db.skills.size(), 14, "スキルは10個＋チェイン技4つで計14個")
+	t.check_eq(db.skills.size(), 17, "スキルは10個＋レア3つ＋チェイン技4つで計17個")
 	t.check_eq(db.droppable_skills().size(), 8, "ドロップするスキルは計8個（チェイン技は落ちない）")
 	t.check_eq(db.supports.size(), 6, "補助ジェムは既存2＋追加4で計6個")
 	t.check_eq(db.chains.size(), 6, "チェインは、砕氷・凍て槍・焔突き・雷落とし・溶岩玉・湯気爆ぜの6つ")

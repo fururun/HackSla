@@ -26,6 +26,7 @@ var _opened: bool = false
 var _was_paused: bool = false
 var _selected_slot: int = 1
 var _select_support: bool = false
+var _select_index: int = 0  ## 補助ジェムを選ぶとき、何番目の穴か（0 から）
 var _root: Control
 var _slots: VBoxContainer
 var _choices: VBoxContainer
@@ -126,7 +127,7 @@ func _equip(id: String) -> bool:
 	if _select_support:
 		for support: SupportDef in _available_supports(_selected_slot):
 			if support.id == id:
-				return _caster.loadout.set_support(_selected_slot, id)
+				return _caster.loadout.set_support(_selected_slot, id, _select_index)
 	else:
 		for skill: SkillDef in _available_skills():
 			if skill.id == id:
@@ -246,11 +247,14 @@ func _refresh() -> void:
 	_slots.add_child(_label("装備枠  /  補助は各1個"))
 	for slot: int in range(1, VISIBLE_SLOTS + 1):
 		var skill: SkillDef = _caster.loadout.skill(slot) if is_instance_valid(_caster) else null
-		var support: SupportDef = _caster.loadout.support(slot) if is_instance_valid(_caster) else null
-		_slots.add_child(_label("枠 %d  /  %s" % [slot, _skill_tags(skill) if skill != null else "—"]))
+		var holes: int = maxi(_caster.loadout.support_capacity(slot), 1) if is_instance_valid(_caster) else 1
+		_slots.add_child(_label("枠 %d  /  %s%s" % [slot, _skill_tags(skill) if skill != null else "—", "  ★補助%d穴" % holes if holes > 1 else ""]))
 		_slot_button(slot, false, skill.name if skill != null else "—")
-		_slot_button(slot, true, "補助: " + (support.name if support != null else "—"))
-		_slots.add_child(_label("対応: " + _kinds(support.kinds) if support != null else "対応: —"))
+		var first: SupportDef = _caster.loadout.support(slot) if is_instance_valid(_caster) else null
+		for index: int in holes:
+			var support: SupportDef = _caster.loadout.support(slot, index) if is_instance_valid(_caster) else null
+			_slot_button(slot, true, "補助%s: %s" % [str(index + 1) if holes > 1 else "", support.name if support != null else "—"], index)
+		_slots.add_child(_label("対応: " + _kinds(first.kinds) if first != null else "対応: —"))
 	_refresh_choices()
 	_clear_children(_chains)
 	_chains.add_child(_label("チェイン図鑑   発見 %d / 未発見 %d" % [_discovered_count(), DataDB.chains.size() - _discovered_count()]))
@@ -260,28 +264,29 @@ func _refresh() -> void:
 		_chains.add_child(label)
 
 
-func _slot_button(slot: int, support: bool, text: String) -> void:
+func _slot_button(slot: int, support: bool, text: String, index: int = 0) -> void:
 	var button: Button = _button(text)
-	if slot == _selected_slot and support == _select_support:
+	if slot == _selected_slot and support == _select_support and (not support or index == _select_index):
 		button.add_theme_color_override("font_color", ACCENT_COLOR)
-	button.pressed.connect(_select.bind(slot, support))
-	button.gui_input.connect(_slot_input.bind(slot, support))
+	button.pressed.connect(_select.bind(slot, support, index))
+	button.gui_input.connect(_slot_input.bind(slot, support, index))
 	_slots.add_child(button)
 
 
-func _select(slot: int, support: bool) -> void:
+func _select(slot: int, support: bool, index: int = 0) -> void:
 	_selected_slot = slot
 	_select_support = support
+	_select_index = index if support else 0
 	_refresh()
 
 
-func _slot_input(event: InputEvent, slot: int, support: bool) -> void:
+func _slot_input(event: InputEvent, slot: int, support: bool, index: int = 0) -> void:
 	var mouse: InputEventMouseButton = event as InputEventMouseButton
 	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_RIGHT:
 		return
 	if is_instance_valid(_caster):
 		if support:
-			_caster.loadout.clear_support(slot)
+			_caster.loadout.clear_support(slot, index)
 		else:
 			_caster.loadout.clear_skill(slot)
 	get_viewport().set_input_as_handled()

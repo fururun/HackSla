@@ -42,11 +42,11 @@ static func prepare(mode: Mode, vitals: PlayerVitals, stash: Stash, tree: SkillT
 			gems[kind] = (stash.gems[kind] as Dictionary).duplicate()
 		currency = stash.currency
 	var skills: Array[String] = []
-	var supports: Array[String] = []
+	var supports: Array = []
 	if loadout != null:
 		for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
 			skills.append(loadout.skill_id(slot))
-			supports.append(loadout.support_id(slot))
+			supports.append(loadout.support_ids(slot))
 	pending = {
 		"level": vitals.level, "xp": vitals.xp, "points": vitals.points,
 		"tree": tree.taken_ids() if tree != null else [],
@@ -87,10 +87,12 @@ static func apply(vitals: PlayerVitals, stash: Stash, tree: SkillTree, loadout: 
 				loadout.set_skill(slot, str(skills[i]))
 			else:
 				loadout.clear_skill(slot)
-			if i < supports.size() and str(supports[i]) != "":
-				loadout.set_support(slot, str(supports[i]))
-			else:
-				loadout.clear_support(slot)
+			var ids: Array = []
+			if i < supports.size():
+				ids = supports[i] if supports[i] is Array else [supports[i]]  # 古い形（1つだけ）も読める
+			for index: int in SkillLoadout.MAX_SUPPORTS:
+				var id: String = str(ids[index]) if index < ids.size() else ""
+				loadout.set_support(slot, id, index)
 	vitals.heal_charges = clampi(int(data.get("heal_charges", vitals.heal_charges)), 0, PlayerVitals.MAX_HEAL_CHARGES)
 	vitals.life = vitals.max_life()
 	vitals.mana = vitals.max_mana()

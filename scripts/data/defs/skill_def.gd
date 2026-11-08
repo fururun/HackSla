@@ -17,6 +17,8 @@ var range: float = 0.0
 var radius: float = 0.0
 var speed: float = 0.0
 var chain_only: bool = false
+var rare: bool = false  ## レアスキル。ふつうのジェムより、ずっと落ちにくい（スタートの構成には出ない）
+var support_slots: int = 1  ## 補助ジェムをはめられる数（1〜3）。レアスキルは、2〜3
 var description: String = ""
 
 
@@ -46,6 +48,10 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> SkillDef:
 	s.radius = float(d.get("radius", 0.0))
 	s.speed = float(d.get("speed", 0.0))
 	s.chain_only = bool(d.get("chain_only", false))
+	s.rare = bool(d.get("rare", false))
+	s.support_slots = int(d.get("support_slots", 1))
+	if s.support_slots < 1 or s.support_slots > 3:
+		errors.append("skill %s: support_slots は 1〜3 にしてください" % s.id)
 	s.description = str(d.get("description", ""))
 
 	if s.id.is_empty():

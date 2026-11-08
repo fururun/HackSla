@@ -128,18 +128,21 @@ func equip_supports(caster: SkillCaster) -> int:
 		var skill: SkillDef = caster.loadout.skill(slot)
 		if skill == null:
 			continue
-		var current: SupportDef = caster.loadout.support(slot)
-		var best: SupportDef = current
-		var best_score: float = support_score(current) if current != null else 1.0
-		for support: SupportDef in DataDB.supports.values():
-			if not support.can_support(skill) or not stash.has_gem(GemInstance.Kind.SUPPORT, support.id):
-				continue
-			var score: float = support_score(support)
-			if score > best_score + 0.0001:
-				best = support
-				best_score = score
-		if best != current and best != null and caster.loadout.set_support(slot, best.id):
-			changed += 1
+		for index: int in caster.loadout.support_capacity(slot):  # レアスキルは、穴の数だけ
+			var current: SupportDef = caster.loadout.support(slot, index)
+			var best: SupportDef = current
+			var best_score: float = support_score(current) if current != null else 1.0
+			for support: SupportDef in DataDB.supports.values():
+				if not support.can_support(skill) or not stash.has_gem(GemInstance.Kind.SUPPORT, support.id):
+					continue
+				if support != current and caster.loadout.supports(slot).has(support):
+					continue  # 同じ枠に、同じ補助ジェムは2つはめられない
+				var score: float = support_score(support)
+				if score > best_score + 0.0001:
+					best = support
+					best_score = score
+			if best != current and best != null and caster.loadout.set_support(slot, best.id, index):
+				changed += 1
 	return changed
 
 

@@ -84,12 +84,19 @@ func roll_drops(enemy: EnemyDef, level: int, owned_gems: Dictionary = {}) -> Arr
 	return drops
 
 
+const RARE_SKILL_CHANCE: float = 0.04  ## ジェムが落ちるとき、レアスキルになる確率（超低確率）
+
+
 func _roll_gem(owned_gems: Dictionary = {}) -> GemInstance:
 	var gems: Array[GemInstance] = []
 	for skill: SkillDef in DataDB.droppable_skills():
 		gems.append(GemInstance.new(GemInstance.Kind.SKILL, skill.id))
 	for support: SupportDef in DataDB.supports.values():
 		gems.append(GemInstance.new(GemInstance.Kind.SUPPORT, support.id))
+	# レアスキル：ふつうの宝石の RARE_SKILL_WEIGHT 倍しか出ない（重みをつけて混ぜる）
+	var rare: Array[SkillDef] = DataDB.rare_skills()
+	if not rare.is_empty() and _rng.randf() < RARE_SKILL_CHANCE:
+		return GemInstance.new(GemInstance.Kind.SKILL, rare[_rng.randi_range(0, rare.size() - 1)].id)
 	if gems.is_empty():
 		return null
 	# 引数省略時は乱数の消費も従来どおり。

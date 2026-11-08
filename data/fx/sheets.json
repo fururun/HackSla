@@ -221,7 +221,10 @@
   },
   "skill_overrides": {
     "shatter": "slash_cold",
-    "thrust": "thrust"
+    "thrust": "thrust",
+    "starfall": "meteor",
+    "grave_cleave": "heavy_cleave",
+    "glacial_pulse": "frost_nova"
   },
   "by_kind": {
     "melee": {

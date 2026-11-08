@@ -228,6 +228,15 @@ func enemy(id: String) -> EnemyDef:
 func droppable_skills() -> Array[SkillDef]:
 	var out: Array[SkillDef] = []
 	for s: SkillDef in skills.values():
-		if not s.chain_only:
+		if not s.chain_only and not s.rare:
+			out.append(s)
+	return out
+
+
+## レアスキル（補助ジェムを複数はめられる。ごくまれに落ちる）
+func rare_skills() -> Array[SkillDef]:
+	var out: Array[SkillDef] = []
+	for s: SkillDef in skills.values():
+		if s.rare and not s.chain_only:
 			out.append(s)
 	return out

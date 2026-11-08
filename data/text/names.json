@@ -715,6 +715,81 @@
   },
   {
    "category": "skill",
+   "id": "starfall",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "星落とし",
+     "reading": "ほしおとし",
+     "description": "足元に星を降らせ、広い範囲を焼き払う。補助ジェムを三つまではめられる、まれなスキル。"
+    },
+    {
+     "plan": 2,
+     "display_name": "流れ星の雨",
+     "reading": "ながれぼしのあめ",
+     "description": "火の星を降らせて、周りを広く焼く。補助の穴が三つあるレアスキル。"
+    },
+    {
+     "plan": 3,
+     "display_name": "天火",
+     "reading": "てんか",
+     "description": "天から火が降り、近くの敵をまとめて焼き尽くす。補助ジェムを三つはめられる。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "grave_cleave",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "墓割り",
+     "reading": "はかわり",
+     "description": "重い一撃で、前の敵をまとめて叩き割る。補助ジェムを二つまではめられる、まれなスキル。"
+    },
+    {
+     "plan": 2,
+     "display_name": "断ち墓",
+     "reading": "たちはか",
+     "description": "大きく振り下ろし、前方をまとめて断つ。補助の穴が二つあるレアスキル。"
+    },
+    {
+     "plan": 3,
+     "display_name": "重ね斬り",
+     "reading": "かさねぎり",
+     "description": "力を乗せた一刀で、並んだ敵を叩き割る。補助ジェムを二つはめられる。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
+   "id": "glacial_pulse",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "氷河の脈動",
+     "reading": "ひょうがのみゃくどう",
+     "description": "冷気の波を足元から広げ、踏んだ敵を凍えさせる。補助ジェムを二つまではめられる、まれなスキル。"
+    },
+    {
+     "plan": 2,
+     "display_name": "氷の鼓動",
+     "reading": "こおりのこどう",
+     "description": "冷たい波が広がり、周りを凍えさせる。補助の穴が二つあるレアスキル。"
+    },
+    {
+     "plan": 3,
+     "display_name": "永久凍土",
+     "reading": "えいきゅうとうど",
+     "description": "足元から凍気が走り、近くの敵を冷やし固める。補助ジェムを二つはめられる。"
+    }
+   ]
+  },
+  {
+   "category": "skill",
    "id": "thrust",
    "adopted": 1,
    "candidates": [
