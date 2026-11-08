@@ -14,6 +14,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func restart() -> void:
 	var tree := get_tree()
+	var pilot: Variant = get_parent().get("autopilot") if get_parent() != null else null
+	if pilot is Autopilot:
+		(pilot as Autopilot).save_state()  # 自動戦闘が入っていれば、やり直したあとも続ける
 	PauseHolder.reset()  # 開いている画面の数え直し（シーンを作り直すので）
 	tree.paused = false
 	Engine.time_scale = 1.0  # ヒットストップ中に押しても、時間が遅いまま残らないように戻す

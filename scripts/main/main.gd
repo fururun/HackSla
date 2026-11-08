@@ -83,8 +83,20 @@ func _ready() -> void:
 	game_log.open()
 	game_log.setup(player, manager, stash)
 	game_log.play("start_loadout", {"skills": start_skill_ids})
-	add_child(RestartListener.new())
+	var restart_listener := RestartListener.new()
+	add_child(restart_listener)
 	_add_help()
+	# 自動戦闘の周回：ボスを倒す・やられたら、自動でやり直す
+	var auto_loop := AutoLoop.new()
+	auto_loop.name = "AutoLoop"
+	add_child(auto_loop)
+	auto_loop.setup(manager, player, autopilot)
+	auto_loop.restart_requested.connect(func(reason: String, run: int) -> void:
+		if game_log != null:
+			game_log.play("auto_restart", {"reason": reason, "run": run})
+		restart_listener.restart())
+	if autopilot.load_state():  # やり直す前に、自動戦闘が入っていたなら、そのまま続ける
+		set_autopilot(true)
 
 
 ## F4：カメラの見え方を切り替える（がくつきの原因を探すため）

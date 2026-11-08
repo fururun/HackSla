@@ -821,3 +821,71 @@ func test_skill_screen_can_change_the_third_slot() -> void:
 	screen.queue_free()
 	caster.queue_free()
 	await tree.process_frame
+
+
+func test_auto_loop_restarts_after_boss_or_death_only_in_auto() -> void:
+	var tree: SceneTree = t
+	var manager := EnemyManager.new()
+	tree.root.add_child(manager)
+	manager.set_physics_process(false)
+	var player := Player.new()
+	tree.root.add_child(player)
+	var pilot := Autopilot.new()
+	var loop := AutoLoop.new()
+	tree.root.add_child(loop)
+	loop.setup(manager, player, pilot)
+	var restarts: Array[String] = []
+	loop.restart_requested.connect(func(reason: String, _run: int) -> void: restarts.append(reason))
+	Autopilot.runs = 0
+	var boss_def: EnemyDef = DataDB.enemy("rock_lord")
+	var boss: Enemy = manager.spawn(boss_def, Vector2(500, 500))
+	# 手で遊んでいる（自動戦闘が切れている）ときは、ボスを倒しても、やり直さない
+	boss.take_hit(boss.life + 1.0, DataDB.skill("slash"))
+	loop.tick(100.0)
+	t.check_eq(restarts.size(), 0, "手で遊んでいるときは、勝手にやり直さない")
+	# 自動戦闘が入っていれば、ボスを倒して、少し待ってから、やり直す
+	pilot.enabled = true
+	var boss2: Enemy = manager.spawn(boss_def, Vector2(500, 500))
+	boss2.take_hit(boss2.life + 1.0, DataDB.skill("slash"))
+	t.check(loop.is_waiting(), "ボスを倒すと、やり直しを待つ")
+	loop.tick(AutoLoop.BOSS_WAIT_SECONDS - 1.0)
+	t.check_eq(restarts.size(), 0, "ドロップを拾う時間のあいだは、やり直さない")
+	loop.tick(1.5)
+	t.check_eq(restarts, ["boss"] as Array[String], "待ったあと、やり直す")
+	t.check_eq(Autopilot.runs, 1, "周回の数が増える")
+	# やられたときも、やり直す
+	player.vitals.take_damage(100000.0)
+	t.check(loop.is_waiting(), "やられても、やり直しを待つ")
+	loop.tick(AutoLoop.DEATH_WAIT_SECONDS + 0.1)
+	t.check_eq(restarts, ["boss", "death"] as Array[String], "やられたあとも、やり直す")
+	# F2 で止めたら、周回もやめる
+	player.vitals.reset()
+	player.vitals.take_damage(100000.0)
+	pilot.enabled = false
+	loop.tick(100.0)
+	t.check_eq(restarts.size(), 2, "自動戦闘を止めたら、やり直さない")
+	Autopilot.runs = 0
+	loop.queue_free()
+	player.queue_free()
+	manager.queue_free()
+	await tree.process_frame
+
+
+func test_autopilot_state_survives_restart() -> void:
+	Autopilot.resume = {}
+	Autopilot.runs = 0
+	var a := Autopilot.new()
+	a.save_state()
+	t.check(not Autopilot.new().load_state(), "自動戦闘が切れていたなら、やり直したあとも、切れたまま")
+	a.enabled = true
+	a.route = Autopilot.Route.BOSS_RUSH
+	a.open_chests = false
+	a.auto_support = false
+	a.save_state()
+	var b := Autopilot.new()
+	t.check(b.load_state(), "自動戦闘が入っていたなら、やり直したあとも、入っている")
+	t.check(b.enabled and b.route == Autopilot.Route.BOSS_RUSH and not b.open_chests and not b.auto_support, "設定も、持ち越す")
+	Autopilot.runs = 2
+	t.check(b.settings_text().contains("3周目"), "何周目かが、画面に出る")
+	Autopilot.resume = {}
+	Autopilot.runs = 0

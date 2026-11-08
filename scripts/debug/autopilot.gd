@@ -35,6 +35,8 @@ const NEAREST_CANDIDATES: int = 8  ## 近い敵を選ぶとき、道のりを比
 enum SkillMode { ALL_READY, CHAIN_PRIORITY, CHAIN_GREEDY }
 var skill_mode: SkillMode = SkillMode.ALL_READY
 var chain_wait_seconds: float = 0.0  ## チェインの相棒の再使用まで、この秒数以内なら、ほかのスキルを出さずに待つ（0 なら待たない）
+static var resume: Dictionary = {}  ## やり直し（シーンの作り直し）をまたいで、自動戦闘の設定を持ち越す
+static var runs: int = 0  ## 自動でやり直した回数（周回の数）
 var auto_support: bool = true  ## 補助ジェムを、持っているものから、自動でつける（F7 で入り切り）
 var stash: Stash  ## 持っている補助ジェムを調べるため
 var enabled: bool = false
@@ -59,6 +61,26 @@ var _last_pos: Vector2 = Vector2.ZERO
 var _stuck_timer: float = 0.0
 var _detour_left: float = 0.0
 var _detour_sign: float = 1.0
+
+
+## やり直す前に呼ぶ。自動戦闘が入っていれば、その設定を覚える（入っていなければ、覚えを消す）
+func save_state() -> void:
+	if enabled:
+		resume = {"route": route, "chests": open_chests, "support": auto_support}
+	else:
+		resume = {}
+		runs = 0
+
+
+## 作り直した画面で呼ぶ。覚えがあれば、設定を戻して、自動戦闘を入れる。入れたら true
+func load_state() -> bool:
+	if resume.is_empty():
+		return false
+	route = int(resume.get("route", route)) as Route
+	open_chests = bool(resume.get("chests", open_chests))
+	auto_support = bool(resume.get("support", auto_support))
+	enabled = true
+	return true
 
 
 func toggle() -> bool:
@@ -123,6 +145,8 @@ func equip_supports(caster: SkillCaster) -> int:
 
 func settings_text() -> String:
 	var head: String = "自動戦闘：敵を全滅させた" if cleared else "自動戦闘 ON"
+	if runs > 0:
+		head += "（%d周目）" % (runs + 1)
 	return "%s　ルート: %s（F3）　宝箱: %s（F6）　補助: %s（F7）　F2で止める" % [head, ROUTE_NAMES[route], "開ける" if open_chests else "開けない", "自動" if auto_support else "手動"]
 
 
