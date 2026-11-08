@@ -13,14 +13,14 @@ var _recent: Array[Dictionary] = []
 
 func setup(stash: Stash) -> void:
 	if _stash != null:
-		_stash.changed.disconnect(_refresh)
+		_stash.changed.disconnect(_refresh_stats)
 		_stash.picked_up.disconnect(_on_picked_up)
 		_stash.equipped.disconnect(_on_equipped)
 		_stash.skipped.disconnect(_on_skipped)
 		_stash.duplicate_gem.disconnect(_on_duplicate_gem)
 	_stash = stash
 	if _stash != null:
-		_stash.changed.connect(_refresh)
+		_stash.changed.connect(_refresh_stats)
 		_stash.picked_up.connect(_on_picked_up)
 		_stash.equipped.connect(_on_equipped)
 		_stash.skipped.connect(_on_skipped)
@@ -138,12 +138,19 @@ func _on_duplicate_gem(gem: GemInstance) -> void:
 	_duplicate_pending = gem
 	_add_message("所持済み：%s / 通貨 +%d" % [_gem_name(gem), Stash.GEM_DUPLICATE_CURRENCY], UiStyle.ACCENT)
 
-func _refresh() -> void:
+## 拾うたびに呼ばれる軽い更新（通貨と、強くなった分の一行だけ。通知の文字は作り直さない）
+func _refresh_stats() -> void:
 	if _currency == null:
 		return
 	_currency.text = "通貨 %d" % (_stash.currency if _stash != null else 0)
 	if _power != null:
 		_power.text = power_summary()
+
+
+func _refresh() -> void:
+	if _currency == null:
+		return
+	_refresh_stats()
 	if _panel != null:
 		_panel.visible = not _recent.is_empty()  # 通知がないときは、枠ごと消す
 	for child: Node in _messages.get_children():

@@ -240,8 +240,8 @@ func _clear_children(parent: Node) -> void:
 
 
 func _refresh() -> void:
-	if _root == null:
-		return
+	if _root == null or not _opened:
+		return  # 閉じているあいだは作り直さない（拾うたびに一瞬止まるため）。開くときに作る
 	_clear_children(_slots)
 	_slots.add_child(_label("装備枠  /  補助は各1個"))
 	for slot: int in range(1, VISIBLE_SLOTS + 1):
