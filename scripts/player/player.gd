@@ -18,6 +18,7 @@ var facing: int = 2  ## Facing の番号（最初は下向き）
 var caster := SkillCaster.new()  ## スキル枠・チェイン・再使用時間を持つ（枠の付け替えは caster.loadout）
 var vitals: PlayerVitals = PlayerVitals.new(caster.stats)  ## 体力・経験値（stats は caster と共有）
 var _swing_t: float = 0.0  ## 攻撃の振りの見た目（残り時間）
+var autopilot: Autopilot  ## デバッグ用の自動戦闘（F2）。入っているあいだ、操作の代わりをする
 var _dodge_left: float = 0.0  ## 回避で動いている残り時間
 var _invuln_left: float = 0.0  ## 無敵の残り時間
 var _dodge_cooldown_left: float = 0.0
@@ -47,6 +48,11 @@ func _physics_process(delta: float) -> void:
 	_invuln_left = maxf(0.0, _invuln_left - delta)
 	_dodge_cooldown_left = maxf(0.0, _dodge_cooldown_left - delta)
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var auto: bool = autopilot != null and autopilot.enabled
+	if auto:
+		input = autopilot.move_input(self, delta)
+		if autopilot.wants_dodge(self):
+			start_dodge(autopilot.dodge_direction)
 	if Input.is_action_just_pressed("dodge"):
 		start_dodge(input)
 	if _dodge_left > 0.0:
@@ -64,7 +70,7 @@ func _physics_process(delta: float) -> void:
 		_swing_t -= delta
 
 	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
-		if Input.is_action_pressed("skill_%d" % slot):
+		if Input.is_action_pressed("skill_%d" % slot) or (auto and autopilot.wants_skill(self)):
 			use_skill(slot, aim_target())
 	queue_redraw()
 

@@ -34,6 +34,20 @@ func setup(manager: EnemyManager, player: Node2D, parent: Node2D, stash: Stash, 
 	_level_provider = level_provider
 	_manager.enemy_hit.connect(_on_enemy_hit)
 
+## 落ちているもののうち、いちばん近いものの位置（なければ null）。自動戦闘が拾いに行くのに使う
+func nearest_drop_position(from: Vector2) -> Variant:
+	var best: Variant = null
+	var best_d: float = INF
+	for drop: GroundDrop in _active:
+		if drop.value == null or not drop.visible:
+			continue
+		var d: float = Iso.ground_distance(from, drop.global_position)
+		if d < best_d:
+			best_d = d
+			best = drop.global_position
+	return best
+
+
 func _on_enemy_hit(enemy: Enemy, _amount: float, killed: bool) -> void:
 	if not killed:
 		return

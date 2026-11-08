@@ -291,3 +291,58 @@ func test_main_wires_dps_and_damage_taken() -> void:
 	dummy.take_hit(30.0, DataDB.skill("slash"))
 	t.check_eq(meter._hits.size(), 2, "案山子への攻撃も DPS に入る")
 	main.queue_free()
+
+
+func test_autopilot_walks_to_enemy_fights_and_dodges() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var pilot: Autopilot = main.autopilot
+	t.check(not pilot.enabled, "最初は切れている")
+	t.check_eq(pilot.toggle(), true, "F2 で入る")
+	t.check(pilot.director != null, "落ちているものを探せる")
+	# 敵のいる場所へ行って、スキルを使う
+	var enemy: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.behavior == "melee_swarm":
+			enemy = n
+			break
+	player.global_position = enemy.global_position + Vector2(-100, 0)
+	var chosen: Node2D = pilot.find_target(player)
+	t.check(chosen is Enemy, "近くの敵を選ぶ")
+	var move: Vector2 = pilot.move_input(player, 0.016)
+	t.check(move.length() > 0.5 and move.dot((chosen.global_position - player.global_position).normalized()) > 0.9, "敵のほうへ歩く")
+	player.global_position = chosen.global_position + Vector2(-10, 0)
+	t.check_eq(pilot.move_input(player, 0.016), Vector2.ZERO, "近づいたら止まって戦う")
+	t.check(pilot.wants_skill(player), "近くに敵がいれば、スキルを使う")
+	player.global_position = Vector2(100000, 100000)
+	t.check(not pilot.wants_skill(player), "敵が近くにいなければ、使わない")
+	# 近くで突進の予告が始まったら避ける
+	var boss: Enemy = null
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy and n.definition.is_boss:
+			boss = n
+	player.global_position = boss.global_position + Vector2(60, 0)
+	t.check(not pilot.wants_dodge(player), "予告がなければ避けない")
+	boss.charge_phase = 1
+	t.check(pilot.wants_dodge(player), "突進の予告が近くで始まったら避ける")
+	t.check(pilot.dodge_direction != Vector2.ZERO, "避ける向きがある")
+	boss.charge_phase = 0
+	t.check_eq(pilot.toggle(), false, "もう一度 F2 で切れる")
+	main.queue_free()
+
+
+func test_autopilot_actually_plays() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var start: Vector2 = player.global_position
+	main.set_autopilot(true)
+	var hits: Array[int] = [0]
+	var manager: EnemyManager = main.get_node("World/EnemyManager")
+	manager.enemy_hit.connect(func(_e: Enemy, _a: float, _k: bool) -> void: hits[0] += 1)
+	for i: int in 900:
+		await tree.physics_frame
+	t.check(player.global_position.distance_to(start) > 20.0, "自動戦闘で、勝手に歩く")
+	t.check(hits[0] > 0, "自動戦闘で、敵や案山子に攻撃が当たる")
+	main.queue_free()

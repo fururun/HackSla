@@ -17,6 +17,7 @@ const KEYS: Dictionary = {
 	"restart_game": [KEY_F5],
 	"cycle_camera": [KEY_F4],
 	"toggle_help": [KEY_H],
+	"toggle_autobattle": [KEY_F2],
 	"dodge": [KEY_SPACE],
 }
 

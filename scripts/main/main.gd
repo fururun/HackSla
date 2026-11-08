@@ -15,6 +15,8 @@ var player: Player
 var stash: Stash  ## 持ち物（拾ったジェム・装備・通貨）
 var game_log: GameLog  ## 遊んだ記録とデバッグの記録
 var camera: Camera2D
+var autopilot: Autopilot = Autopilot.new()  ## デバッグ用の自動戦闘（F2）
+var _autopilot_label: Label
 var camera_mode: int = 0
 var _camera_label: Label
 
@@ -45,6 +47,7 @@ func _ready() -> void:
 	player = Player.new()
 	player.name = "Player"
 	player.position = map.marker("P")
+	player.autopilot = autopilot
 	world.add_child(player)
 
 	camera = Camera2D.new()
@@ -82,8 +85,29 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_help"):
 		set_help_open(not _help_open)
+	if event.is_action_pressed("toggle_autobattle"):
+		set_autopilot(autopilot.toggle())
 	if event.is_action_pressed("cycle_camera"):
 		apply_camera_mode((camera_mode + 1) % CAMERA_MODES.size())
+
+
+## 自動戦闘の表示（画面の上の中央）
+func set_autopilot(on: bool) -> void:
+	autopilot.enabled = on
+	if _autopilot_label == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		_autopilot_label = Label.new()
+		_autopilot_label.position = Vector2(170, 4)
+		_autopilot_label.add_theme_font_size_override("font_size", 8)
+		_autopilot_label.add_theme_color_override("font_color", Color("#7dffb0"))
+		_autopilot_label.add_theme_constant_override("outline_size", 2)
+		_autopilot_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		layer.add_child(_autopilot_label)
+	_autopilot_label.text = "自動戦闘 ON（F2で止める）" if on else ""
+	if game_log != null:
+		game_log.play("autopilot", {"on": on})
 
 
 func apply_camera_mode(index: int) -> void:
@@ -145,6 +169,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	director.name = "LootDirector"
 	add_child(director)
 	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)
+	autopilot.director = director
 	director.is_valid_position = func(pos: Vector2) -> bool: return map.is_floor_at(pos, true)  # 壁の中・壁ぎわに置かない
 	# 宝箱：近づくと開いて、まとまった数のドロップが出る（最初の広場に置く）
 	for pos: Vector2 in map.markers.get("C", []):
@@ -219,7 +244,7 @@ static func load_map(path: String) -> PackedStringArray:
 	return rows
 
 
-const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nF4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
+const HELP_FULL: String = "WASD: 移動　Space: 回避\n左クリック: スキル1　右クリック: スキル2　Q: スキル3\nK: スキル装備　I: 装備\nF2: 自動戦闘　F4: カメラ切替　F5: やり直し\nH: このヘルプを閉じる"
 const HELP_COMPACT: String = "H: 操作ヘルプ"
 const HELP_SHOW_SECONDS: float = 8.0  ## 起動してすぐは操作を出し、この時間がたったら、小さな「H: 操作ヘルプ」だけにする
 
