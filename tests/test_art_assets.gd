@@ -21,6 +21,19 @@ func test_sprites_load() -> void:
 		t.check(load("res://art/sprites/icons/icon_%s.png" % name) is Texture2D, "アイコンを読める: %s" % name)
 
 
+func test_player_views_cover_eight_directions() -> void:
+	for index: int in 8:
+		var v := Player.view_for(index)
+		t.check(load("res://art/sprites/player/player_%s.png" % v["view"]) is Texture2D, "向き %d の絵がある (%s)" % [index, v["view"]])
+	# 左右対称：右向きと左向きは、同じ絵を反転して使う
+	t.check_eq(Player.view_for(1)["view"], Player.view_for(3)["view"], "右下と左下は同じ絵")
+	t.check(Player.view_for(1)["flip"] != Player.view_for(3)["flip"], "右下と左下は反転が逆")
+	t.check_eq(Player.view_for(7)["view"], Player.view_for(5)["view"], "右上と左上は同じ絵")
+	t.check(Player.view_for(7)["flip"] != Player.view_for(5)["flip"], "右上と左上は反転が逆")
+	t.check_eq(Player.view_for(0)["view"], Player.view_for(4)["view"], "右と左は同じ絵")
+	t.check(Player.view_for(0)["flip"] != Player.view_for(4)["flip"], "右と左は反転が逆")
+
+
 func test_drop_icon_choice() -> void:
 	t.check_eq(GroundDrop.icon_name(GemInstance.new(GemInstance.Kind.SKILL, "slash")), "gem_skill", "スキルジェム")
 	t.check_eq(GroundDrop.icon_name(GemInstance.new(GemInstance.Kind.SUPPORT, "scatter")), "gem_support", "補助ジェム")

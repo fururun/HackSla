@@ -114,17 +114,19 @@ static func _texture(view: String) -> Texture2D:
 	return _textures[view]
 
 
-## 向き（Facing の番号）から、使う絵と左右反転を決める。下向き=前、上向き=後ろ、横=横（左向きは反転）
+## 向き（Facing の番号）から、使う絵と左右反転を決める。8方向：
+## 下=前、上=後ろ、右=横（右向きの絵）、左=横の反転、斜めは斜めの絵。
+## 斜めの絵（diag_down / diag_up）は、左向き（左下・左上）に描かれているので、右下・右上は反転して使う。
 static func view_for(facing_index: int) -> Dictionary:
 	match facing_index:
-		0: return {"view": "side", "flip": false}
-		1: return {"view": "front", "flip": false}
-		2: return {"view": "front", "flip": false}
-		3: return {"view": "front", "flip": true}
-		4: return {"view": "side", "flip": true}
-		5: return {"view": "back", "flip": true}
-		6: return {"view": "back", "flip": false}
-		_: return {"view": "back", "flip": false}  # 7: 右上
+		0: return {"view": "side", "flip": false}       # 右
+		1: return {"view": "diag_down", "flip": true}   # 右下
+		2: return {"view": "front", "flip": false}      # 下
+		3: return {"view": "diag_down", "flip": false}  # 左下
+		4: return {"view": "side", "flip": true}        # 左
+		5: return {"view": "diag_up", "flip": false}    # 左上
+		6: return {"view": "back", "flip": false}       # 上
+		_: return {"view": "diag_up", "flip": true}     # 7: 右上
 
 
 func _draw() -> void:
@@ -140,4 +142,6 @@ func _draw() -> void:
 	var tint := Color(0.45, 0.4, 0.45) if vitals.is_dead() else Color.WHITE
 	var s := SPRITE_SCALE
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2(-s if v["flip"] else s, s))
-	draw_texture(tex, Vector2(-SPRITE_SIZE.x * 0.5, -SPRITE_SIZE.y), tint)
+	# 絵ごとに幅が違う（斜めは刀の分だけ広い）ので、絵の大きさから足元の中心を決める
+	var size := tex.get_size()
+	draw_texture(tex, Vector2(-size.x * 0.5, -size.y), tint)
