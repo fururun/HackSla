@@ -25,6 +25,10 @@ window/size/window_height_override=810
 window/stretch/mode="canvas_items"
 window/stretch/scale_mode="integer"
 
+[gui]
+
+theme/custom_font.web="res://fonts/web_font.tres"
+
 [physics]
 
 common/physics_ticks_per_second=60
