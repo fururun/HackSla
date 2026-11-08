@@ -63,6 +63,10 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	director.name = "LootDirector"
 	add_child(director)
 	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)
+	var equip_screen := EquipScreen.new()
+	equip_screen.name = "EquipScreen"
+	add_child(equip_screen)
+	equip_screen.setup(stash, player.vitals)
 	var loot_hud := LootHud.new()
 	loot_hud.name = "LootHud"
 	add_child(loot_hud)
@@ -112,7 +116,7 @@ func _add_help() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var help := Label.new()
-	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　F5: やり直し"
+	help.text = "WASD: 移動　左クリック: スキル1　右クリック: スキル2　Q: スキル3　K: スキル装備　I: 装備　F5: やり直し"
 	help.position = Vector2(6, 4)
 	help.add_theme_font_size_override("font_size", 8)
 	help.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
