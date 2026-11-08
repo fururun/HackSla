@@ -3,7 +3,7 @@ extends RefCounted
 ## 補助ジェム1つ分の定義（data/supports/supports.json の1件）。
 
 const MODIFIER_KEYS: PackedStringArray = [
-	"damage_mult", "area_mult", "cooldown_mult", "projectile_count", "hop_count",
+	"damage_mult", "area_mult", "cooldown_mult", "mana_mult", "projectile_count", "hop_count",
 	"explode_on_kill", "explode_damage_ratio", "chain_damage_mult", "chain_area_mult",
 ]
 

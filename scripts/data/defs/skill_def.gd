@@ -12,6 +12,7 @@ var kind: String = "melee"
 var damage_min: float = 0.0
 var damage_max: float = 0.0
 var cooldown: float = 0.0
+var mana_cost: float = 0.0  ## 使うときに消費するマナ（チェイン技は、元のスキルの分を払うので 0）
 var range: float = 0.0
 var radius: float = 0.0
 var speed: float = 0.0
@@ -38,6 +39,9 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> SkillDef:
 	else:
 		errors.append("skill %s: damage は [最小, 最大] で書いてください" % s.id)
 	s.cooldown = float(d.get("cooldown", 0.0))
+	s.mana_cost = float(d.get("mana_cost", 0.0))
+	if s.mana_cost < 0.0:
+		errors.append("skill %s: mana_cost は 0 以上にしてください" % s.id)
 	s.range = float(d.get("range", 0.0))
 	s.radius = float(d.get("radius", 0.0))
 	s.speed = float(d.get("speed", 0.0))
@@ -55,6 +59,11 @@ static func from_dict(d: Dictionary, errors: Array[String]) -> SkillDef:
 	if s.kind == "projectile" and s.speed <= 0.0:
 		errors.append("skill %s: 飛び道具は speed が必要です" % s.id)
 	return s
+
+
+## ダメージの平均（コストあたりの強さの比較に使う）
+func average_damage() -> float:
+	return (damage_min + damage_max) * 0.5
 
 
 func roll_damage(rng: RandomNumberGenerator) -> float:

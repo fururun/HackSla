@@ -915,6 +915,46 @@
      "description": "白い煙が輪になって、一気に広がる。"
     }
    ]
+  },
+  {
+   "category": "affix",
+   "id": "mana_1",
+   "effect": "最大マナ増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "賢い"
+    },
+    {
+     "plan": 2,
+     "display_name": "魔力に満ちた"
+    },
+    {
+     "plan": 3,
+     "display_name": "澄んだ"
+    }
+   ]
+  },
+  {
+   "category": "affix",
+   "id": "mana_regen_1",
+   "effect": "マナ回復増加",
+   "adopted": 1,
+   "candidates": [
+    {
+     "plan": 1,
+     "display_name": "湧き出る"
+    },
+    {
+     "plan": 2,
+     "display_name": "巡る"
+    },
+    {
+     "plan": 3,
+     "display_name": "尽きない"
+    }
+   ]
   }
  ]
 }

@@ -4,8 +4,12 @@
     "name": "斬撃",
     "element": "physical",
     "kind": "melee",
-    "damage": [14, 22],
+    "damage": [
+      14,
+      22
+    ],
     "cooldown": 0.5,
+    "mana_cost": 3,
     "range": 26,
     "radius": 22,
     "speed": 0,
@@ -17,8 +21,12 @@
     "name": "氷華",
     "element": "cold",
     "kind": "area",
-    "damage": [10, 14],
+    "damage": [
+      10,
+      14
+    ],
     "cooldown": 0.8,
+    "mana_cost": 5,
     "range": 0,
     "radius": 48,
     "speed": 0,
@@ -30,8 +38,12 @@
     "name": "火球",
     "element": "fire",
     "kind": "projectile",
-    "damage": [18, 26],
+    "damage": [
+      18,
+      26
+    ],
     "cooldown": 0.5,
+    "mana_cost": 5,
     "range": 220,
     "radius": 5,
     "speed": 240,
@@ -43,8 +55,12 @@
     "name": "砕氷",
     "element": "cold",
     "kind": "melee",
-    "damage": [72, 96],
+    "damage": [
+      72,
+      96
+    ],
     "cooldown": 0.4,
+    "mana_cost": 0,
     "range": 28,
     "radius": 42,
     "speed": 0,
@@ -56,8 +72,12 @@
     "name": "ほむら輪",
     "element": "fire",
     "kind": "area",
-    "damage": [12, 18],
+    "damage": [
+      12,
+      18
+    ],
     "cooldown": 0.8,
+    "mana_cost": 5,
     "range": 0,
     "radius": 42,
     "speed": 0,
@@ -69,8 +89,12 @@
     "name": "氷つぶて",
     "element": "cold",
     "kind": "projectile",
-    "damage": [16, 22],
+    "damage": [
+      16,
+      22
+    ],
     "cooldown": 0.5,
+    "mana_cost": 5,
     "range": 200,
     "radius": 6,
     "speed": 220,
@@ -82,8 +106,12 @@
     "name": "稲妻針",
     "element": "lightning",
     "kind": "projectile",
-    "damage": [9, 15],
+    "damage": [
+      9,
+      15
+    ],
     "cooldown": 0.3,
+    "mana_cost": 3,
     "range": 280,
     "radius": 4,
     "speed": 320,
@@ -95,8 +123,12 @@
     "name": "地鳴らし",
     "element": "physical",
     "kind": "area",
-    "damage": [19, 27],
+    "damage": [
+      19,
+      27
+    ],
     "cooldown": 1.2,
+    "mana_cost": 8,
     "range": 0,
     "radius": 60,
     "speed": 0,
@@ -108,8 +140,12 @@
     "name": "通し突き",
     "element": "physical",
     "kind": "melee",
-    "damage": [24, 32],
+    "damage": [
+      24,
+      32
+    ],
     "cooldown": 0.7,
+    "mana_cost": 6,
     "range": 52,
     "radius": 10,
     "speed": 0,
@@ -121,8 +157,12 @@
     "name": "凍て槍",
     "element": "cold",
     "kind": "projectile",
-    "damage": [64, 88],
+    "damage": [
+      64,
+      88
+    ],
     "cooldown": 0.4,
+    "mana_cost": 0,
     "range": 260,
     "radius": 10,
     "speed": 300,
@@ -134,8 +174,12 @@
     "name": "焔突き",
     "element": "fire",
     "kind": "melee",
-    "damage": [66, 90],
+    "damage": [
+      66,
+      90
+    ],
     "cooldown": 0.5,
+    "mana_cost": 0,
     "range": 60,
     "radius": 14,
     "speed": 0,
@@ -147,8 +191,12 @@
     "name": "雷落とし",
     "element": "lightning",
     "kind": "area",
-    "damage": [54, 76],
+    "damage": [
+      54,
+      76
+    ],
     "cooldown": 0.7,
+    "mana_cost": 0,
     "range": 0,
     "radius": 58,
     "speed": 0,
@@ -160,8 +208,12 @@
     "name": "溶岩玉",
     "element": "fire",
     "kind": "projectile",
-    "damage": [58, 80],
+    "damage": [
+      58,
+      80
+    ],
     "cooldown": 0.5,
+    "mana_cost": 0,
     "range": 230,
     "radius": 12,
     "speed": 250,
@@ -173,8 +225,12 @@
     "name": "湯気爆ぜ",
     "element": "cold",
     "kind": "area",
-    "damage": [50, 70],
+    "damage": [
+      50,
+      70
+    ],
     "cooldown": 0.7,
+    "mana_cost": 0,
     "range": 0,
     "radius": 64,
     "speed": 0,

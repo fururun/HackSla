@@ -21,6 +21,7 @@
 | kind | 文字 | `melee`（近接）/ `projectile`（飛び道具）/ `area`（範囲）/ `movement`（移動）/ `totem`（設置） |
 | damage | [最小, 最大] | 1回あたりのダメージ |
 | cooldown | 秒 | 再使用までの時間 |
+| mana_cost | マナ | 使うときに消費するマナ（0 以上。省略時 0）。チェイン技（chain_only）は 0（元のスキルの分を払う） |
 | range | ドット | 届く距離（近接・移動・飛び道具の射程） |
 | radius | ドット | 範囲の半径（範囲スキル・近接の振りの広さ）。不要なら 0 |
 | speed | ドット/秒 | 飛び道具の速さ。不要なら 0 |
@@ -42,6 +43,7 @@
 | damage_mult | ダメージ倍率（0.8 = 80%） |
 | area_mult | 範囲の倍率 |
 | cooldown_mult | 再使用時間の倍率 |
+| mana_mult | マナのコストの倍率（強い補助ジェムほど高い。省略時 1.0） |
 | projectile_count | 飛び道具の追加数 |
 | hop_count | 当たった後、近くの敵へ伝わる回数 |
 | explode_on_kill | 倒した敵が爆発する確率（0〜1） |
@@ -136,3 +138,5 @@
 | cooldown_pct | 再使用時間の短縮% |
 | fire_res / cold_res / lightning_res | 属性耐性% |
 | life_on_kill | 撃破時のライフ回復 |
+| mana | 最大マナ（基本 100） |
+| mana_regen | マナの自然回復（毎秒。基本 22） |

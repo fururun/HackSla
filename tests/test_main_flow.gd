@@ -1087,3 +1087,57 @@ func test_chain_fx_sheets_are_defined_for_every_chain_result() -> void:
 				t.check(not def.is_empty() and def["frame_size"] is Vector2, "絵 %s が読み込める" % key)
 	var default_keys: Dictionary = SheetFx.chain_keys(DataDB.skill("slash"))
 	t.check((default_keys["target"] as Array).size() >= 1, "指定のない技にも、既定の絵がある")
+
+
+func test_mana_costs_and_regen() -> void:
+	var player := Player.new()
+	var loadout: SkillLoadout = player.caster.loadout
+	loadout.set_skill(1, "slash")
+	loadout.set_skill(2, "fire_bolt")
+	t.check_eq(player.vitals.mana, 100.0, "マナは、はじめ満タン（100）")
+	t.check_eq(player.caster.mana_cost(1), 3.0, "払いのコスト")
+	t.check_eq(player.caster.mana_cost(2), 5.0, "火球のコスト")
+	loadout.set_support(2, "scatter")
+	t.check(absf(player.caster.mana_cost(2) - 6.5) < 0.001, "補助ジェムで、コストが増える（拡散は×1.3）")
+	# 払う・足りない
+	t.check(player.vitals.spend_mana(40.0), "払える")
+	t.check_eq(player.vitals.mana, 60.0, "マナが減る")
+	t.check(not player.vitals.spend_mana(100.0), "足りないと、払えない")
+	t.check_eq(player.vitals.mana, 60.0, "足りないときは、減らない")
+	# 回復
+	player.vitals.tick(1.0)
+	t.check_eq(player.vitals.mana, 82.0, "1秒で22回復")
+	player.vitals.tick(10.0)
+	t.check_eq(player.vitals.mana, 100.0, "最大を超えない")
+	# 装備で最大・回復が増える
+	player.vitals.stats.add("mana", 40.0)
+	player.vitals.stats.add("mana_regen", 8.0)
+	t.check_eq(player.vitals.max_mana(), 140.0, "装備で最大マナが増える")
+	t.check_eq(player.vitals.mana_regen(), 30.0, "装備で回復が増える")
+	player.free()
+
+
+func test_skill_needs_mana_and_autopilot_is_mana_aware() -> void:
+	var player := Player.new()
+	var pilot := Autopilot.new()
+	var shorts: Array[String] = []
+	player.mana_short.connect(func(skill: SkillDef) -> void: shorts.append(skill.id))
+	player.caster.loadout.set_skill(1, "ground_slam")
+	player.caster.loadout.set_skill(2, "slash")
+	player.caster.loadout.set_skill(3, "fire_bolt")
+	player.vitals.mana = 2.0
+	t.check(not player.use_skill(1, Vector2(100, 0)), "マナが足りないと、スキルが出ない")
+	t.check_eq(shorts, ["ground_slam"] as Array[String], "マナ不足の知らせが出る")
+	t.check_eq(player.caster.cooldown_left(1), 0.0, "出せなかったときは、再使用時間も始まらない")
+	# 自動戦闘は、払えるものだけを、マナあたりのダメージが大きい順に出す
+	player.vitals.mana = 9.0
+	var slots: Array[int] = pilot.skills_to_cast(player)
+	t.check(not slots.has(1) or player.caster.mana_cost(1) <= 9.0, "払えないスキルは出さない")
+	var total: float = 0.0
+	for slot: int in slots:
+		total += player.caster.mana_cost(slot)
+	t.check(total <= 9.0 + 0.001, "合計が、いまのマナの範囲に収まる")
+	t.check(slots.size() >= 1, "払えるものは出す")
+	player.vitals.mana = 100.0
+	t.check_eq(pilot.skills_to_cast(player).size(), 3, "マナが十分なら、出せるものを全部")
+	player.free()

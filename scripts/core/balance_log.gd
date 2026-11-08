@@ -48,6 +48,10 @@ var _drop_items_by_rarity: Dictionary = {}
 var _drop_gems: Dictionary = {}
 var _drop_names: Array[String] = []
 var _dodges: int = 0
+var _mana_spent: float = 0.0
+var _mana_denied: Dictionary = {}  ## スキルid -> マナ不足で出せなかった回数（0.3秒以内の連続は、1回と数える）
+var _mana_denied_at: Dictionary = {}
+var _last_mana: float = -1.0
 var _damage_taken_by: Dictionary = {}  ## "敵のid:攻撃の種類" -> 受けたダメージの合計
 var _recent_hits: Array[Dictionary] = []  ## 直近に受けた攻撃（死因を調べるため。最大 RECENT_HITS 件）
 var last_record: Dictionary = {}
@@ -71,6 +75,9 @@ func setup(manager: EnemyManager, player: Player, stash: Stash, director: LootDi
 	player.caster.cast_done.connect(_on_cast_done)
 	player.damaged.connect(_on_player_damaged)
 	player.dodged.connect(func() -> void: _dodges += 1)
+	player.mana_short.connect(_on_mana_short)
+	player.vitals.changed.connect(_on_vitals_changed)
+	_last_mana = player.vitals.mana
 	player.vitals.healed.connect(_on_healed)
 	player.vitals.died.connect(func() -> void: finish("death"))
 	stash.equipped.connect(func(_slot: String, _new_item: ItemInstance, _old_item: ItemInstance) -> void: _equips += 1)
@@ -153,6 +160,26 @@ func _on_healed(amount: float) -> void:
 	_heal_events.append({"t": snappedf(_time, 0.1), "life_before_ratio": snappedf((life_after - amount) / max_life, 0.01), "amount": roundi(amount)})
 
 
+## マナ不足で出せなかった（連続して押し続けても、0.3秒に1回と数える）
+func _on_mana_short(skill: SkillDef) -> void:
+	if skill == null:
+		return
+	if _time - float(_mana_denied_at.get(skill.id, -10.0)) < 0.3:
+		return
+	_mana_denied_at[skill.id] = _time
+	_mana_denied[skill.id] = int(_mana_denied.get(skill.id, 0)) + 1
+
+
+## マナが減った分を、使った量として数える（増えるときは、回復なので数えない）
+func _on_vitals_changed() -> void:
+	if _player == null:
+		return
+	var mana: float = _player.vitals.mana
+	if _last_mana >= 0.0 and mana < _last_mana:
+		_mana_spent += _last_mana - mana
+	_last_mana = mana
+
+
 func _on_cast_done(_slot: int, skill: SkillDef, _hits: int, chained: bool) -> void:
 	var entry: Dictionary = _skill_entry(skill.id)
 	entry["casts"] = int(entry["casts"]) + 1
@@ -209,6 +236,13 @@ func _death_snapshot() -> Dictionary:
 	if not boss_info.is_empty():
 		info["boss"] = boss_info
 	return info
+
+
+static func _sum_ints(d: Dictionary) -> int:
+	var total: int = 0
+	for key: Variant in d:
+		total += int(d[key])
+	return total
 
 
 func _loadout_snapshot() -> Array[Dictionary]:
@@ -280,6 +314,9 @@ func build_record(reason: String) -> Dictionary:
 		"damage_taken": roundi(_damage_taken),
 		"damage_taken_by": _damage_taken_by,
 		"dodges": _dodges,
+		"mana": {"max": roundi(_player.vitals.max_mana()) if _player != null else 0, "regen": snappedf(_player.vitals.mana_regen(), 0.1) if _player != null else 0.0,
+			"spent": roundi(_mana_spent), "spent_per_second": snappedf(_mana_spent / maxf(_time, 1.0), 0.1),
+			"denied_casts": _mana_denied, "denied_total": _sum_ints(_mana_denied)},
 		"heals": {"used": _heals_used, "left": _player.vitals.heal_charges if _player != null else 0, "max": PlayerVitals.MAX_HEAL_CHARGES, "events": _heal_events},
 		"death": _death_snapshot() if reason == "death" else {},
 		"avg_dps": snappedf(_damage_dealt / maxf(_time, 1.0), 0.1),

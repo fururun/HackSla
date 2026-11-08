@@ -12,6 +12,7 @@ const HEAL_RATIO: float = 0.5  ## 1回で回復する量（最大ライフに対
 
 var stats: StatBlock = StatBlock.new()
 var life: float = PlayerConsts.BASE_MAX_LIFE
+var mana: float = PlayerConsts.BASE_MAX_MANA
 var level: int = 1
 var xp: int = 0
 var heal_charges: int = MAX_HEAL_CHARGES  ## 回復の残り回数
@@ -24,10 +25,34 @@ func _init(p_stats: StatBlock = null) -> void:
 	if p_stats != null:
 		stats = p_stats
 	life = max_life()
+	mana = max_mana()
 
 
 func max_life() -> float:
 	return PlayerConsts.BASE_MAX_LIFE + stats.get_value("life")
+
+
+func max_mana() -> float:
+	return PlayerConsts.BASE_MAX_MANA + stats.get_value("mana")
+
+
+func mana_regen() -> float:
+	return PlayerConsts.MANA_REGEN_PER_SEC + stats.get_value("mana_regen")
+
+
+func can_afford(cost: float) -> bool:
+	return mana + 0.0001 >= cost
+
+
+## マナを払う。足りなければ false（払わない）
+func spend_mana(cost: float) -> bool:
+	if cost <= 0.0:
+		return true
+	if not can_afford(cost):
+		return false
+	mana = maxf(mana - cost, 0.0)
+	changed.emit()
+	return true
 
 
 func is_dead() -> bool:
@@ -38,6 +63,9 @@ func is_dead() -> bool:
 func tick(delta: float) -> void:
 	if _invuln > 0.0:
 		_invuln = maxf(_invuln - delta, 0.0)
+	if not _dead and mana < max_mana():
+		mana = minf(mana + mana_regen() * delta, max_mana())
+		changed.emit()
 	# 時間でゆっくり回復する（群れの合間に、少しだけ息をつけるように）。死んでいるときは回復しない
 	if not _dead and life < max_life():
 		life = minf(life + PlayerConsts.LIFE_REGEN_PER_SEC * delta, max_life())
@@ -83,6 +111,7 @@ func grant_xp(amount: int) -> void:
 	points = int(state["points"])
 	if gained > 0:
 		life = max_life()
+		mana = max_mana()
 	changed.emit()
 	if gained > 0:
 		leveled_up.emit(level)
@@ -96,4 +125,5 @@ func reset() -> void:
 	_dead = false
 	heal_charges = MAX_HEAL_CHARGES
 	life = max_life()
+	mana = max_mana()
 	changed.emit()

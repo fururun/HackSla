@@ -45,6 +45,21 @@ func tick(delta: float) -> void:
 		_cooldowns[i] = maxf(0.0, _cooldowns[i] - delta)
 
 
+## この枠のスキルを使うときの、マナのコスト（補助ジェムの倍率つき。チェインで技が変わっても、元のスキルの分）
+func mana_cost(slot: int) -> float:
+	var skill := loadout.skill(slot)
+	if skill == null:
+		return 0.0
+	var sup := loadout.support(slot)
+	var mult: float = _mod(sup.modifiers, "mana_mult") if sup != null else 1.0
+	return skill.mana_cost * mult
+
+
+## スキルがあって、再使用時間が終わっている（マナは見ない）
+func is_ready(slot: int) -> bool:
+	return loadout.skill(slot) != null and cooldown_left(slot) <= 0.0
+
+
 func cooldown_left(slot: int) -> float:
 	return _cooldowns[slot - 1] if SkillLoadout.is_valid_slot(slot) else 0.0
 

@@ -7,7 +7,7 @@ const NAMES: Dictionary = {
 	"lightning_damage_pct": "雷ダメージ", "cast_speed_pct": "スキルの速さ",
 	"move_speed_pct": "移動速度", "area_pct": "範囲", "cooldown_pct": "再使用時間の短縮",
 	"fire_res": "火耐性", "cold_res": "冷気耐性", "lightning_res": "雷耐性",
-	"life_on_kill": "撃破時のライフ回復",
+	"life_on_kill": "撃破時のライフ回復", "mana": "最大マナ", "mana_regen": "マナ回復（毎秒）",
 }
 const INCREASE_COLOR: Color = Color("8ce6a0")
 const DECREASE_COLOR: Color = Color("ff9b91")

@@ -5,7 +5,7 @@ extends RefCounted
 const STATS: PackedStringArray = [
 	"life", "armor", "damage_pct", "fire_damage_pct", "cold_damage_pct", "lightning_damage_pct",
 	"cast_speed_pct", "move_speed_pct", "area_pct", "cooldown_pct",
-	"fire_res", "cold_res", "lightning_res", "life_on_kill",
+	"fire_res", "cold_res", "lightning_res", "life_on_kill", "mana", "mana_regen",
 ]
 
 var id: String = ""

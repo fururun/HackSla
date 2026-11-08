@@ -2,43 +2,73 @@
   {
     "id": "scatter",
     "name": "拡散",
-    "kinds": ["projectile"],
-    "modifiers": { "projectile_count": 2, "damage_mult": 0.85 },
+    "kinds": [
+      "projectile"
+    ],
+    "modifiers": {
+      "projectile_count": 2,
+      "damage_mult": 0.85,
+      "mana_mult": 1.3
+    },
     "description": "飛び道具が3方向に広がる。1発あたりの威力は下がる。"
   },
   {
     "id": "burst_on_kill",
     "name": "撃破時爆発",
     "kinds": [],
-    "modifiers": { "explode_on_kill": 0.6, "explode_damage_ratio": 1.5 },
+    "modifiers": {
+      "explode_on_kill": 0.6,
+      "explode_damage_ratio": 1.5,
+      "mana_mult": 1.15
+    },
     "description": "このスキルで倒した敵が、一定の確率で爆発して周りを巻き込む。"
   },
   {
     "id": "heavy_blow",
     "name": "重み乗せ",
     "kinds": [],
-    "modifiers": { "damage_mult": 1.45, "cooldown_mult": 1.25 },
+    "modifiers": {
+      "damage_mult": 1.45,
+      "cooldown_mult": 1.25,
+      "mana_mult": 1.2
+    },
     "description": "次の発動まで間が空く代わりに、一撃の重みが増す。"
   },
   {
     "id": "wide_area",
     "name": "大ぶり",
-    "kinds": ["area", "melee"],
-    "modifiers": { "area_mult": 1.35, "damage_mult": 0.9 },
+    "kinds": [
+      "area",
+      "melee"
+    ],
+    "modifiers": {
+      "area_mult": 1.35,
+      "damage_mult": 0.9,
+      "mana_mult": 1.1
+    },
     "description": "威力が少し控えめになる代わりに、届く範囲が大きく広がる。"
   },
   {
     "id": "chain_hop",
     "name": "飛び移り",
-    "kinds": ["projectile"],
-    "modifiers": { "hop_count": 2 },
+    "kinds": [
+      "projectile"
+    ],
+    "modifiers": {
+      "hop_count": 2,
+      "mana_mult": 1.2
+    },
     "description": "敵に当たった飛び道具が消えず、すぐ近くの敵へ飛び移る。"
   },
   {
     "id": "rapid_cast",
     "name": "早繰り",
     "kinds": [],
-    "modifiers": { "cooldown_mult": 0.7, "damage_mult": 0.8 },
+    "modifiers": {
+      "cooldown_mult": 0.7,
+      "damage_mult": 0.8,
+      "mana_mult": 1.35
+    },
     "description": "一発の威力が軽くなる代わりに、短い間隔で繰り出せる。"
   }
 ]

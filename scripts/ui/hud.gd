@@ -12,6 +12,7 @@ const BAR_BG: Color = UiStyle.BAR_BG
 const LIFE_COLOR: Color = UiStyle.LIFE
 const XP_COLOR: Color = UiStyle.XP
 const LEVELUP_TIME: float = 1.5
+const MANA_COLOR: Color = Color("#3d7bff")  ## マナの棒の色
 
 var _vitals: PlayerVitals
 var _root: Control
@@ -19,6 +20,8 @@ var _life_bar: Panel
 var _life_label: Label
 var _xp_bar: Panel
 var _xp_label: Label
+var _mana_bar: Panel
+var _mana_label: Label
 var _levelup_label: Label
 var _heal_label: Label  ## 回復の残り回数
 var _dead_label: Label
@@ -45,6 +48,8 @@ func _build() -> void:
 	theme.default_font_size = FONT_SIZE
 	_root.theme = theme
 	add_child(_root)
+	_mana_bar = _make_bar(Vector2(MARGIN, SCREEN_H - MARGIN - BAR_H * 3 - 5), MANA_COLOR)
+	_mana_label = _make_label(_mana_bar)
 	_life_bar = _make_bar(Vector2(MARGIN, SCREEN_H - MARGIN - BAR_H * 2 - 3), LIFE_COLOR)
 	_life_label = _make_label(_life_bar)
 	_heal_label = Label.new()
@@ -108,6 +113,9 @@ func _refresh() -> void:
 	var max_life: float = _vitals.max_life()
 	_set_fill(_life_bar, _vitals.life / max_life if max_life > 0.0 else 0.0)
 	_life_label.text = "%d / %d" % [ceili(_vitals.life), roundi(max_life)]
+	var max_mana: float = _vitals.max_mana()
+	_set_fill(_mana_bar, _vitals.mana / max_mana if max_mana > 0.0 else 0.0)
+	_mana_label.text = "マナ %d / %d" % [floori(_vitals.mana), roundi(max_mana)]
 	if _vitals.level >= LevelCurve.MAX_LEVEL:
 		_set_fill(_xp_bar, 1.0)
 		_xp_label.text = "Lv %d (MAX)" % _vitals.level

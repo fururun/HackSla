@@ -5,6 +5,7 @@ extends CharacterBody2D
 
 signal attacked(skill: SkillDef, hits: int)
 signal dodged  ## 回避を出した（バランス記録用）
+signal mana_short(skill: SkillDef)  ## マナが足りなくて、スキルを出せなかった
 signal damaged(amount: float, source: Node)  ## 敵に殴られて、体力が減った（回避中は出ない。見た目用）
 
 const MOVE_SPEED: float = 80.0
@@ -143,10 +144,15 @@ func is_dodging() -> bool:
 func use_skill(slot: int, target: Vector2) -> bool:
 	if vitals.is_dead():
 		return false
+	var cost: float = caster.mana_cost(slot)
+	if caster.is_ready(slot) and not vitals.can_afford(cost):
+		mana_short.emit(caster.loadout.skill(slot))  # 使える状態なのに、マナが足りない
+		return false
 	caster.fx_parent = get_parent()
 	var hits := caster.cast(slot, target, global_position, Facing.to_vector(facing))
 	if hits < 0:
 		return false
+	vitals.spend_mana(cost)
 	var aim := target - global_position
 	if aim.length() >= CombatConsts.MIN_AIM_DISTANCE:
 		facing = Facing.dir8(aim)

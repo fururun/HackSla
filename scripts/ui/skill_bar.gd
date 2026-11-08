@@ -8,10 +8,12 @@ const IDLE_ALPHA: float = 0.6  ## どれも再使用待ちでないときは、�
 const FLASH_TIME: float = 0.22
 const INPUT_SETUP: Script = preload("res://scripts/core/input_setup.gd")
 var _caster: SkillCaster
+var _vitals: PlayerVitals  ## マナが足りないスキルを、うす青く示すため（空でもよい）
 var _root: Control
 var _slots: Array[Dictionary] = []
 
-func setup(caster: SkillCaster) -> void:
+func setup(caster: SkillCaster, vitals: PlayerVitals = null) -> void:
+	_vitals = vitals
 	if is_instance_valid(_caster):
 		if _caster.loadout.changed.is_connected(_loadout_changed):
 			_caster.loadout.changed.disconnect(_loadout_changed)
@@ -146,5 +148,10 @@ func _process(delta: float) -> void:
 		veil.size = Vector2(24, 24 * ratio)
 		veil.visible = not state["ready"] and not state["empty"]
 		(entry["timer"] as Label).text = "%.1f" % state["left"] if veil.visible else ""
+		# マナが足りないときは、絵を青くくすませて、コストを数字で出す
+		var short: bool = _vitals != null and skill != null and not _vitals.can_afford(_caster.mana_cost(slot))
+		if short and not veil.visible:
+			(entry["timer"] as Label).text = "%d" % ceili(_caster.mana_cost(slot))
+			icon.color = icon.color.lerp(Color("#2a3a6a"), 0.7)
 		busy = busy or veil.visible or entry["flash"] > 0.0 or state["chain"]
 	_root.modulate.a = lerpf(_root.modulate.a, 1.0 if busy else IDLE_ALPHA, minf(1.0, delta * 8.0))

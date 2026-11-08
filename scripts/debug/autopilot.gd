@@ -449,13 +449,43 @@ func skills_to_cast(player: Player) -> Array[int]:
 		for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
 			if player.caster.loadout.skill(slot) != null and player.caster.cooldown_left(slot) <= 0.0:
 				slots.append(slot)
-		return slots
+		return _within_mana(player, slots)
 	if skill_mode == SkillMode.CHAIN_GREEDY:
 		return _greedy_order(player)
 	var pick: int = pick_skill_slot(player)
 	if pick > 0:
 		slots.append(pick)
 	return slots
+
+
+## マナで払える範囲に絞る。足りるなら、そのまま（枠の順）。足りないときは、マナあたりのダメージが大きいものから、払える分だけ出す
+func _within_mana(player: Player, slots: Array[int]) -> Array[int]:
+	var caster: SkillCaster = player.caster
+	var total: float = 0.0
+	for slot: int in slots:
+		total += caster.mana_cost(slot)
+	var mana: float = player.vitals.mana
+	if total <= mana + 0.0001:
+		return slots
+	var ranked: Array[int] = slots.duplicate()
+	ranked.sort_custom(func(a: int, b: int) -> bool:
+		return _efficiency(caster, a) > _efficiency(caster, b))
+	var chosen: Array[int] = []
+	for slot: int in ranked:
+		var cost: float = caster.mana_cost(slot)
+		if cost <= mana + 0.0001:
+			chosen.append(slot)
+			mana -= cost
+	return chosen
+
+
+## マナ1あたりの、ダメージ（平均）。コストが0なら、とても大きい
+func _efficiency(caster: SkillCaster, slot: int) -> float:
+	var cost: float = caster.mana_cost(slot)
+	var skill: SkillDef = caster.loadout.skill(slot)
+	if skill == null:
+		return 0.0
+	return skill.average_damage() / cost if cost > 0.0 else 1000000.0
 
 
 ## 出せるスキルを全部、チェインが成立する順に並べる（出せるものを減らさない）。
@@ -507,7 +537,7 @@ func pick_skill_slot(player: Player) -> int:
 	var last: SkillDef = caster.chain.last_skill
 	var ready: Array[int] = []
 	for slot: int in range(1, SkillLoadout.SLOT_COUNT + 1):
-		if caster.loadout.skill(slot) != null and caster.cooldown_left(slot) <= 0.0:
+		if caster.loadout.skill(slot) != null and caster.cooldown_left(slot) <= 0.0 and player.vitals.can_afford(caster.mana_cost(slot)):
 			ready.append(slot)
 	# 1) チェインを完成させる
 	if last != null:
