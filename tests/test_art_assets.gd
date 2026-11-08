@@ -25,6 +25,8 @@ func test_drop_icon_choice() -> void:
 	t.check_eq(GroundDrop.icon_name(GemInstance.new(GemInstance.Kind.SKILL, "slash")), "gem_skill", "スキルジェム")
 	t.check_eq(GroundDrop.icon_name(GemInstance.new(GemInstance.Kind.SUPPORT, "scatter")), "gem_support", "補助ジェム")
 	t.check_eq(GroundDrop.icon_name(12), "coin", "通貨")
+	# 他のテストがデータを入れ替えることがあるので、先に読み込み直す
+	((Engine.get_main_loop() as SceneTree).root.get_node("DataDB") as Node).call("reload")
 	var roller := LootRoller.new(RandomNumberGenerator.new())
 	var seen := {}
 	for i in 400:

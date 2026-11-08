@@ -6,6 +6,8 @@ var t: Variant
 
 func _start_main() -> Node:
 	var tree: SceneTree = t
+	# 他のテストがデータを入れ替えることがあるので、メイン画面を作る前に読み込み直す
+	(tree.root.get_node("DataDB") as Node).call("reload")
 	var main: Node = load("res://scenes/main/main.tscn").instantiate()
 	tree.root.add_child(main)
 	for i in 5:
@@ -146,6 +148,7 @@ func test_equipment_stats_reach_player() -> void:
 		if candidate != null and float(candidate.total_stats().get("life", 0.0)) > 0.0:
 			item = candidate
 			break
+	t.check(item != null, "ライフが付く装備を抽選で作れる")  # 作れないときに、黙って通らないようにする
 	if item == null:
 		main.queue_free()
 		return
