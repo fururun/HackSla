@@ -306,6 +306,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 		player.caster.stats.clear()
 		player.caster.stats.merge(stash.equipment_stats())
 		player.caster.stats.merge(skill_tree.stats())  # スキルツリーで取ったノードの効果
+		player.vitals.life = minf(player.vitals.life, player.vitals.max_life())  # 最大ライフが下がったら、いまのライフも合わせる
 		player.vitals.changed.emit()
 	stash.changed.connect(apply_equipment)
 	skill_tree.changed.connect(apply_equipment)

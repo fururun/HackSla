@@ -249,10 +249,9 @@
       "proj_2"
     ],
     "effects": {
-      "projectile_damage_pct": 22,
-      "move_speed_pct": 4
+      "projectile_damage_pct": 22
     },
-    "description": "飛び道具のダメージ +22%、移動速度 +4%"
+    "description": "飛び道具のダメージ +22%"
   },
   {
     "id": "area_1",
@@ -301,10 +300,9 @@
       "area_2"
     ],
     "effects": {
-      "area_damage_pct": 22,
-      "area_pct": 6
+      "area_damage_pct": 22
     },
-    "description": "範囲技のダメージ +22%、範囲 +6%"
+    "description": "範囲技のダメージ +22%"
   },
   {
     "id": "melee_1",
@@ -360,7 +358,7 @@
   },
   {
     "id": "res_fire",
-    "name": "炎の耐え",
+    "name": "頑健 III",
     "kind": "small",
     "cost": 1,
     "pos": [
@@ -371,13 +369,13 @@
       "vit_2"
     ],
     "effects": {
-      "fire_res": 10
+      "life": 10
     },
-    "description": "火耐性 +10%"
+    "description": "最大ライフ +10"
   },
   {
     "id": "res_cold",
-    "name": "霜の耐え",
+    "name": "頑健 IV",
     "kind": "small",
     "cost": 1,
     "pos": [
@@ -388,13 +386,13 @@
       "res_fire"
     ],
     "effects": {
-      "cold_res": 10
+      "life": 10
     },
-    "description": "冷気耐性 +10%"
+    "description": "最大ライフ +10"
   },
   {
     "id": "res_light",
-    "name": "雷の耐え",
+    "name": "頑健 V",
     "kind": "small",
     "cost": 1,
     "pos": [
@@ -405,9 +403,9 @@
       "res_cold"
     ],
     "effects": {
-      "lightning_res": 10
+      "life": 10
     },
-    "description": "雷耐性 +10%"
+    "description": "最大ライフ +10"
   },
   {
     "id": "vit_4",

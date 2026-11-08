@@ -1446,3 +1446,11 @@ func test_carry_with_nothing_to_carry_and_stale_ids() -> void:
 	t.check(skill_tree.is_taken("pow_1") and not skill_tree.is_taken("no_such_node"), "存在しないノードのidは無視する")
 	t.check(RunCarry.pending.is_empty(), "戻したら、預かりは空になる（次のリセットに残らない）")
 	RunCarry.clear()
+
+
+func test_tree_nodes_only_use_stats_the_game_reads() -> void:
+	var working: PackedStringArray = ["life", "armor", "damage_pct", "fire_damage_pct", "cold_damage_pct", "lightning_damage_pct", "mana", "mana_regen",
+		"melee_damage_pct", "projectile_damage_pct", "area_damage_pct", "supported_damage_pct", "chain_damage_pct", "mana_cost_pct"]
+	for node: TreeNodeDef in DataDB.tree_nodes.values():
+		for key: String in node.effects:
+			t.check(working.has(key), "ノード %s の %s は、ゲームが読むステータス" % [node.id, key])
