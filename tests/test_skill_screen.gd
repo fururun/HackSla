@@ -112,3 +112,28 @@ func test_mouse_controls_and_key() -> void:
 	t.check(not screen.is_open() and not tree.paused, "停止中もK入力で閉じる")
 	screen.free()
 	caster.free()
+
+
+func test_stash_filters_and_optional_setup() -> void:
+	var stash: Stash = Stash.new()
+	stash.gems.clear()
+	stash.add_gem(GemInstance.new(GemInstance.Kind.SKILL, "fire_bolt"))
+	var caster: SkillCaster = SkillCaster.new()
+	caster.loadout.set_skill(1, "fire_bolt")
+	var screen: SkillScreen = SkillScreen.new()
+	screen.setup(caster, stash)
+	t.check_eq(screen._available_skills().size(), 1, "所持スキルだけ候補")
+	t.check(not screen._equip("slash"), "未所持は装備不可")
+	t.check(screen._available_supports(1).is_empty(), "未所持補助は候補に出ない")
+	stash.add_gem(GemInstance.new(GemInstance.Kind.SUPPORT, "scatter"))
+	t.check_eq(screen._available_supports(1).size(), 1, "所持補助が増える")
+	screen._select_support = true
+	t.check(screen._equip("scatter"), "拾った補助を装備")
+	caster.loadout.set_skill(1, "slash")
+	t.check(screen._available_supports(1).is_empty(), "所持していても適合性を守る")
+	stash.add_gem(GemInstance.new(GemInstance.Kind.SKILL, "shatter"))
+	t.check_eq(screen._available_skills().size(), 1, "所持しても専用技は除外")
+	screen.setup(caster)
+	t.check(screen._available_skills().size() > 1, "省略すると従来の全候補")
+	screen.free()
+	caster.free()
