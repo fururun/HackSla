@@ -87,6 +87,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		set_help_open(not _help_open)
 	if event.is_action_pressed("toggle_autobattle"):
 		set_autopilot(autopilot.toggle())
+	if event.is_action_pressed("autobattle_route"):
+		autopilot.cycle_route()
+		set_autopilot(autopilot.enabled)
+	if event.is_action_pressed("autobattle_chests"):
+		autopilot.toggle_chests()
+		set_autopilot(autopilot.enabled)
 	if event.is_action_pressed("cycle_camera"):
 		apply_camera_mode((camera_mode + 1) % CAMERA_MODES.size())
 
@@ -105,7 +111,7 @@ func set_autopilot(on: bool) -> void:
 		_autopilot_label.add_theme_constant_override("outline_size", 2)
 		_autopilot_label.add_theme_color_override("font_outline_color", Color.BLACK)
 		layer.add_child(_autopilot_label)
-	_autopilot_label.text = "自動戦闘 ON（F2で止める）" if on else ""
+	_autopilot_label.text = autopilot.settings_text() if on else ""
 	if game_log != null:
 		game_log.play("autopilot", {"on": on})
 
@@ -170,6 +176,7 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	add_child(director)
 	director.setup(manager, player, world, stash, func() -> int: return player.vitals.level)
 	autopilot.director = director
+	autopilot.map = map
 	director.is_valid_position = func(pos: Vector2) -> bool: return map.is_floor_at(pos, true)  # 壁の中・壁ぎわに置かない
 	# 宝箱：近づくと開いて、まとまった数のドロップが出る（最初の広場に置く）
 	for pos: Vector2 in map.markers.get("C", []):

@@ -18,6 +18,8 @@ const KEYS: Dictionary = {
 	"cycle_camera": [KEY_F4],
 	"toggle_help": [KEY_H],
 	"toggle_autobattle": [KEY_F2],
+	"autobattle_route": [KEY_F3],
+	"autobattle_chests": [KEY_F6],
 	"dodge": [KEY_SPACE],
 }
 

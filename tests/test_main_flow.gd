@@ -311,7 +311,7 @@ func test_autopilot_walks_to_enemy_fights_and_dodges() -> void:
 	var chosen: Node2D = pilot.find_target(player)
 	t.check(chosen is Enemy, "近くの敵を選ぶ")
 	var move: Vector2 = pilot.move_input(player, 0.016)
-	t.check(move.length() > 0.5 and move.dot((chosen.global_position - player.global_position).normalized()) > 0.9, "敵のほうへ歩く")
+	t.check(move.length() > 0.5, "敵のほうへ（道に沿って）歩く")
 	player.global_position = chosen.global_position + Vector2(-10, 0)
 	t.check_eq(pilot.move_input(player, 0.016), Vector2.ZERO, "近づいたら止まって戦う")
 	t.check(pilot.wants_skill(player), "近くに敵がいれば、スキルを使う")
@@ -345,4 +345,74 @@ func test_autopilot_actually_plays() -> void:
 		await tree.physics_frame
 	t.check(player.global_position.distance_to(start) > 20.0, "自動戦闘で、勝手に歩く")
 	t.check(hits[0] > 0, "自動戦闘で、敵や案山子に攻撃が当たる")
+	main.queue_free()
+
+
+func test_autopilot_finds_paths_around_walls_and_options() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var pilot: Autopilot = main.autopilot
+	var map: IsoMap = main.map
+	# 開始地点から、ボスの部屋・すべての宝箱へ、道がつながっている
+	var boss_pos: Vector2 = map.marker("X")
+	t.check(pilot.path_length(map.marker("P"), boss_pos) > 20, "開始地点からボスの部屋まで、歩いて行ける道がある")
+	for chest_pos: Vector2 in map.markers.get("C", []):
+		t.check(pilot.path_length(map.marker("P"), chest_pos) >= 0, "宝箱へ歩いて行ける")
+	# 壁の向こうの目的地へ、まっすぐではなく、道に沿った向きに歩く
+	player.global_position = map.marker("P")
+	pilot.toggle()
+	pilot.route = Autopilot.Route.BOSS_RUSH
+	pilot.open_chests = false
+	var steered: Vector2 = pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "ボス", "ボスへ直行のとき、目的地はボス")
+	t.check(steered.length() > 0.5, "道に沿って歩き出す")
+	# 設定の切り替え
+	pilot.route = Autopilot.Route.NEAREST_ENEMY
+	pilot.cycle_route()
+	t.check_eq(pilot.route, Autopilot.Route.BOSS_RUSH, "ルートを切り替えられる")
+	pilot.cycle_route()
+	t.check_eq(pilot.route, Autopilot.Route.NEAREST_ENEMY, "ルートは一周する")
+	pilot.open_chests = true
+	t.check_eq(pilot.toggle_chests(), false, "宝箱を開けない設定にできる")
+	t.check_eq(pilot.toggle_chests(), true, "もう一度で、開ける設定に戻る")
+	t.check(pilot.settings_text().contains("ルート") and pilot.settings_text().contains("宝箱"), "設定が画面に出る")
+	# 宝箱を開ける設定なら、近くの敵がいないとき、宝箱へ向かう。開けない設定なら向かわない
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy:
+			n.hide()  # 敵を見えなくして、宝箱だけを見る
+	var chest: TreasureChest = tree.get_nodes_in_group("chests")[0] as TreasureChest
+	player.global_position = chest.global_position + Vector2(60, 0)
+	pilot.open_chests = true
+	pilot.move_input(player, 0.016)
+	t.check_eq(pilot.goal_kind, "宝箱", "宝箱を開ける設定なら、宝箱へ向かう")
+	pilot.open_chests = false
+	pilot.move_input(player, 0.016)
+	t.check(pilot.goal_kind != "宝箱", "開けない設定なら、宝箱へ寄り道しない")
+	main.queue_free()
+
+
+func test_autopilot_reaches_far_goal_through_corridors() -> void:
+	var main: Node = await _start_main()
+	var tree: SceneTree = t
+	var player := tree.get_first_node_in_group("player") as Player
+	var pilot: Autopilot = main.autopilot
+	var map: IsoMap = main.map
+	for n: Node in tree.get_nodes_in_group("enemies"):
+		if n is Enemy:
+			n.hide()
+			n.active = false
+	player.global_position = map.marker("P")
+	# 開始の広場から、最初の宝箱へ（壁をまわって、歩いて着く）
+	var chest: TreasureChest = tree.get_nodes_in_group("chests")[0] as TreasureChest
+	for c: Node in tree.get_nodes_in_group("chests"):
+		if pilot.path_length(player.global_position, c.global_position) < pilot.path_length(player.global_position, chest.global_position):
+			chest = c as TreasureChest
+	pilot.toggle()
+	pilot.open_chests = true
+	for i: int in 1800:
+		await tree.physics_frame
+		if chest.is_open:
+			break
+	t.check(chest.is_open, "壁にぶつからず、道に沿って宝箱まで歩いて、開けた")
 	main.queue_free()
