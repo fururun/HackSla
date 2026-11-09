@@ -13,6 +13,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		restart(RunCarry.Mode.RESET)
 	elif event.is_action_pressed("restart_carry"):
 		restart(RunCarry.Mode.CARRY)
+	elif event is InputEventJoypadButton and (event as InputEventJoypadButton).pressed and _player_dead():
+		# コントローラー：やられたとき、A＝引き継いでリスタート、B＝リセット
+		var button: int = (event as InputEventJoypadButton).button_index
+		if button == JOY_BUTTON_A:
+			restart(RunCarry.Mode.CARRY)
+		elif button == JOY_BUTTON_B:
+			restart(RunCarry.Mode.RESET)
+
+
+func _player_dead() -> bool:
+	var parent: Node = get_parent()
+	var player: Variant = parent.get("player") if parent != null else null
+	return player is Player and (player as Player).vitals.is_dead()
 
 
 func restart(mode: RunCarry.Mode = RunCarry.Mode.RESET) -> void:

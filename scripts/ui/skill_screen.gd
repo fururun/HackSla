@@ -26,6 +26,7 @@ var _opened: bool = false
 var _was_paused: bool = false
 var _selected_slot: int = 1
 var _select_support: bool = false
+var _focus_key: String = ""  ## コントローラーで選んでいる欄（作り直したあとも、同じ欄に戻す）
 var _select_index: int = 0  ## 補助ジェムを選ぶとき、何番目の穴か（0 から）
 var _root: Control
 var _slots: VBoxContainer
@@ -98,6 +99,45 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_skill_screen") and not event.is_echo():
 		toggle()
 		get_viewport().set_input_as_handled()
+	elif _opened and event.is_action_pressed("ui_cancel"):
+		close()
+		get_viewport().set_input_as_handled()
+	elif _opened and event is InputEventJoypadButton and (event as InputEventJoypadButton).pressed \
+			and (event as InputEventJoypadButton).button_index == JOY_BUTTON_Y:
+		_clear_focused_slot()  # コントローラー：Y で、選んでいる枠を外す（右クリックと同じ）
+		get_viewport().set_input_as_handled()
+
+
+## "slot_<枠>_<補助か>_<穴>" の欄を選んでいるとき、その枠のスキル／補助ジェムを外す
+func _clear_focused_slot() -> void:
+	var parts: PackedStringArray = _focus_key.split("_")
+	if parts.size() != 4 or parts[0] != "slot" or not is_instance_valid(_caster):
+		return
+	var slot: int = int(parts[1])
+	if parts[2] == "1":
+		_caster.loadout.clear_support(slot, int(parts[3]))
+	else:
+		_caster.loadout.clear_skill(slot)
+
+
+## 選んでいた欄に、フォーカスを戻す（なければ、最初の枠）
+func _restore_focus() -> void:
+	var key: String = _focus_key if not _focus_key.is_empty() else "slot_1_0_0"
+	var target: Button = _find_focus_button(_root, key)
+	if target == null:
+		target = _find_focus_button(_root, "slot_1_0_0")
+	if target != null and target.is_inside_tree():
+		target.grab_focus()
+
+
+func _find_focus_button(node: Node, key: String) -> Button:
+	for child: Node in node.get_children():
+		if child is Button and str(child.get_meta("fk", "")) == key:
+			return child as Button
+		var found: Button = _find_focus_button(child, key)
+		if found != null:
+			return found
+	return null
 
 
 func _available_skills() -> Array[SkillDef]:
@@ -173,6 +213,8 @@ func _build_ui() -> void:
 	close_button.position = Vector2(394, 6)
 	close_button.size = Vector2(74, 18)
 	close_button.pressed.connect(close)
+	close_button.set_meta("fk", "close")
+	close_button.focus_entered.connect(func() -> void: _focus_key = "close")
 	_root.add_child(close_button)
 	_slots = _scroll_box(_panel(Vector2(12, 32), Vector2(158, 138)), 128)  # 枠が多くてもスクロールで見られる
 	var right: VBoxContainer = _panel(Vector2(180, 32), Vector2(288, 138))
@@ -209,6 +251,7 @@ func _scroll_box(parent: Control, height: float) -> VBoxContainer:
 	scroll.custom_minimum_size.y = height
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true  # 十字キーで選んだ欄が見えるように、自動でスクロールする
 	parent.add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -229,7 +272,7 @@ func _button(text: String) -> Button:
 	var button: Button = Button.new()
 	button.text = text
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.focus_mode = Control.FOCUS_NONE
+	button.focus_mode = Control.FOCUS_ALL  # 十字キー（コントローラー）で選べる
 	UiStyle.button(button)
 	return button
 
@@ -262,12 +305,16 @@ func _refresh() -> void:
 		var label: Label = _label(entry["name"] + ("  /  " + entry["description"] if entry["known"] else ""))
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_chains.add_child(label)
+	_restore_focus()
 
 
 func _slot_button(slot: int, support: bool, text: String, index: int = 0) -> void:
 	var button: Button = _button(text)
 	if slot == _selected_slot and support == _select_support and (not support or index == _select_index):
 		button.add_theme_color_override("font_color", ACCENT_COLOR)
+	var key: String = "slot_%d_%d_%d" % [slot, 1 if support else 0, index]
+	button.set_meta("fk", key)
+	button.focus_entered.connect(func() -> void: _focus_key = key)
 	button.pressed.connect(_select.bind(slot, support, index))
 	button.gui_input.connect(_slot_input.bind(slot, support, index))
 	_slots.add_child(button)
@@ -309,6 +356,11 @@ func _refresh_choices() -> void:
 
 func _add_choice(id: String, title: String, description: String, values: String) -> void:
 	var button: Button = _button(title)
+	var key: String = "choice_" + id
+	button.set_meta("fk", key)
+	button.focus_entered.connect(func() -> void:
+		_focus_key = key
+		_show_details(values))
 	button.pressed.connect(_choose.bind(id, values))
 	button.mouse_entered.connect(_show_details.bind(values))
 	_choices.add_child(button)

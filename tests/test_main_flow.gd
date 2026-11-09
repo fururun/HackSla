@@ -1526,3 +1526,29 @@ func test_rare_skill_gems_drop_rarely() -> void:
 			rare_count += 1
 	t.check(rare_count > 0, "ときどき落ちる（%d / %d）" % [rare_count, total])
 	t.check(float(rare_count) / float(total) < 0.1, "ほとんどは、ふつうのジェム")
+
+
+func test_controller_bindings_and_tree_cursor() -> void:
+	for action: String in ["move_up", "move_down", "move_left", "move_right", "dodge", "heal", "skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6", "toggle_skill_screen", "toggle_equip_screen", "toggle_skill_tree", "toggle_autobattle"]:
+		var has_pad: bool = InputMap.action_get_events(action).any(func(e: InputEvent) -> bool: return e is InputEventJoypadButton or e is InputEventJoypadMotion)
+		t.check(has_pad, "%s にコントローラーの割り当てがある" % action)
+	var has_keys: bool = InputMap.action_get_events("move_up").any(func(e: InputEvent) -> bool: return e is InputEventKey)
+	t.check(has_keys, "キーボードの割り当ても残っている")
+	var main: Node = await _start_main()
+	var screen: SkillTreeScreen = main.tree_screen
+	screen.open()
+	t.check(screen.move_cursor(Vector2.RIGHT) or screen.move_cursor(Vector2.DOWN), "最初のカーソルが、根源に置かれる")
+	var start_id: String = screen.hover_id
+	var moved: bool = false
+	for dir: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
+		if screen.move_cursor(dir):
+			moved = true
+			break
+	t.check(moved and screen.hover_id != "", "十字キーで、ほかのノードへ動かせる（%s → %s）" % [start_id, screen.hover_id])
+	screen.close()
+	var skills: SkillScreen = main.get_node("SkillScreen")
+	skills.open()
+	await t.process_frame
+	t.check(skills.get_viewport().gui_get_focus_owner() != null, "スキル装備画面を開くと、どこかの欄が選ばれている")
+	skills.close()
+	main.queue_free()

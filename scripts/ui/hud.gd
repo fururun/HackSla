@@ -59,7 +59,7 @@ func _build() -> void:
 	_xp_bar = _make_bar(Vector2(MARGIN, SCREEN_H - MARGIN - BAR_H), XP_COLOR)
 	_xp_label = _make_label(_xp_bar)
 	_levelup_label = _make_message("レベルアップ！", UiStyle.ACCENT, Vector2(200, 70))
-	_dead_label = _make_message("やられた　F5 でやり直し", UiStyle.WARNING, Vector2(170, 130))
+	_dead_label = _make_message("やられた　F5 でやり直し（コントローラー：A 引き継ぎ / B リセット）", UiStyle.WARNING, Vector2(170, 130))
 
 
 func _make_message(text: String, color: Color, pos: Vector2) -> Label:

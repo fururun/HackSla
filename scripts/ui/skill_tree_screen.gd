@@ -152,6 +152,48 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif _opened and event.is_action_pressed("ui_cancel"):
 		close()
 		get_viewport().set_input_as_handled()
+	elif _opened:
+		# コントローラー／キーボード：十字キー・スティックでノードを選び、A（決定）で取る
+		for pair: Array in [["ui_up", Vector2.UP], ["ui_down", Vector2.DOWN], ["ui_left", Vector2.LEFT], ["ui_right", Vector2.RIGHT]]:
+			if event.is_action_pressed(str(pair[0])):
+				move_cursor(pair[1])
+				get_viewport().set_input_as_handled()
+				return
+		if event.is_action_pressed("ui_accept") and not hover_id.is_empty():
+			_on_clicked(hover_id)
+			get_viewport().set_input_as_handled()
+
+
+## 選んでいるノードから、指した向きの、いちばん近いノードへ動かす（最初は、根源）。動かせたら true
+func move_cursor(direction: Vector2) -> bool:
+	var current: TreeNodeDef = DataDB.tree_node(hover_id) if not hover_id.is_empty() else null
+	if current == null:
+		for node: TreeNodeDef in DataDB.tree_nodes.values():
+			if node.pos == Vector2i.ZERO:
+				current = node
+				break
+		if current == null:
+			return false
+		_on_hovered(current.id)
+		return true
+	var origin: Vector2 = node_position(current)
+	var best: TreeNodeDef = null
+	var best_score: float = INF
+	for node: TreeNodeDef in DataDB.tree_nodes.values():
+		if node.id == current.id:
+			continue
+		var offset: Vector2 = node_position(node) - origin
+		var alignment: float = offset.normalized().dot(direction)
+		if alignment < 0.5:
+			continue
+		var score: float = offset.length() * (2.0 - alignment)
+		if score < best_score:
+			best = node
+			best_score = score
+	if best == null:
+		return false
+	_on_hovered(best.id)
+	return true
 
 
 ## ノードを取る（クリックと同じ）。取れたら true

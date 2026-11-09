@@ -68,6 +68,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_equip_screen") and not event.is_echo():
 		toggle()
 		get_viewport().set_input_as_handled()
+	elif is_open() and event.is_action_pressed("ui_cancel"):
+		toggle()
+		get_viewport().set_input_as_handled()
 
 ## 描画なしでも6部位と性能を調べられる。
 func slot_entries() -> Array[Dictionary]:
