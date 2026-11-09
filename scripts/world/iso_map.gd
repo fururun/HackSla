@@ -15,6 +15,8 @@ const LOW_WALL := Vector2i(3, 0)  ## 手前の壁（低い縁。キャラを隠�
 const CRYPT_TALL_PATH: String = "res://art/tiles/crypt_walls_tall.png"  ## 地下墓所の、2階分の高い壁（32×48 を6種類）
 const TALL_WALL_H: int = 48
 const TALL_SOURCE: int = 1
+const HD_TALL_PATH: String = "res://art/tiles/crypt_walls_tall_hd.png"  ## 壁を2倍の細かさで（64×96 を6種類）
+const HD_LOW_PATH: String = "res://art/tiles/crypt_walls_low_hd.png"    ## 低い壁（64×64 を3種類）
 const CRYPT_ART_PATH: String = "res://art/tiles/crypt_tiles.png"  ## 地下墓所（暗い遺跡）のドット絵
 const TILE_ART_PATH: String = "res://art/tiles/grounds_tiles.png"  ## 廃寺の境内（屋外）の、床と壁のドット絵（地下墓所用は crypt_tiles.png）
 const FLOOR_VARIANTS: int = 8
@@ -35,6 +37,9 @@ const LOW_WALL_HEIGHT: float = 4.0
 
 var floor_layer: TileMapLayer
 var wall_layer: TileMapLayer
+var _sort_parent: Node2D
+var _hd_tall: Texture2D
+var _hd_low: Texture2D
 var markers: Dictionary = {}  ## 記号 -> Array[Vector2]（画面上の位置）
 
 
@@ -52,6 +57,10 @@ func build(rows: PackedStringArray, y_sorted_parent: Node2D) -> void:
 	wall_layer.tile_set = ts
 	wall_layer.y_sort_enabled = true
 	y_sorted_parent.add_child.call_deferred(wall_layer)
+	_sort_parent = y_sorted_parent
+	if hd_walls and ResourceLoader.exists(HD_TALL_PATH) and ResourceLoader.exists(HD_LOW_PATH):
+		_hd_tall = load(HD_TALL_PATH)
+		_hd_low = load(HD_LOW_PATH)
 
 	markers.clear()
 	for y in rows.size():
@@ -87,6 +96,10 @@ func _add_floor_mural(rows: PackedStringArray) -> void:
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.position = Vector2(-(rows.size() - 1) * 16, 0)  # 絵の左の余白（make_floor_mural.py の OX）
+	var cols: int = 0
+	for r: String in rows:
+		cols = maxi(cols, r.length())
+	sprite.scale = Vector2.ONE * (float((cols + rows.size()) * 16) / texture.get_width())  # 細かい絵（2倍など）は、縮めて重ねる
 	sprite.z_index = -9
 	add_child(sprite)
 	floor_layer.visible = false
@@ -218,6 +231,8 @@ static func make_tileset() -> TileSet:
 	for coord: Vector2i in [WALL, LOW_WALL, WALL + Vector2i(0, 1), WALL + Vector2i(0, 2), WALL + Vector2i(0, 3), WALL + Vector2i(0, 4), WALL + Vector2i(0, 5),
 			LOW_WALL + Vector2i(0, 1), LOW_WALL + Vector2i(0, 2)]:
 		var wall := src.get_tile_data(coord, 0)
+		if hd_walls:
+			wall.modulate = Color(1, 1, 1, 0)  # 見た目は、細かい絵のスプライトに任せる
 		wall.add_collision_polygon(0)
 		wall.set_collision_polygon_points(0, 0, PackedVector2Array([
 			Vector2(-16, 0), Vector2(0, -8), Vector2(16, 0), Vector2(0, 8)]))
@@ -241,13 +256,29 @@ static func make_tileset() -> TileSet:
 
 ## 壁のセルの絵を置く。地下墓所で高い壁なら、2階分の高い壁（なければ今までの壁）
 func _set_wall(cell: Vector2i, kind: Vector2i, variant: int) -> void:
-	if kind == WALL and wall_layer.tile_set.has_source(TALL_SOURCE):
+	if _hd_tall != null and _hd_low != null:
+		# 細かい絵のスプライトで見せる。タイルは、見えなくして当たり判定だけ残す
+		wall_layer.set_cell(cell, 0, kind)
+		var high: bool = kind == WALL
+		var tex: Texture2D = _hd_tall if high else _hd_low
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		var w: int = Iso.TILE_W * 2
+		atlas.region = Rect2(variant * w, 0, w, tex.get_height())
+		var sprite := Sprite2D.new()
+		sprite.texture = atlas
+		sprite.scale = Vector2(0.5, 0.5)
+		sprite.offset = Vector2(0, -32 if high else -16)  # 足もとの菱形の中心を、マスの中心に合わせる
+		sprite.position = floor_layer.map_to_local(cell)
+		_sort_parent.add_child.call_deferred(sprite)
+	elif kind == WALL and wall_layer.tile_set.has_source(TALL_SOURCE):
 		wall_layer.set_cell(cell, TALL_SOURCE, Vector2i(variant, 0))
 	else:
 		wall_layer.set_cell(cell, 0, kind + Vector2i(0, variant))
 
 
 ## ドット絵のタイル（tools/tiles/make_crypt_tiles.py が作る）。大きさが合わない・なければ null（コードで描いた絵のまま）
+static var hd_walls: bool = false  ## true なら、壁を2倍の細かさの絵（スプライト）で見せる。タイルは当たり判定だけ残す
 static var mural_path: String = ""  ## マップ全体の床の絵（あれば、床のタイルの上に敷く。tools/tiles/make_floor_mural.py）
 static var art_path: String = TILE_ART_PATH  ## 使うタイル絵。エリアの見た目の切り替え用
 

@@ -14,9 +14,10 @@ root = os.path.join(here, '..', '..')
 rows = [l.rstrip('\n') for l in open(os.path.join(root, 'data', 'maps', 'field_01.txt'), encoding='utf-8') if l.strip()]
 H = len(rows)
 W = max(len(r) for r in rows)
+S = 2   # 細かさ（1=今までのドット、2=ドットが半分の大きさ）
 OX = (H - 1) * 16
-IW = (W + H) * 16
-IH = (W + H - 2) * 8 + 16
+IW = (W + H) * 16 * S
+IH = ((W + H - 2) * 8 + 16) * S
 
 rng = np.random.default_rng(20261109)
 
@@ -35,8 +36,8 @@ RUST = hx('#5a3a46')   # 赤茶の染み
 
 # ---- ピクセル → 地面の座標 (u,v)（マス単位） ----
 ys, xs = np.mgrid[0:IH, 0:IW].astype(np.float32)
-lx = xs + 0.5 - OX
-ly = ys + 0.5
+lx = (xs + 0.5) / S - OX
+ly = (ys + 0.5) / S
 u = ((lx - 16) / 16 + ly / 8) / 2
 v = (ly / 8 - (lx - 16) / 16) / 2
 cu = np.floor(u).astype(int)
