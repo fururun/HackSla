@@ -12,7 +12,7 @@ const FLOOR_B := Vector2i(1, 0)
 const WALL := Vector2i(2, 0)      ## 奥の壁（高い）
 const LOW_WALL := Vector2i(3, 0)  ## 手前の壁（低い縁。キャラを隠さないため）
 
-const TILE_ART_PATH: String = "res://art/tiles/crypt_tiles.png"  ## 廃寺の地下墓所の、床と壁のドット絵
+const TILE_ART_PATH: String = "res://art/tiles/grounds_tiles.png"  ## 廃寺の境内（屋外）の、床と壁のドット絵（地下墓所用は crypt_tiles.png）
 const FLOOR_VARIANTS: int = 8
 const FLOOR_COLORS: Array[Color] = [Color("#3a3d46"), Color("#363941")]
 const FLOOR_EDGE := Color("#282c35")
@@ -24,6 +24,8 @@ const WALL_LIGHT := Color("#89909a")
 const WALL_LEFT := Color("#4a505c")
 const WALL_RIGHT := Color("#3b414d")
 const WALL_MORTAR := Color("#303640")
+const FOREST_MARGIN: int = 10  ## マップの外側に敷く森の厚さ（マス）
+const FOREST_BG := Color("#16301f")
 const HIGH_WALL_HEIGHT: float = 16.0
 const LOW_WALL_HEIGHT: float = 4.0
 
@@ -56,13 +58,54 @@ func build(rows: PackedStringArray, y_sorted_parent: Node2D) -> void:
 			if c == "#":
 				var kind := _wall_kind(rows, x, y)
 				if kind != Vector2i(-1, -1):
-					wall_layer.set_cell(cell, 0, kind)
+					wall_layer.set_cell(cell, 0, kind + Vector2i(0, wall_variant(cell, kind == WALL)))
 				continue
 			floor_layer.set_cell(cell, 0, floor_tile(cell))
 			if c != ".":
 				if not markers.has(c):
 					markers[c] = []
 				markers[c].append(floor_layer.map_to_local(cell))
+	_build_forest_margin(rows)
+	RenderingServer.set_default_clear_color(FOREST_BG)
+
+
+## マップの外側にも、見た目だけの森（木・岩・茂み）を厚く敷く。画面の端が真っ暗にならないように
+func _build_forest_margin(rows: PackedStringArray) -> void:
+	var width: int = 0
+	for r: String in rows:
+		width = maxi(width, r.length())
+	var height: int = rows.size()
+	for y in range(-FOREST_MARGIN, height + FOREST_MARGIN):
+		for x in range(-FOREST_MARGIN, width + FOREST_MARGIN):
+			if _is_floor(rows, x, y) or wall_layer.get_cell_source_id(Vector2i(x, y)) != -1:
+				continue
+			var near: bool = false
+			for dy in range(-FOREST_MARGIN, FOREST_MARGIN + 1):
+				for dx in range(-FOREST_MARGIN, FOREST_MARGIN + 1):
+					if _is_floor(rows, x + dx, y + dy):
+						near = true
+						break
+				if near:
+					break
+			if not near:
+				continue
+			# 高い木は、上に重なって見える床（画面の上側＝x-,y-）が近くにないときだけ
+			var low: bool = false
+			for a in range(0, 4):
+				for b in range(0, 4):
+					if _is_floor(rows, x - a, y - b):
+						low = true
+			var cell := Vector2i(x, y)
+			wall_layer.set_cell(cell, 0, (LOW_WALL if low else WALL) + Vector2i(0, wall_variant(cell, not low)))
+
+
+## 壁の見た目の種類（木・針葉樹・大木・岩山 / 茂み・花の茂み・低い岩）を、座標から固定で選ぶ
+static func wall_variant(cell: Vector2i, high: bool) -> int:
+	var seed_value: int = (cell.x * 92837111) ^ (cell.y * 689287499)
+	var r: int = posmod(seed_value ^ (seed_value >> 9), 100)
+	if high:
+		return 0 if r < 40 else (1 if r < 65 else (2 if r < 85 else 3))
+	return 0 if r < 45 else (1 if r < 70 else 2)
 
 
 ## 壁の種類を決める。床に接していない壁は描かない（-1,-1）。
@@ -133,6 +176,10 @@ static func make_tileset() -> TileSet:
 	src.texture_region_size = Vector2i(Iso.TILE_W, Iso.TILE_W)
 	ts.add_source(src, 0)
 	var coords: Array[Vector2i] = [WALL, LOW_WALL]
+	for v in range(1, 4):
+		coords.append(WALL + Vector2i(0, v))
+	for v in range(1, 3):
+		coords.append(LOW_WALL + Vector2i(0, v))
 	for variant: int in FLOOR_VARIANTS:
 		coords.append(Vector2i(0, variant))
 		coords.append(Vector2i(1, variant))
@@ -140,7 +187,8 @@ static func make_tileset() -> TileSet:
 		src.create_tile(coord)
 		var data := src.get_tile_data(coord, 0)
 		data.texture_origin = Vector2i(0, Iso.TILE_H / 2)
-	for coord: Vector2i in [WALL, LOW_WALL]:
+	for coord: Vector2i in [WALL, LOW_WALL, WALL + Vector2i(0, 1), WALL + Vector2i(0, 2), WALL + Vector2i(0, 3),
+			LOW_WALL + Vector2i(0, 1), LOW_WALL + Vector2i(0, 2)]:
 		var wall := src.get_tile_data(coord, 0)
 		wall.add_collision_polygon(0)
 		wall.set_collision_polygon_points(0, 0, PackedVector2Array([
@@ -165,7 +213,22 @@ static func _load_tile_art(expected: Vector2i) -> Image:
 ## 座標だけから固定の模様を選ぶ。乱数状態・生成順には依存しない。
 static func floor_tile(cell: Vector2i) -> Vector2i:
 	var seed_value: int = (cell.x * 73856093) ^ (cell.y * 19349663)
-	return Vector2i(posmod(cell.x + cell.y, 2), posmod(seed_value ^ (seed_value >> 7), FLOOR_VARIANTS))
+	var fine: int = posmod(seed_value ^ (seed_value >> 7), 100)
+	# 粗い区画ごとに、土（5）や石畳（6）の場所をまとめる。ほかは草（0〜3）に、花（4）と土まじり（7）を少し
+	var bx: int = floori(cell.x / 4.0)
+	var by: int = floori(cell.y / 4.0)
+	var block_seed: int = (bx * 83492791) ^ (by * 2654435761)
+	var block: int = posmod(block_seed ^ (block_seed >> 11), 100)
+	var variant: int
+	if block < 9:
+		variant = 5 if fine < 85 else fine % 4
+	elif block < 18:
+		variant = 6 if fine < 85 else 5
+	elif fine < 6:
+		variant = 4
+	else:
+		variant = fine % 4
+	return Vector2i(posmod(cell.x + cell.y, 2), variant)
 
 
 ## 画像の整数ピクセルに焼き付けるので、実行中の描き直しは不要。
