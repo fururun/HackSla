@@ -46,7 +46,7 @@ const CAMERA_MODES: Array = [
 
 
 func _ready() -> void:
-	if "--area=crypt" in OS.get_cmdline_user_args():  # 見た目の確認用：地下墓所のタイル
+	if not "--area=grounds" in OS.get_cmdline_user_args():  # 標準は地下墓所の見た目。屋外の境内は --area=grounds
 		IsoMap.art_path = IsoMap.CRYPT_ART_PATH
 		IsoMap.mural_path = "res://art/tiles/mural_field_01_crypt.png"
 		IsoMap.hd_walls = true
