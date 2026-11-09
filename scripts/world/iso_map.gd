@@ -12,6 +12,7 @@ const FLOOR_B := Vector2i(1, 0)
 const WALL := Vector2i(2, 0)      ## 奥の壁（高い）
 const LOW_WALL := Vector2i(3, 0)  ## 手前の壁（低い縁。キャラを隠さないため）
 
+const TILE_ART_PATH: String = "res://art/tiles/crypt_tiles.png"  ## 廃寺の地下墓所の、床と壁のドット絵
 const FLOOR_VARIANTS: int = 8
 const FLOOR_COLORS: Array[Color] = [Color("#3a3d46"), Color("#363941")]
 const FLOOR_EDGE := Color("#282c35")
@@ -123,6 +124,9 @@ static func make_tileset() -> TileSet:
 			_paint_floor(img, shade * Iso.TILE_W, variant * Iso.TILE_W, FLOOR_COLORS[shade], variant)
 	_paint_wall(img, Iso.TILE_W * 2, HIGH_WALL_HEIGHT)
 	_paint_wall(img, Iso.TILE_W * 3, LOW_WALL_HEIGHT)
+	var art: Image = _load_tile_art(img.get_size())
+	if art != null:
+		img = art  # ドット絵のタイルがあれば、コードで描いた仮の絵のかわりに使う
 
 	var src := TileSetAtlasSource.new()
 	src.texture = ImageTexture.create_from_image(img)
@@ -142,6 +146,20 @@ static func make_tileset() -> TileSet:
 		wall.set_collision_polygon_points(0, 0, PackedVector2Array([
 			Vector2(-16, 0), Vector2(0, -8), Vector2(16, 0), Vector2(0, 8)]))
 	return ts
+
+
+## ドット絵のタイル（tools/tiles/make_crypt_tiles.py が作る）。大きさが合わない・なければ null（コードで描いた絵のまま）
+static func _load_tile_art(expected: Vector2i) -> Image:
+	if not ResourceLoader.exists(TILE_ART_PATH):
+		return null
+	var texture: Texture2D = load(TILE_ART_PATH)
+	if texture == null:
+		return null
+	var image: Image = texture.get_image()
+	if image == null or image.get_size() != expected:
+		return null
+	image.convert(Image.FORMAT_RGBA8)
+	return image
 
 
 ## 座標だけから固定の模様を選ぶ。乱数状態・生成順には依存しない。

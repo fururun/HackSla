@@ -1552,3 +1552,16 @@ func test_controller_bindings_and_tree_cursor() -> void:
 	t.check(skills.get_viewport().gui_get_focus_owner() != null, "スキル装備画面を開くと、どこかの欄が選ばれている")
 	skills.close()
 	main.queue_free()
+
+
+func test_crypt_tile_art_loads_and_is_seamless_shape() -> void:
+	t.check(ResourceLoader.exists(IsoMap.TILE_ART_PATH), "タイルのドット絵がある")
+	var ts: TileSet = IsoMap.make_tileset()
+	var src: TileSetAtlasSource = ts.get_source(0)
+	var image: Image = src.texture.get_image()
+	t.check_eq(image.get_size(), Vector2i(Iso.TILE_W * 4, Iso.TILE_W * IsoMap.FLOOR_VARIANTS), "タイルの画像の大きさ")
+	# 床は菱形（32×16）の中だけに描かれ、外側（角）は透明
+	for variant: int in IsoMap.FLOOR_VARIANTS:
+		t.check(image.get_pixel(0, variant * Iso.TILE_W + 16).a < 0.01, "床 %d：左上の角は透明" % variant)
+		t.check(image.get_pixel(16, variant * Iso.TILE_W + 24).a > 0.99, "床 %d：中央は塗られている" % variant)
+		t.check(image.get_pixel(31, variant * Iso.TILE_W + 31).a < 0.01, "床 %d：右下の角は透明" % variant)
