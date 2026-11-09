@@ -66,7 +66,8 @@ func build(rows: PackedStringArray, y_sorted_parent: Node2D) -> void:
 				if not markers.has(c):
 					markers[c] = []
 				markers[c].append(floor_layer.map_to_local(cell))
-	_build_forest_margin(rows)
+	if art_path == TILE_ART_PATH:  # 屋外だけ、外側を森で埋める（地下は暗がりのまま）
+		_build_forest_margin(rows)
 	RenderingServer.set_default_clear_color(FOREST_BG if art_path == TILE_ART_PATH else Color("#080e1f"))
 
 
@@ -102,10 +103,13 @@ func _build_forest_margin(rows: PackedStringArray) -> void:
 
 ## 壁の見た目の種類（木・針葉樹・大木・岩山 / 茂み・花の茂み・低い岩）を、座標から固定で選ぶ
 static func wall_variant(cell: Vector2i, high: bool) -> int:
-	if art_path != TILE_ART_PATH:
-		return 0  # 地下墓所のタイル絵には、壁の種類の違いがまだない
 	var seed_value: int = (cell.x * 92837111) ^ (cell.y * 689287499)
 	var r: int = posmod(seed_value ^ (seed_value >> 9), 100)
+	if art_path == CRYPT_ART_PATH:
+		# 地下墓所：高い壁 0=普通 1=アーチ 2=窓 3=扉 4=崩れ 5=苔 / 低い壁 0=普通 1=崩れ 2=苔
+		if high:
+			return 0 if r < 40 else (1 if r < 50 else (2 if r < 62 else (3 if r < 70 else (4 if r < 85 else 5))))
+		return 0 if r < 55 else (1 if r < 80 else 2)
 	if high:
 		return 0 if r < 40 else (1 if r < 65 else (2 if r < 85 else 3))
 	return 0 if r < 45 else (1 if r < 70 else 2)
@@ -179,7 +183,7 @@ static func make_tileset() -> TileSet:
 	src.texture_region_size = Vector2i(Iso.TILE_W, Iso.TILE_W)
 	ts.add_source(src, 0)
 	var coords: Array[Vector2i] = [WALL, LOW_WALL]
-	for v in range(1, 4):
+	for v in range(1, 6):
 		coords.append(WALL + Vector2i(0, v))
 	for v in range(1, 3):
 		coords.append(LOW_WALL + Vector2i(0, v))
@@ -190,7 +194,7 @@ static func make_tileset() -> TileSet:
 		src.create_tile(coord)
 		var data := src.get_tile_data(coord, 0)
 		data.texture_origin = Vector2i(0, Iso.TILE_H / 2)
-	for coord: Vector2i in [WALL, LOW_WALL, WALL + Vector2i(0, 1), WALL + Vector2i(0, 2), WALL + Vector2i(0, 3),
+	for coord: Vector2i in [WALL, LOW_WALL, WALL + Vector2i(0, 1), WALL + Vector2i(0, 2), WALL + Vector2i(0, 3), WALL + Vector2i(0, 4), WALL + Vector2i(0, 5),
 			LOW_WALL + Vector2i(0, 1), LOW_WALL + Vector2i(0, 2)]:
 		var wall := src.get_tile_data(coord, 0)
 		wall.add_collision_polygon(0)

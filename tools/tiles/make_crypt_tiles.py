@@ -89,14 +89,41 @@ def paint_floor(img, ox, oy, variant, shade, rng):
                     if p in cells and cells[p][2] < 0.8 and rng.random() < 0.6 - 0.15 * (abs(dx) + abs(dy)):
                         img.putpixel((ox + p[0], oy + 16 + p[1]), rng.choice(MOSS))
 
-# 壁（高さ：奥の壁=16、手前の壁=4）。形は iso_map.gd の _paint_wall と同じ
-W_TOP = hx('#35607f')
-W_TOP_LIGHT = hx('#5e9cc0')
-W_LEFT = [hx('#27456e'), hx('#223c63'), hx('#2d4d78')]
-W_RIGHT = [hx('#16264a'), hx('#12203f'), hx('#1a2d55')]
-W_MORTAR = hx('#0a1330')
+# 壁（高さ：奥の壁=16、手前の壁=4）。赤茶のレンガに、青緑の笠石。参考画像（暗い遺跡）の色
+W_TOP = hx('#2f6370')
+W_TOP_LIGHT = hx('#5ba3a6')
+W_LEFT = [hx('#7a4a45'), hx('#6d4140'), hx('#86544b')]
+W_RIGHT = [hx('#4a2a35'), hx('#402535'), hx('#553240')]
+W_MORTAR = hx('#2a1426')
+DARK = hx('#120a1c')
+FRAME = hx('#b58a62')
+GLOWC = hx('#ffb454')
+WOOD = hx('#6b4426')
+DOORGLOW = hx('#e8893a')
 
-def paint_wall(img, ox, height, rng):
+def face_feature(kind, x, ry, rng_hash):
+    """面の中の位置(x=0..15（面の中）, ry=0..16)に、窓・扉・アーチを描く。色を返す（なければ None）"""
+    if kind == 'arch':
+        top = 4 + (abs(x - 8) > 2) * 2 + (abs(x - 8) > 3) * 2
+        if 4 <= x <= 12 and ry >= top:
+            return DARK
+        if 3 <= x <= 13 and ry >= top - 1 and (x in (3, 4, 12, 13) or ry == top - 1 + (abs(x - 8) > 2) * 0):
+            return FRAME
+    elif kind == 'window':
+        if 6 <= x <= 9 and 4 <= ry <= 9:
+            return GLOWC if (x in (7, 8) and 5 <= ry <= 8) else DARK
+        if 5 <= x <= 10 and 3 <= ry <= 10:
+            return FRAME
+    elif kind == 'door':
+        if 5 <= x <= 10 and ry >= 3:
+            if x in (5, 10):
+                return DOORGLOW
+            return WOOD if (x + ry // 3) % 4 else DARK
+        if 4 <= x <= 11 and ry >= 2:
+            return FRAME
+    return None
+
+def paint_wall(img, ox, height, rng, kind='plain'):
     top_c = 24.0 - height
     for y in range(W):
         for x in range(W):
@@ -109,15 +136,24 @@ def paint_wall(img, ox, height, rng):
                 col = W_TOP_LIGHT if py < top_lo + 1.0 else W_TOP
                 if rng.random() < 0.10:
                     col = shade_color(col, 0.9)
+                if kind == 'crumbled' and rng.random() < 0.10:
+                    continue  # 崩れて欠けた笠石
                 img.putpixel((ox + x, y), col)
             elif top_hi < py <= bottom:
-                course_y = int(py - top_hi)
-                course = course_y // 5
-                mortar = course_y % 5 == 4 or (x + course * 5) % 10 == 0
+                ry = int(py - top_hi)
+                course = ry // 5
+                mortar = ry % 5 == 4 or (x + course * 5) % 10 == 0
                 palette = W_LEFT if x < 16 else W_RIGHT
                 col = W_MORTAR if mortar else palette[(x // 5 + course) % 3]
-                # 苔：壁の根もと（下の方）に、少し
-                if not mortar and py > bottom - 4 and rng.random() < 0.22:
+                fx = x if x < 16 else x - 16
+                feat = face_feature(kind, fx, ry, 0) if height > 8 else None
+                if feat is not None:
+                    col = feat if x < 16 else shade_color(feat, 0.7) if feat in (FRAME, WOOD) else feat
+                elif kind == 'crumbled' and not mortar and rng.random() < 0.2:
+                    col = DARK if rng.random() < 0.5 else shade_color(col, 0.7)
+                elif kind == 'mossy' and not mortar and rng.random() < 0.28:
+                    col = rng.choice(MOSS)
+                elif not mortar and py > bottom - 4 and rng.random() < 0.18:
                     col = rng.choice(MOSS)
                 img.putpixel((ox + x, y), col)
 
@@ -130,8 +166,15 @@ def main():
     for v in range(VARIANTS):
         # 壁は先頭の行だけ使う（ほかの行は空）。奥の壁・手前の壁
         pass
-    paint_wall(img, W * 2, 16.0, random.Random(7))
-    paint_wall(img, W * 3, 4.0, random.Random(8))
+    # 列2=高い壁（行0=普通 1=アーチ 2=窓 3=扉 4=崩れた 5=苔むした）、列3=低い壁（行0=普通 1=崩れた 2=苔むした）
+    for v, kind in enumerate(['plain', 'arch', 'window', 'door', 'crumbled', 'mossy']):
+        tmp = Image.new('RGBA', (W, W), (0, 0, 0, 0))
+        paint_wall(tmp, 0, 16.0, random.Random(7 + v), kind)
+        img.paste(tmp, (W * 2, W * v))
+    for v, kind in enumerate(['plain', 'crumbled', 'mossy']):
+        tmp = Image.new('RGBA', (W, W), (0, 0, 0, 0))
+        paint_wall(tmp, 0, 4.0, random.Random(17 + v), kind)
+        img.paste(tmp, (W * 3, W * v))
     img.save('art/tiles/crypt_tiles.png')
     print('ok', img.size)
 
