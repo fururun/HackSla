@@ -158,7 +158,7 @@ func test_floor_check_and_drops_avoid_walls() -> void:
 	t.check(not map.is_floor_at(wall_pos), "壁のマスは床ではない")
 	t.check(not map.is_floor_at(wall_pos, true), "壁のマスは壁ぎわ判定でも床ではない")
 	# 壁ぎわの床（左端の列のすぐ内側）は、margin 付きでは置けない
-	var edge_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(2, 2))  # 開始の広場の角（北と西が壁）
+	var edge_pos: Vector2 = map.floor_layer.map_to_local(Vector2i(2, 6))  # 開始の広場の西の端（西が壁）
 	t.check(map.is_floor_at(edge_pos) and not map.is_floor_at(edge_pos, true), "壁ぎわは余白付きの判定で除外される")
 	# 壁ぎわの敵を倒しても、ドロップは壁の中・壁ぎわに置かれない
 	var director: LootDirector = null

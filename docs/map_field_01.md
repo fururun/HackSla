@@ -41,3 +41,19 @@
 - 群れの数：`main.gd` の `SMALL_PACK_SIZE`、`enemies.json` の `pack`
 - 体力の自然回復：`scripts/player/player_consts.gd` の `LIFE_REGEN_PER_SEC`（いまは 1秒に 1.5）
 - 部屋の大きさ・敵の位置・宝箱の数：`tools/maps/make_field_01.py` を直して、もう一度実行する
+
+## 部屋の形
+
+四角だけの部屋をやめて、形に変化をつけた（印の数・順番・経験値の見積もりは変えていない）。
+
+| 部屋 | 形 |
+| --- | --- |
+| 開始の広場 | 角を落とした八角形 |
+| 部屋A | 楕円の広間。柱3本 |
+| 部屋B | 八角形。柱3本 |
+| 部屋C | 丸い広場 |
+| 広場E | 角を少し落とした広間。柱が並ぶ（8本） |
+| ボスの部屋 | 大きな丸い広場。柱4本 |
+| 横道の小部屋 | 小さな八角形 |
+
+形は tools/maps/make_field_01.py の carve_oct（八角形）・carve_ellipse（楕円）・pillar（柱）で作る。
