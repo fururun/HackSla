@@ -3,9 +3,9 @@ extends Node2D
 ## 光だまり：マップの壁ぎわ・開始位置・宝箱・ボスの近くに、たいまつ（と色つきの灯り）を置く。
 ## 全体は CanvasModulate で暗くし、PointLight2D でその周りだけ明るくする。見た目だけ（当たり判定なし）。
 
-const AMBIENT := Color("#7d82ad")          ## 画面全体の明るさ（暗い青紫）
-const TORCH_EVERY: int = 46                 ## 壁ぎわの床のうち、およそこの数マスにつき1本
-const WARM := Color("#ffa24a")
+const AMBIENT := Color("#4a4678")          ## 画面全体の明るさ（暗い青紫）
+const TORCH_EVERY: int = 30                 ## 壁ぎわの床のうち、およそこの数マスにつき1本
+const WARM := Color("#ff7a2a")
 const COOL := Color("#4ad6b4")
 const PINK := Color("#d96aa8")
 
@@ -79,9 +79,9 @@ func _add_pool(pos: Vector2, color: Color, size: float, energy: float) -> void:
 func _add_torch(pos: Vector2, color: Color) -> void:
 	var light := PointLight2D.new()
 	light.texture = _glow_texture
-	light.texture_scale = 1.5
+	light.texture_scale = 1.6
 	light.color = color
-	light.energy = 1.1
+	light.energy = 1.5
 	light.position = pos + Vector2(0, -8)
 	add_child(light)
 	_lights.append(light)
@@ -111,4 +111,4 @@ static func _torch_texture(flame: Color) -> ImageTexture:
 func _process(delta: float) -> void:
 	_time += delta
 	for i in _lights.size():
-		_lights[i].energy = 1.0 + 0.18 * sin(_time * 7.0 + _phases[i]) + 0.08 * sin(_time * 13.0 + _phases[i] * 2.0)
+		_lights[i].energy = 1.5 + 0.25 * sin(_time * 7.0 + _phases[i]) + 0.12 * sin(_time * 13.0 + _phases[i] * 2.0)
