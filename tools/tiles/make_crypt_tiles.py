@@ -123,14 +123,14 @@ def face_feature(kind, x, ry, rng_hash):
             return FRAME
     return None
 
-def paint_wall(img, ox, height, rng, kind='plain'):
-    top_c = 24.0 - height
-    for y in range(W):
+def paint_wall(img, ox, height, rng, kind='plain', canvas_h=W, foot=24.0):
+    top_c = foot - height
+    for y in range(canvas_h):
         for x in range(W):
             w = 1.0 - abs(x + 0.5 - 16.0) / 16.0
             top_lo = top_c - 8.0 * w
             top_hi = top_c + 8.0 * w
-            bottom = 24.0 + 8.0 * w
+            bottom = foot + 8.0 * w
             py = y + 0.5
             if top_lo <= py <= top_hi:
                 col = W_TOP_LIGHT if py < top_lo + 1.0 else W_TOP
@@ -146,7 +146,19 @@ def paint_wall(img, ox, height, rng, kind='plain'):
                 palette = W_LEFT if x < 16 else W_RIGHT
                 col = W_MORTAR if mortar else palette[(x // 5 + course) % 3]
                 fx = x if x < 16 else x - 16
-                feat = face_feature(kind, fx, ry, 0) if height > 8 else None
+                if height > 16:
+                    low = ry - (height - 16)   # 下の階（アーチ・扉）。上の階には窓
+                    feat = None
+                    if kind in ('arch', 'door') and low >= 0:
+                        feat = face_feature(kind, fx, low, 0)
+                    elif kind == 'window':
+                        feat = face_feature('window', fx, ry, 0) or (face_feature('window', fx, low, 0) if low >= 0 else None)
+                    elif kind == 'plain' and ry in (height - 17,):
+                        feat = None
+                    if kind in ('arch', 'door') and feat is None and 3 <= fx <= 12 and 3 <= ry <= 10 and fx % 6 in (2, 3):
+                        feat = face_feature('window', fx - (fx % 6 - 2) + 4 - 4, ry, 0) if False else None
+                else:
+                    feat = face_feature(kind, fx, ry, 0) if height > 8 else None
                 if feat is not None:
                     col = feat if x < 16 else shade_color(feat, 0.7) if feat in (FRAME, WOOD) else feat
                 elif kind == 'crumbled' and not mortar and rng.random() < 0.2:
@@ -175,6 +187,14 @@ def main():
         tmp = Image.new('RGBA', (W, W), (0, 0, 0, 0))
         paint_wall(tmp, 0, 4.0, random.Random(17 + v), kind)
         img.paste(tmp, (W * 3, W * v))
+    # 2階分の高い壁（32×48）。crypt_walls_tall.png：6種類を横に並べる
+    TALL_H = 48
+    tall = Image.new('RGBA', (W * 6, TALL_H), (0, 0, 0, 0))
+    for v, kind in enumerate(['plain', 'arch', 'window', 'door', 'crumbled', 'mossy']):
+        tmp = Image.new('RGBA', (W, TALL_H), (0, 0, 0, 0))
+        paint_wall(tmp, 0, 32.0, random.Random(27 + v), kind, canvas_h=TALL_H, foot=40.0)
+        tall.paste(tmp, (W * v, 0))
+    tall.save('art/tiles/crypt_walls_tall.png')
     img.save('art/tiles/crypt_tiles.png')
     print('ok', img.size)
 

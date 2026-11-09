@@ -12,6 +12,9 @@ const FLOOR_B := Vector2i(1, 0)
 const WALL := Vector2i(2, 0)      ## 奥の壁（高い）
 const LOW_WALL := Vector2i(3, 0)  ## 手前の壁（低い縁。キャラを隠さないため）
 
+const CRYPT_TALL_PATH: String = "res://art/tiles/crypt_walls_tall.png"  ## 地下墓所の、2階分の高い壁（32×48 を6種類）
+const TALL_WALL_H: int = 48
+const TALL_SOURCE: int = 1
 const CRYPT_ART_PATH: String = "res://art/tiles/crypt_tiles.png"  ## 地下墓所（暗い遺跡）のドット絵
 const TILE_ART_PATH: String = "res://art/tiles/grounds_tiles.png"  ## 廃寺の境内（屋外）の、床と壁のドット絵（地下墓所用は crypt_tiles.png）
 const FLOOR_VARIANTS: int = 8
@@ -59,7 +62,7 @@ func build(rows: PackedStringArray, y_sorted_parent: Node2D) -> void:
 			if c == "#":
 				var kind := _wall_kind(rows, x, y)
 				if kind != Vector2i(-1, -1):
-					wall_layer.set_cell(cell, 0, kind + Vector2i(0, wall_variant(cell, kind == WALL)))
+					_set_wall(cell, kind, wall_variant(cell, kind == WALL))
 				continue
 			floor_layer.set_cell(cell, 0, floor_tile(cell))
 			if c != ".":
@@ -218,7 +221,30 @@ static func make_tileset() -> TileSet:
 		wall.add_collision_polygon(0)
 		wall.set_collision_polygon_points(0, 0, PackedVector2Array([
 			Vector2(-16, 0), Vector2(0, -8), Vector2(16, 0), Vector2(0, 8)]))
+	if art_path == CRYPT_ART_PATH and ResourceLoader.exists(CRYPT_TALL_PATH):
+		# 2階分の高い壁（32×48）。足もとの菱形は、床と同じ位置
+		var tall_tex: Texture2D = load(CRYPT_TALL_PATH)
+		if tall_tex != null and tall_tex.get_size() == Vector2(Iso.TILE_W * 6, TALL_WALL_H):
+			var tall := TileSetAtlasSource.new()
+			tall.texture = tall_tex
+			tall.texture_region_size = Vector2i(Iso.TILE_W, TALL_WALL_H)
+			ts.add_source(tall, TALL_SOURCE)
+			for v in 6:
+				tall.create_tile(Vector2i(v, 0))
+				var td := tall.get_tile_data(Vector2i(v, 0), 0)
+				td.texture_origin = Vector2i(0, 16)
+				td.add_collision_polygon(0)
+				td.set_collision_polygon_points(0, 0, PackedVector2Array([
+					Vector2(-16, 0), Vector2(0, -8), Vector2(16, 0), Vector2(0, 8)]))
 	return ts
+
+
+## 壁のセルの絵を置く。地下墓所で高い壁なら、2階分の高い壁（なければ今までの壁）
+func _set_wall(cell: Vector2i, kind: Vector2i, variant: int) -> void:
+	if kind == WALL and wall_layer.tile_set.has_source(TALL_SOURCE):
+		wall_layer.set_cell(cell, TALL_SOURCE, Vector2i(variant, 0))
+	else:
+		wall_layer.set_cell(cell, 0, kind + Vector2i(0, variant))
 
 
 ## ドット絵のタイル（tools/tiles/make_crypt_tiles.py が作る）。大きさが合わない・なければ null（コードで描いた絵のまま）
