@@ -9,7 +9,7 @@ const START_NOTICE_SECONDS: float = 10.0  ## スタート構成のお知らせ�
 const SMALL_PACK_SIZE: int = 6  ## マップの印 f の群れの数
 ## カメラの引き（拡大率）。1.0 で、画面が 480x270 ドットの範囲。0.5 なら、2倍の範囲（960x540）が見える。
 ## 画面を3倍に拡大して描く（1440x810）とき、2/3 なら、ドット1つがちょうど画面の2ピクセルになって、にじまない。
-const CAMERA_ZOOM: float = 0.5
+const CAMERA_ZOOM: float = 1.0  ## 標準の引き（1.0＝ドットが3ピクセル。F4で変えられる）
 
 var world: Node2D
 var map: IsoMap
@@ -35,6 +35,7 @@ var _camera_label: Label
 ## カメラの見え方の候補（F4 で順に切り替えて、がくつきの出ないものを探す）。
 ## [名前, 引き, 追従をなめらかにする, ピクセルへの吸着]
 const CAMERA_MODES: Array = [
+	["標準: 引き1.0・追従なし（固定）・吸着なし", 1.0, false, false],
 	["A: 引き0.5・なめらか追従・吸着あり", 0.5, true, true],
 	["B: 引き0.5・追従なし（固定）・吸着なし（標準）", 0.5, false, false],
 	["C: 引き0.5・追従なし（プレイヤーに固定）・吸着あり", 0.5, false, true],
@@ -63,7 +64,7 @@ func _ready() -> void:
 	world.add_child(player)
 
 	camera = Camera2D.new()
-	camera.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える
+	camera.zoom = Vector2.ONE * CAMERA_ZOOM  # 引き：小さいほど、広い範囲が見える（標準は 1.0）
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS  # プレイヤーと同じ物理の刻みで追う（がくつき防止）
 	camera.position_smoothing_enabled = false  # 標準は、追従なし（プレイヤーに固定）。ふるるん さんが、がくつきのない設定として選んだ（設定B）
 	camera.position_smoothing_speed = 8.0
