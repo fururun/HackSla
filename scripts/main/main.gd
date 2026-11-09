@@ -48,6 +48,7 @@ const CAMERA_MODES: Array = [
 func _ready() -> void:
 	if "--area=crypt" in OS.get_cmdline_user_args():  # 見た目の確認用：地下墓所のタイル
 		IsoMap.art_path = IsoMap.CRYPT_ART_PATH
+		IsoMap.mural_path = "res://art/tiles/mural_field_01_crypt.png"
 	world = Node2D.new()
 	world.name = "World"
 	world.y_sort_enabled = true

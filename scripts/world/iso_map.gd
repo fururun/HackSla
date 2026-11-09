@@ -66,9 +66,27 @@ func build(rows: PackedStringArray, y_sorted_parent: Node2D) -> void:
 				if not markers.has(c):
 					markers[c] = []
 				markers[c].append(floor_layer.map_to_local(cell))
+	_add_floor_mural(rows)
 	if art_path == TILE_ART_PATH:  # 屋外だけ、外側を森で埋める（地下は暗がりのまま）
 		_build_forest_margin(rows)
 	RenderingServer.set_default_clear_color(FOREST_BG if art_path == TILE_ART_PATH else Color("#080e1f"))
+
+
+## マップ全体の床の絵を敷く。床のタイルは、当たり判定・印の位置のために残して、見えなくする
+func _add_floor_mural(rows: PackedStringArray) -> void:
+	if mural_path == "" or not ResourceLoader.exists(mural_path):
+		return
+	var texture: Texture2D = load(mural_path)
+	if texture == null:
+		return
+	var sprite := Sprite2D.new()
+	sprite.name = "FloorMural"
+	sprite.texture = texture
+	sprite.centered = false
+	sprite.position = Vector2(-(rows.size() - 1) * 16, 0)  # 絵の左の余白（make_floor_mural.py の OX）
+	sprite.z_index = -9
+	add_child(sprite)
+	floor_layer.visible = false
 
 
 ## マップの外側にも、見た目だけの森（木・岩・茂み）を厚く敷く。画面の端が真っ暗にならないように
@@ -204,6 +222,7 @@ static func make_tileset() -> TileSet:
 
 
 ## ドット絵のタイル（tools/tiles/make_crypt_tiles.py が作る）。大きさが合わない・なければ null（コードで描いた絵のまま）
+static var mural_path: String = ""  ## マップ全体の床の絵（あれば、床のタイルの上に敷く。tools/tiles/make_floor_mural.py）
 static var art_path: String = TILE_ART_PATH  ## 使うタイル絵。エリアの見た目の切り替え用
 
 
