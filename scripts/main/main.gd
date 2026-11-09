@@ -211,6 +211,15 @@ func _roll_start_loadout() -> void:
 	start_loadout_text = StartLoadout.describe(start_skill_ids)
 
 
+func _on_joy_connection_changed(device: int, connected: bool) -> void:
+	if loot_hud == null:
+		return
+	if connected:
+		loot_hud.notify("コントローラー接続: %s" % Input.get_joy_name(device), UiStyle.ACCENT, 6.0)
+	else:
+		loot_hud.notify("コントローラーが切れました", UiStyle.WARNING, 6.0)
+
+
 ## 超低確率で、金色のレジェンドの宝箱を、マップの印 L のうち1か所に置く。force が true なら、かならず置く（試験用）
 func _place_legend_chest(force: bool) -> TreasureChest:
 	var spots: Array = map.markers.get("L", [])
@@ -298,6 +307,9 @@ func _add_progression(manager: EnemyManager, stash: Stash) -> void:
 	loot_hud.name = "LootHud"
 	add_child(loot_hud)
 	loot_hud.setup(stash)
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)  # コントローラーがつながった／切れたのを、画面に出す
+	for pad: int in Input.get_connected_joypads():
+		_on_joy_connection_changed(pad, true)
 	loot_hud.notify(start_loadout_text, UiStyle.ACCENT, START_NOTICE_SECONDS)  # 今回の、スタート構成と、組めるチェイン
 	if legend_chest != null:
 		loot_hud.notify("どこかに、金色に輝く宝箱がある…", Color("#ffb03d"), START_NOTICE_SECONDS)
