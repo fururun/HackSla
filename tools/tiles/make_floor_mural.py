@@ -50,73 +50,120 @@ for y, r in enumerate(rows):
         grid[y, x] = c != '#'
 floor[inside] = grid[cv[inside], cu[inside]]
 
-# ---- 不規則な石：ずらした格子点の最近傍（ボロノイ）。石の大きさは約 1.6〜2.6 マス ----
-CELL = 2.1
-gx = np.floor(u / CELL).astype(int)
-gy = np.floor(v / CELL).astype(int)
+# ---- 値ノイズ（なめらかな、場所ごとの偏り。大きな石の区画・がれきの区画・苔の区画に使う）----
+def value_noise(scale, seed):
+    r = np.random.default_rng(seed)
+    g = r.random((int(H / scale) + 3, int(W / scale) + 3)).astype(np.float32)
+    fu = u / scale
+    fv = v / scale
+    iu = np.clip(np.floor(fu).astype(int), 0, g.shape[1] - 2)
+    iv = np.clip(np.floor(fv).astype(int), 0, g.shape[0] - 2)
+    tu = np.clip(fu - iu, 0, 1)
+    tv = np.clip(fv - iv, 0, 1)
+    tu = tu * tu * (3 - 2 * tu)
+    tv = tv * tv * (3 - 2 * tv)
+    a = g[iv, iu] * (1 - tu) + g[iv, iu + 1] * tu
+    b = g[iv + 1, iu] * (1 - tu) + g[iv + 1, iu + 1] * tu
+    return a * (1 - tv) + b * tv
 
 
-def seed_of(ix, iy):
-    h = (ix * 73856093) ^ (iy * 19349663) ^ 0x5bd1e995
-    h = (h ^ (h >> 13)) * 1274126177
-    h = h ^ (h >> 16)
-    a = ((h & 0xFFFF) / 65535.0) * 0.8 + 0.1
-    b = (((h >> 16) & 0xFFFF) / 65535.0) * 0.8 + 0.1
-    return (ix + a) * CELL, (iy + b) * CELL, (h >> 5) & 0xFF
+def voronoi(cell, angular, salt):
+    """格子ごとに1点をずらして置き、最近傍で石を分ける。angular が大きいほど四角っぽい石になる"""
+    gx = np.floor(u / cell).astype(int)
+    gy = np.floor(v / cell).astype(int)
+    best = np.full((IH, IW), 1e9, dtype=np.float32)
+    second = np.full((IH, IW), 1e9, dtype=np.float32)
+    bid = np.zeros((IH, IW), dtype=int)
+    bdx = np.zeros((IH, IW), dtype=np.float32)
+    bdy = np.zeros((IH, IW), dtype=np.float32)
+    for oy in (-1, 0, 1):
+        for ox in (-1, 0, 1):
+            ix, iy = gx + ox, gy + oy
+            h = (ix * 73856093) ^ (iy * 19349663) ^ salt
+            h = (h ^ (h >> 13)) * 1274126177
+            h = h ^ (h >> 16)
+            sx = (ix + ((h & 0xFFFF) / 65535.0) * 0.7 + 0.15) * cell
+            sy = (iy + (((h >> 16) & 0xFFFF) / 65535.0) * 0.7 + 0.15) * cell
+            dx = u - sx
+            dy = v - sy
+            d = (1 - angular) * np.sqrt(dx * dx + dy * dy) + angular * np.maximum(np.abs(dx), np.abs(dy)) * 1.15
+            better = d < best
+            second = np.where(better, best, np.minimum(second, d))
+            bdx = np.where(better, dx, bdx)
+            bdy = np.where(better, dy, bdy)
+            bid = np.where(better, (h >> 5) & 0xFFFF, bid)
+            best = np.where(better, d, best)
+    return second - best, bid, bdx, bdy
 
 
-best = np.full((IH, IW), 1e9, dtype=np.float32)
-second = np.full((IH, IW), 1e9, dtype=np.float32)
-best_id = np.zeros((IH, IW), dtype=int)
-best_dx = np.zeros((IH, IW), dtype=np.float32)
-best_dy = np.zeros((IH, IW), dtype=np.float32)
-for oy in (-1, 0, 1):
-    for ox in (-1, 0, 1):
-        sx, sy, sid = seed_of(gx + ox, gy + oy)
-        dx = u - sx
-        dy = v - sy
-        d = np.sqrt(dx * dx + dy * dy)
-        better = d < best
-        second = np.where(better, best, np.minimum(second, d))
-        best_dx = np.where(better, dx, best_dx)
-        best_dy = np.where(better, dy, best_dy)
-        best_id = np.where(better, sid, best_id)
-        best = np.where(better, d, best)
-gap = second - best
+noise = rng.random((IH, IW))
+region = value_noise(5.0, 11)    # 大きな石の区画 ↔ 小さな石の区画
+rubble_zone = value_noise(4.0, 23)  # がれき（小石の散らばり）の区画
+moss_zone = value_noise(3.5, 37)
+stain_zone = value_noise(6.0, 41)
 
-# ---- 色 ----
+gap_b, id_b, dx_b, dy_b = voronoi(3.0, 0.55, 0x1111)   # 大きな板石
+gap_m, id_m, dx_m, dy_m = voronoi(1.5, 0.30, 0x2222)   # 中くらいの石
+gap_s, id_s, dx_s, dy_s = voronoi(0.8, 0.10, 0x3333)   # 小さな石
+use_big = region > 0.55
+use_small = region < 0.30
+gap = np.where(use_big, gap_b, np.where(use_small, gap_s, gap_m))
+sid = np.where(use_big, id_b, np.where(use_small, id_s, id_m))
+sdx = np.where(use_big, dx_b, np.where(use_small, dx_s, dx_m))
+sdy = np.where(use_big, dy_b, np.where(use_small, dy_s, dy_m))
+width = np.where(use_big, 0.20, np.where(use_small, 0.13, 0.17))  # 縁の幅（マス）：大きな石ほど厚み
+
 img = np.zeros((IH, IW, 3), dtype=np.float32)
-tone_idx = best_id % len(STONE)
+tone_idx = sid % len(STONE)
 for i, col in enumerate(STONE):
     img[tone_idx == i] = col
-bright = 1.0 + ((best_id >> 3) % 7 - 3) * 0.035
+bright = 1.0 + ((sid >> 3) % 9 - 4) * 0.04
 img *= bright[..., None]
-noise = rng.random((IH, IW))
 img *= (1.0 + (noise - 0.5) * 0.10)[..., None]       # 石の粒
-# 目地と縁取り（左上の縁は明るく、右下の縁は暗く）
-edge = gap < 0.17
-facing = (best_dx + best_dy) > 0   # 石の中心から見て右下側＝影
-img[edge & ~facing] = img[edge & ~facing] * 0.55 + LIGHT * 0.45
-img[edge & facing] = img[edge & facing] * 0.55 + DARK * 0.45
-mortar = gap < 0.06
+# 地面（がれきの区画）：暗い土に、小石を散らす
+rub = rubble_zone > 0.62
+ground = np.where(rub[..., None], hx('#17283a'), img)
+img = ground
+pebble_id = value_noise(0.55, 77)
+pebble = rub & (pebble_id > 0.62) & (noise > 0.2)
+pebble_lit = pebble & (value_noise(0.55, 78) > 0.5)
+img[pebble] = hx('#3f7480')
+img[pebble_lit] = hx('#6fa8a8')
+# 縁取り：左上の縁は明るく、右下の縁は暗く。大きな石ほど厚い
+facing = (sdx + sdy) > 0
+edge = (gap < width) & ~rub
+img[edge & ~facing] = img[edge & ~facing] * 0.5 + LIGHT * 0.5
+img[edge & facing] = img[edge & facing] * 0.45 + DARK * 0.55
+mortar = (gap < 0.055) & ~rub
 img[mortar] = MORTAR
-# 割れ目：石の中に、短い暗い線
-crack = (noise > 0.985) & (gap > 0.2)
+# 割れ目・砂利・苔・染み
+crack = (noise > 0.987) & (gap > 0.2) & ~rub
 img[crack] = DARK
-# 砂利：目地の近くに、明暗の点
-gravel = (gap < 0.35) & (noise > 0.93)
+gravel = (gap < 0.4) & (noise > 0.92)
 img[gravel] = img[gravel] * 0.7 + LIGHT * 0.3
-# 苔：低い周波数のかたまり
-coarse = rng.random((H // 3 + 2, W // 3 + 2)).astype(np.float32)
-mu = np.clip((u / 3).astype(int), 0, coarse.shape[1] - 1)
-mv = np.clip((v / 3).astype(int), 0, coarse.shape[0] - 1)
-mossy = (coarse[mv, mu] > 0.80) & (noise > 0.55)
+mossy = (moss_zone > 0.62) & (value_noise(0.7, 91) > 0.42)
 for i, col in enumerate(MOSS):
-    sel = mossy & (rng.integers(0, 3, (IH, IW)) == i)
+    sel = mossy & (rng.integers(0, 3, (IH, IW)) == i) if i == 2 else mossy & (value_noise(0.35, 95 + i) > 0.5)
     img[sel] = col
-# 赤茶の染み（血・錆）
-rusty = (coarse[mv, mu] < 0.07) & (noise > 0.6)
-img[rusty] = img[rusty] * 0.5 + RUST * 0.5
+rusty = (stain_zone < 0.28) & (noise > 0.55)
+img[rusty] = img[rusty] * 0.55 + RUST * 0.45
+# 床の端（壁・崖のきわ）：欠けた石とがれき。縁から 0.6 マス以内に、暗い点と小石を散らす
+nb = np.zeros((IH, IW), dtype=bool)
+wallgrid = ~grid
+for dy_ in (-1, 0, 1):
+    for dx_ in (-1, 0, 1):
+        if dx_ == 0 and dy_ == 0:
+            continue
+        ncu = np.clip(cu + dx_, 0, W - 1)
+        ncv = np.clip(cv + dy_, 0, H - 1)
+        nb |= inside & wallgrid[ncv, ncu]
+fu_ = u - cu
+fv_ = v - cv
+near_edge = nb & floor & ((np.minimum(fu_, 1 - fu_) < 0.45) | (np.minimum(fv_, 1 - fv_) < 0.45))
+debris = near_edge & (noise > 0.80)
+img[debris] = img[debris] * 0.5 + DARK * 0.5
+debris2 = near_edge & (noise > 0.94)
+img[debris2] = hx('#5b8c93')
 
 out = np.zeros((IH, IW, 4), dtype=np.uint8)
 out[..., :3] = np.clip(img, 0, 255).astype(np.uint8)
