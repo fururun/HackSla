@@ -46,6 +46,8 @@ const CAMERA_MODES: Array = [
 
 
 func _ready() -> void:
+	if "--area=crypt" in OS.get_cmdline_user_args():  # 見た目の確認用：地下墓所のタイル
+		IsoMap.art_path = IsoMap.CRYPT_ART_PATH
 	world = Node2D.new()
 	world.name = "World"
 	world.y_sort_enabled = true
@@ -55,7 +57,12 @@ func _ready() -> void:
 	map.name = "Map"
 	add_child(map)
 	move_child(map, 0)
-	map.build(load_map(MAP_PATH), world)
+	var map_rows: PackedStringArray = load_map(MAP_PATH)
+	map.build(map_rows, world)
+	var lights := WorldLights.new()  # たいまつ・色つきの光だまり
+	lights.name = "Lights"
+	add_child(lights)
+	lights.build(map_rows, map)
 
 	player = Player.new()
 	player.name = "Player"

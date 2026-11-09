@@ -12,6 +12,7 @@ const FLOOR_B := Vector2i(1, 0)
 const WALL := Vector2i(2, 0)      ## 奥の壁（高い）
 const LOW_WALL := Vector2i(3, 0)  ## 手前の壁（低い縁。キャラを隠さないため）
 
+const CRYPT_ART_PATH: String = "res://art/tiles/crypt_tiles.png"  ## 地下墓所（暗い遺跡）のドット絵
 const TILE_ART_PATH: String = "res://art/tiles/grounds_tiles.png"  ## 廃寺の境内（屋外）の、床と壁のドット絵（地下墓所用は crypt_tiles.png）
 const FLOOR_VARIANTS: int = 8
 const FLOOR_COLORS: Array[Color] = [Color("#3a3d46"), Color("#363941")]
@@ -66,7 +67,7 @@ func build(rows: PackedStringArray, y_sorted_parent: Node2D) -> void:
 					markers[c] = []
 				markers[c].append(floor_layer.map_to_local(cell))
 	_build_forest_margin(rows)
-	RenderingServer.set_default_clear_color(FOREST_BG)
+	RenderingServer.set_default_clear_color(FOREST_BG if art_path == TILE_ART_PATH else Color("#080e1f"))
 
 
 ## マップの外側にも、見た目だけの森（木・岩・茂み）を厚く敷く。画面の端が真っ暗にならないように
@@ -101,6 +102,8 @@ func _build_forest_margin(rows: PackedStringArray) -> void:
 
 ## 壁の見た目の種類（木・針葉樹・大木・岩山 / 茂み・花の茂み・低い岩）を、座標から固定で選ぶ
 static func wall_variant(cell: Vector2i, high: bool) -> int:
+	if art_path != TILE_ART_PATH:
+		return 0  # 地下墓所のタイル絵には、壁の種類の違いがまだない
 	var seed_value: int = (cell.x * 92837111) ^ (cell.y * 689287499)
 	var r: int = posmod(seed_value ^ (seed_value >> 9), 100)
 	if high:
@@ -197,10 +200,13 @@ static func make_tileset() -> TileSet:
 
 
 ## ドット絵のタイル（tools/tiles/make_crypt_tiles.py が作る）。大きさが合わない・なければ null（コードで描いた絵のまま）
+static var art_path: String = TILE_ART_PATH  ## 使うタイル絵。エリアの見た目の切り替え用
+
+
 static func _load_tile_art(expected: Vector2i) -> Image:
-	if not ResourceLoader.exists(TILE_ART_PATH):
+	if not ResourceLoader.exists(art_path):
 		return null
-	var texture: Texture2D = load(TILE_ART_PATH)
+	var texture: Texture2D = load(art_path)
 	if texture == null:
 		return null
 	var image: Image = texture.get_image()
