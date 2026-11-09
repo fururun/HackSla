@@ -311,6 +311,16 @@ func test_autopilot_walks_to_enemy_fights_and_dodges() -> void:
 			enemy = n
 			break
 	player.global_position = enemy.global_position + Vector2(-100, 0)
+	var found: bool = false
+	for radius: float in [100.0, 80.0, 60.0, 120.0]:  # マップの形が変わっても、床の上から始める
+		for angle: float in range(0, 360, 30):
+			var offset: Vector2 = Vector2(radius, 0).rotated(deg_to_rad(angle))
+			if main.map.is_floor_at(enemy.global_position + offset, true):
+				player.global_position = enemy.global_position + offset
+				found = true
+				break
+		if found:
+			break
 	var chosen: Node2D = pilot.find_target(player)
 	t.check(chosen is Enemy, "近くの敵を選ぶ")
 	var move: Vector2 = pilot.move_input(player, 0.016)
