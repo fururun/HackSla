@@ -30,7 +30,7 @@ STONE = [hx('#2c5d68'), hx('#33696f'), hx('#3b7479'), hx('#27525e'), hx('#305a6e
 MORTAR = hx('#0b1430')
 LIGHT = hx('#6fb0b0')
 DARK = hx('#0f2030')
-MOSS = [hx('#2a7a47'), hx('#3d9460'), hx('#1a5230')]
+MOSS = [hx('#245f3c'), hx('#2f7a4d'), hx('#174a2c')]
 RUST = hx('#5a3a46')   # 赤茶の染み
 
 # ---- ピクセル → 地面の座標 (u,v)（マス単位） ----
@@ -119,16 +119,16 @@ for i, col in enumerate(STONE):
     img[tone_idx == i] = col
 bright = 1.0 + ((sid >> 3) % 9 - 4) * 0.04
 img *= bright[..., None]
-img *= (1.0 + (noise - 0.5) * 0.10)[..., None]       # 石の粒
+img *= (1.0 + (noise - 0.5) * 0.03)[..., None]       # 石の粒（ごく弱く。ざらつかせない）
 # 地面（がれきの区画）：暗い土に、小石を散らす
 rub = rubble_zone > 0.62
 ground = np.where(rub[..., None], hx('#17283a'), img)
 img = ground
-pebble_id = value_noise(0.55, 77)
-pebble = rub & (pebble_id > 0.62) & (noise > 0.2)
-pebble_lit = pebble & (value_noise(0.55, 78) > 0.5)
-img[pebble] = hx('#3f7480')
-img[pebble_lit] = hx('#6fa8a8')
+gap_p, id_p, dx_p, dy_p = voronoi(0.42, 0.0, 0x4444)   # 小石：1個ずつ丸い塊にする
+pebble = rub & (gap_p > 0.07) & (((id_p >> 2) % 3) == 0) & (np.sqrt(dx_p ** 2 + dy_p ** 2) < 0.17)
+pebble_lit = pebble & ((dx_p + dy_p) < 0)
+img[pebble] = hx('#35687a')
+img[pebble_lit] = hx('#5e9a9e')
 # 縁取り：左上の縁は明るく、右下の縁は暗く。大きな石ほど厚い
 facing = (sdx + sdy) > 0
 edge = (gap < width) & ~rub
@@ -137,15 +137,13 @@ img[edge & facing] = img[edge & facing] * 0.45 + DARK * 0.55
 mortar = (gap < 0.055) & ~rub
 img[mortar] = MORTAR
 # 割れ目・砂利・苔・染み
-crack = (noise > 0.987) & (gap > 0.2) & ~rub
-img[crack] = DARK
-gravel = (gap < 0.4) & (noise > 0.92)
-img[gravel] = img[gravel] * 0.7 + LIGHT * 0.3
-mossy = (moss_zone > 0.62) & (value_noise(0.7, 91) > 0.42)
+mossy = (moss_zone > 0.68) & (value_noise(1.1, 91) > 0.45)
 for i, col in enumerate(MOSS):
-    sel = mossy & (rng.integers(0, 3, (IH, IW)) == i) if i == 2 else mossy & (value_noise(0.35, 95 + i) > 0.5)
+    sel = mossy & ((value_noise(0.8, 95) > 0.5) if i == 0 else ((value_noise(0.8, 96) > 0.35) if i == 1 else (value_noise(0.8, 97) > 0.75)))
+    if i != 0:
+        sel &= ~(mossy & (value_noise(0.8, 95) > 0.5)) if i == 2 else sel
     img[sel] = col
-rusty = (stain_zone < 0.28) & (noise > 0.55)
+rusty = (stain_zone < 0.28) & (value_noise(1.2, 99) > 0.4)
 img[rusty] = img[rusty] * 0.55 + RUST * 0.45
 # 床の端（壁・崖のきわ）：欠けた石とがれき。縁から 0.6 マス以内に、暗い点と小石を散らす
 nb = np.zeros((IH, IW), dtype=bool)
@@ -160,10 +158,10 @@ for dy_ in (-1, 0, 1):
 fu_ = u - cu
 fv_ = v - cv
 near_edge = nb & floor & ((np.minimum(fu_, 1 - fu_) < 0.45) | (np.minimum(fv_, 1 - fv_) < 0.45))
-debris = near_edge & (noise > 0.80)
+debris = near_edge & (value_noise(0.6, 101) > 0.62)
 img[debris] = img[debris] * 0.5 + DARK * 0.5
-debris2 = near_edge & (noise > 0.94)
-img[debris2] = hx('#5b8c93')
+debris2 = near_edge & (gap_p > 0.07) & (((id_p >> 2) % 4) == 0) & (np.sqrt(dx_p ** 2 + dy_p ** 2) < 0.15)
+img[debris2] = hx('#4f8088')
 
 out = np.zeros((IH, IW, 4), dtype=np.uint8)
 out[..., :3] = np.clip(img, 0, 255).astype(np.uint8)
